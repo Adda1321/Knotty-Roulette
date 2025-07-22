@@ -2,11 +2,10 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
-import GameBoard from '../../components/game/GameBoard';
-import PlayerSetup from '../../components/game/PlayerSetup';
-import { fetchChallenges } from '../../services/api';
-import { Challenge, GameState, Player } from '../../types/game';
+import GameBoard from '../components/game/GameBoard';
+import PlayerSetup from '../components/game/PlayerSetup';
+import { fetchChallenges } from '../services/api';
+import { Challenge, GameState, Player } from '../types/game';
 
 export default function HomeScreen() {
   const [gameState, setGameState] = useState<GameState>('setup');
@@ -14,7 +13,6 @@ export default function HomeScreen() {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
     loadChallenges();
@@ -25,24 +23,20 @@ export default function HomeScreen() {
     try {
       const fetchedChallenges = await fetchChallenges();
       setChallenges(fetchedChallenges);
-      setIsOnline(true); // Success means we're online
     } catch (error) {
+      Alert.alert('Error', 'Failed to load challenges. Please check your connection.');
       console.error('Error loading challenges:', error);
-      setIsOnline(false); // Error means we're offline
-      // Don't show alert, just use fallback challenges
     } finally {
       setIsLoading(false);
     }
   };
 
   const startGame = (playerNames: string[]) => {
-    console.log('Received player names:', playerNames);
     const newPlayers = playerNames.map((name, index) => ({
       id: index,
       name,
       points: 0,
     }));
-    console.log('Created players:', newPlayers);
     setPlayers(newPlayers);
     setCurrentPlayerIndex(0);
     setGameState('playing');
@@ -60,7 +54,6 @@ export default function HomeScreen() {
         <View style={styles.loadingContainer}>
           <Text style={styles.loadingText}>Loading Knotty Roulette...</Text>
         </View>
-        <Toast />
       </SafeAreaView>
     );
   }
@@ -75,7 +68,6 @@ export default function HomeScreen() {
           players={players}
           challenges={challenges}
           currentPlayerIndex={currentPlayerIndex}
-          isOnline={isOnline}
           onPlayerTurnComplete={(playerIndex, points) => {
             const updatedPlayers = [...players];
             updatedPlayers[playerIndex].points += points;
@@ -97,7 +89,6 @@ export default function HomeScreen() {
           onResetGame={resetGame}
         />
       )}
-      <Toast />
     </SafeAreaView>
   );
 }
@@ -117,4 +108,4 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontFamily: 'Montserrat',
   },
-});
+}); 

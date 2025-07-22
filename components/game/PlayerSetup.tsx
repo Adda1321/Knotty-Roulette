@@ -1,32 +1,35 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
 
 interface PlayerSetupProps {
   onStartGame: (playerNames: string[]) => void;
 }
 
 export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
-  const [players, setPlayers] = useState<string[]>(['']);
+  const [players, setPlayers] = useState<string[]>(['', '']); // Default two empty players
   const [playerName, setPlayerName] = useState('');
 
   const addPlayer = () => {
-    if (playerName.trim()) {
-      setPlayers([...players, playerName.trim()]);
-      setPlayerName('');
+    if (players.length < 8) {
+      setPlayers([...players, '']); // Add empty player field
     }
   };
 
   const removePlayer = (index: number) => {
-    if (players.length > 1) {
+    if (players.length > 2) { // Prevent removing below minimum 2 players
       const newPlayers = players.filter((_, i) => i !== index);
       setPlayers(newPlayers);
     }
@@ -41,115 +44,123 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   const startGame = () => {
     const validPlayers = players.filter(name => name.trim());
     
-    console.log('All players array:', players);
-    console.log('Valid players (filtered):', validPlayers);
-    console.log('Valid players length:', validPlayers.length);
-    
     if (validPlayers.length < 2) {
       Alert.alert('Not Enough Players', 'You need at least 2 players to start the game.');
       return;
     }
 
-    if (validPlayers.length > 8) {
-      Alert.alert('Too Many Players', 'Maximum 8 players allowed.');
-      return;
-    }
-
-    console.log('Starting game with players:', validPlayers);
     onStartGame(validPlayers);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Knotty Roulette</Text>
-        <Text style={styles.subtitle}>Add Players to Start</Text>
-      </View>
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.playerList}>
-          {players.map((player, index) => (
-            <View key={index} style={styles.playerInputContainer}>
-              <TextInput
-                style={styles.playerInput}
-                placeholder={`Player ${index + 1} Name`}
-                placeholderTextColor="#666"
-                value={player}
-                onChangeText={(text) => updatePlayer(index, text)}
-                maxLength={20}
-              />
-              {players.length > 1 && (
-                <TouchableOpacity
-                  style={styles.removeButton}
-                  onPress={() => removePlayer(index)}
-                >
-                  <Text style={styles.removeButtonText}>×</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.addPlayerContainer}>
-          <TextInput
-            style={styles.addPlayerInput}
-            placeholder="Add another player..."
-            placeholderTextColor="#666"
-            value={playerName}
-            onChangeText={setPlayerName}
-            onSubmitEditing={addPlayer}
-            maxLength={20}
-          />
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={addPlayer}
-            disabled={!playerName.trim() || players.length >= 8}
-          >
-            <Text style={styles.addButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          style={[
-            styles.startButton,
-            players.filter(p => p.trim()).length < 2 && styles.startButtonDisabled
-          ]}
-          onPress={startGame}
-          disabled={players.filter(p => p.trim()).length < 2}
+    <LinearGradient
+      colors={['#1a1a2e', '#16213e']}
+      style={styles.container}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
         >
-          <Text style={styles.startButtonText}>Start Game</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+          <View style={styles.header}>
+            <Text style={styles.title}>KNOTTY ROULETTE</Text>
+            <Text style={styles.subtitle}>Add Players to Begin</Text>
+          </View>
+
+          <ScrollView style={styles.content}>
+            <View style={styles.playerList}>
+              {players.map((player, index) => (
+                <View key={index}>
+                  <View style={styles.playerInputContainer}>
+                    <TextInput
+                      style={styles.playerInput}
+                      placeholder={`Player ${index + 1}`}
+                      placeholderTextColor="#a1a1a1"
+                      value={player}
+                      onChangeText={(text) => updatePlayer(index, text)}
+                      maxLength={20}
+                      selectionColor="#e94560"
+                    />
+                    {/* Show remove button only when more than minimum players */}
+                    {players.length > 2 && (
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => removePlayer(index)}
+                      >
+                        <Text style={styles.removeButtonText}>✕</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                  
+                  {/* Add Player button after each field when under max */}
+                  {index === players.length - 1 && players.length < 8 && (
+                    <TouchableOpacity
+                      style={styles.addPlayerButton}
+                      onPress={addPlayer}
+                    >
+                      <Text style={styles.addPlayerButtonText}>+ Add Player</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.footer}>
+              <Text style={styles.tagline}>A Little Knotty, All Fun</Text>
+              <TouchableOpacity
+                style={[
+                  styles.startButton,
+                  players.filter(p => p.trim()).length < 2 && styles.startButtonDisabled
+                ]}
+                onPress={startGame}
+                disabled={players.filter(p => p.trim()).length < 2}
+              >
+                <Text style={styles.startButtonText}>START GAME</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.DARK_GREEN,
+    padding: SIZES.PADDING_MEDIUM,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  keyboardView: {
+    flex: 1,
   },
   header: {
     alignItems: 'center',
-    paddingVertical: 30,
-    paddingHorizontal: 20,
+    marginBottom: SIZES.PADDING_XLARGE,
   },
   title: {
-    fontSize: 32,
+    fontSize: SIZES.TITLE,
     fontWeight: 'bold',
-    color: '#ffcc00',
+    color: COLORS.YELLOW,
+    fontFamily: FONTS.PRIMARY,
+    marginBottom: SIZES.PADDING_SMALL,
+    marginTop: SIZES.PADDING_LARGE,
+    
     textAlign: 'center',
-    marginBottom: 10,
   },
   subtitle: {
-    fontSize: 18,
-    color: '#fff',
+    fontSize: SIZES.BODY,
+    color: COLORS.TEXT_SECONDARY,
+    fontFamily: FONTS.PRIMARY,
     textAlign: 'center',
-    opacity: 0.8,
+    marginBottom: SIZES.PADDING_LARGE,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 25,
   },
   playerList: {
     marginBottom: 20,
@@ -157,72 +168,82 @@ const styles = StyleSheet.create({
   playerInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 10,
+    backgroundColor: COLORS.CARD_BACKGROUND,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    paddingHorizontal: 15,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: COLORS.CARD_BORDER,
+    ...SIZES.SHADOW_SMALL,
   },
   playerInput: {
     flex: 1,
-    backgroundColor: '#333',
-    borderRadius: 10,
-    paddingHorizontal: 15,
+    fontSize: SIZES.BODY,
+    color: COLORS.TEXT_DARK,
     paddingVertical: 12,
-    fontSize: 16,
-    color: '#fff',
-    marginRight: 10,
+    fontFamily: FONTS.PRIMARY,
   },
   removeButton: {
-    backgroundColor: '#ff4444',
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: COLORS.OFFLINE,
   },
   removeButtonText: {
-    color: '#fff',
-    fontSize: 18,
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: SIZES.BODY,
     fontWeight: 'bold',
   },
-  addPlayerContainer: {
-    flexDirection: 'row',
+  addPlayerButton: {
+    backgroundColor: COLORS.DARK_GREEN,
+    paddingVertical: 10,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    marginBottom: 15,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.DARK_GREEN,
+    ...SIZES.SHADOW_SMALL,
+  },
+  addPlayerButtonText: {
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: SIZES.BODY,
+    fontWeight: '600',
+  },
+  footer: {
+    marginTop: 20,
+    marginBottom: 40,
+  },
+  tagline: {
+    color: COLORS.TEXT_SECONDARY,
+    textAlign: 'center',
+    fontSize: SIZES.BODY,
+    fontWeight: 'bold',
+    fontStyle: 'italic',
     marginBottom: 30,
   },
-  addPlayerInput: {
-    flex: 1,
-    backgroundColor: '#333',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#fff',
-    marginRight: 10,
-  },
-  addButton: {
-    backgroundColor: '#00cc00',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
   startButton: {
-    backgroundColor: '#ffcc00',
-    borderRadius: 15,
-    paddingVertical: 15,
-    alignItems: 'center',
-    marginBottom: 20,
+    backgroundColor: COLORS.YELLOW,
+    paddingVertical: SIZES.PADDING_LARGE,
+    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
+    marginTop: SIZES.PADDING_LARGE,
+    ...SIZES.SHADOW_MEDIUM,
   },
   startButtonDisabled: {
-    backgroundColor: '#666',
+    opacity: 0.6,
+  },
+  gradient: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   startButtonText: {
-    color: '#000',
-    fontSize: 18,
+    color: COLORS.TEXT_DARK,
+    fontSize: SIZES.SUBTITLE,
+    fontFamily: FONTS.PRIMARY,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
-}); 
+});

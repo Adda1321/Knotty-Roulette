@@ -1,11 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { forwardRef, useImperativeHandle, useState } from 'react';
-import {
-    Animated,
-    Dimensions,
-    StyleSheet,
-    View,
-} from 'react-native';
+import { Animated, Dimensions, StyleSheet, View } from 'react-native';
+import { COLORS } from '../../constants/theme';
 
 interface RouletteWheelProps {
   isSpinning: boolean;
@@ -139,9 +135,11 @@ const styles = StyleSheet.create({
     height: WHEEL_SIZE - 40,
     borderRadius: (WHEEL_SIZE - 40) / 2,
     borderWidth: 4,
-    borderColor: '#ffcc00',
+    borderColor: COLORS.YELLOW,
     overflow: 'hidden',
     position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   segment: {
     position: 'absolute',
@@ -159,6 +157,18 @@ const styles = StyleSheet.create({
     marginLeft: -RADIUS / 2,
     marginTop: -1,
   },
+  centerCircle: {
+    position: 'absolute',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: 'hidden',
+    zIndex: 5,
+  },
+  centerGradient: {
+    width: '100%',
+    height: '100%',
+  },
   pointer: {
     position: 'absolute',
     top: 10,
@@ -171,20 +181,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 20,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: COLORS.YELLOW,
     zIndex: 10,
-  },
-  centerCircle: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: 'hidden',
-    zIndex: 5,
-  },
-  centerGradient: {
-    width: '100%',
-    height: '100%',
   },
 });
 

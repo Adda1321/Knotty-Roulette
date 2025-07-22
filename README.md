@@ -63,9 +63,9 @@ cd knotty-roulette
 ```
 
 2. Install dependencies:
-```bash
-npm install
-```
+   ```bash
+   npm install
+   ```
 
 3. Configure WordPress backend:
    - Update `services/api.ts` with your WordPress site URL
@@ -78,7 +78,7 @@ npm start
 ```
 
 5. Run on device/simulator:
-```bash
+   ```bash
 # iOS
 npm run ios
 

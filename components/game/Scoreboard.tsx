@@ -1,9 +1,6 @@
 import React from 'react';
-import {
-    StyleSheet,
-    Text,
-    View
-} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Player } from '../../types/game';
 
 interface ScoreboardProps {
@@ -22,7 +19,7 @@ export default function Scoreboard({ players, currentPlayerIndex }: ScoreboardPr
     <View style={styles.container}>
       <Text style={styles.title}>Scoreboard:</Text>
       
-      <View style={styles.playerList}>
+      <View style={styles.playersContainer}>
         {sortedPlayers.map((player, index) => (
           <View
             key={player.id}
@@ -31,11 +28,17 @@ export default function Scoreboard({ players, currentPlayerIndex }: ScoreboardPr
               player.id === currentPlayerIndex && styles.currentPlayerCard,
             ]}
           >
-            <Text style={styles.playerName}>
+            <Text style={[
+              styles.playerName,
+              player.id === currentPlayerIndex && styles.currentPlayerName,
+            ]}>
               {player.name}
               {player.id === currentPlayerIndex && ' (Current)'}
             </Text>
-            <Text style={styles.playerScore}>{player.points}</Text>
+            <Text style={[
+              styles.playerScore,
+              player.id === currentPlayerIndex && styles.currentPlayerScore,
+            ]}>{player.points}</Text>
             {index === 0 && player.points > 0 && (
               <Text style={styles.leaderBadge}>👑</Text>
             )}
@@ -48,52 +51,61 @@ export default function Scoreboard({ players, currentPlayerIndex }: ScoreboardPr
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#000',
-    borderRadius: 10,
-    padding: 15,
-    marginHorizontal: 20,
-    marginBottom: 10,
+    backgroundColor: COLORS.LIGHT_GREEN,
+    borderRadius: SIZES.BORDER_RADIUS_LARGE,
+    padding: SIZES.PADDING_MEDIUM,
+    margin: SIZES.PADDING_MEDIUM,
+    ...SIZES.SHADOW_SMALL,
   },
   title: {
-    fontSize: 16,
+    fontSize: SIZES.SUBTITLE,
     fontWeight: 'bold',
-    color: '#fff',
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.PRIMARY,
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: SIZES.PADDING_MEDIUM,
   },
-  playerList: {
+  playersContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 10,
+    gap: SIZES.PADDING_SMALL,
   },
   playerCard: {
-    backgroundColor: '#333',
-    borderRadius: 8,
-    padding: 12,
-    minWidth: 80,
+    backgroundColor: COLORS.CARD_BACKGROUND,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    padding: SIZES.PADDING_MEDIUM,
+    minWidth: 100,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    ...SIZES.SHADOW_SMALL,
   },
   currentPlayerCard: {
-    borderColor: '#ffcc00',
-    backgroundColor: '#444',
+    backgroundColor: COLORS.DARK_GREEN,
+    borderWidth: 2,
+    borderColor: COLORS.YELLOW,
   },
   playerName: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: SIZES.CAPTION,
+    fontWeight: '600',
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.PRIMARY,
     textAlign: 'center',
-    marginBottom: 5,
+    marginBottom: SIZES.PADDING_SMALL,
+  },
+  currentPlayerName: {
+    color: COLORS.TEXT_PRIMARY,
   },
   playerScore: {
-    fontSize: 20,
+    fontSize: SIZES.TITLE,
     fontWeight: 'bold',
-    color: '#ffcc00',
+    color: COLORS.DARK_GREEN,
+    fontFamily: FONTS.PRIMARY,
+  },
+  currentPlayerScore: {
+    color: COLORS.YELLOW,
   },
   leaderBadge: {
     fontSize: 14,
     marginTop: 3,
   },
-}); 
+});

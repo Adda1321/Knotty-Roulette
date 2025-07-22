@@ -1,18 +1,23 @@
-import React, { useRef, useState } from 'react';
+import { LinearGradient } from "expo-linear-gradient";
+
+import React, { useRef, useState } from "react";
 import {
-    Alert,
-    Dimensions,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Challenge, Player } from '../../types/game';
-import ChallengeDisplay from './ChallengeDisplay';
-import GameRules from './GameRules';
-import RouletteWheel from './RouletteWheel';
-import Scoreboard from './Scoreboard';
+  Alert,
+  Animated,
+  Dimensions,
+  Easing,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import { Challenge, Player } from "../../types/game";
+import ChallengeDisplay from "./ChallengeDisplay";
+import GameRules from "./GameRules";
+import Scoreboard from "./Scoreboard";
 
 interface GameBoardProps {
   players: Player[];
@@ -21,9 +26,10 @@ interface GameBoardProps {
   isOnline: boolean;
   onPlayerTurnComplete: (playerIndex: number, points: number) => void;
   onResetGame: () => void;
+  renderPremiumSection?: React.ReactNode;
 }
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 export default function GameBoard({
   players,
@@ -32,54 +38,36 @@ export default function GameBoard({
   isOnline,
   onPlayerTurnComplete,
   onResetGame,
+  renderPremiumSection,
 }: GameBoardProps) {
   const [isSpinning, setIsSpinning] = useState(false);
-  const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(null);
+  const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(
+    null
+  );
   const [showChallenge, setShowChallenge] = useState(false);
   const [recentChallenges, setRecentChallenges] = useState<number[]>([]);
   const [showRules, setShowRules] = useState(false);
-  const wheelRef = useRef<any>(null);
+  const rotation = useRef(new Animated.Value(0)).current;
 
   const getNonRepeatingChallenge = (): Challenge => {
-    const availableChallenges = challenges.filter(
-      challenge => !recentChallenges.includes(challenge.id)
+    const available = challenges.filter(
+      (ch) => !recentChallenges.includes(ch.id)
     );
-
-    if (availableChallenges.length === 0) {
-      // Reset if all challenges have been used
+    if (available.length === 0) {
       setRecentChallenges([]);
       return challenges[Math.floor(Math.random() * challenges.length)];
     }
-
-    const randomChallenge = availableChallenges[Math.floor(Math.random() * availableChallenges.length)];
-    
-    // Update recent challenges
-    const newRecentChallenges = [...recentChallenges, randomChallenge.id];
-    if (newRecentChallenges.length > 5) {
-      newRecentChallenges.shift();
-    }
-    setRecentChallenges(newRecentChallenges);
-
-    return randomChallenge;
+    const random = available[Math.floor(Math.random() * available.length)];
+    const updatedRecent = [...recentChallenges, random.id];
+    if (updatedRecent.length > 5) updatedRecent.shift();
+    setRecentChallenges(updatedRecent);
+    return random;
   };
 
-  const spinWheel = () => {
-    if (isSpinning) return;
-
-    setIsSpinning(true);
-    setShowChallenge(false);
-    setCurrentChallenge(null);
-
-    // Spin the wheel
-    if (wheelRef.current) {
-      wheelRef.current.spin(() => {
-        // Wheel finished spinning, show challenge
-        const challenge = getNonRepeatingChallenge();
-        setCurrentChallenge(challenge);
-        setShowChallenge(true);
-        setIsSpinning(false);
-      });
-    }
+  const handleSpinComplete = () => {
+    const challenge = getNonRepeatingChallenge();
+    setCurrentChallenge(challenge);
+    setShowChallenge(true);
   };
 
   const completeChallenge = (points: number) => {
@@ -89,11 +77,15 @@ export default function GameBoard({
 
   const passChallenge = () => {
     Alert.alert(
-      'Pass Challenge',
-      'Are you sure you want to pass? You will lose 1 point.',
+      "Pass Challenge",
+      "Are you sure you want to pass? You will lose 1 point.",
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Pass', style: 'destructive', onPress: () => completeChallenge(-1) },
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Pass",
+          style: "destructive",
+          onPress: () => completeChallenge(-1),
+        },
       ]
     );
   };
@@ -101,11 +93,11 @@ export default function GameBoard({
   const attemptBonus = () => {
     if (currentChallenge?.has_bonus) {
       Alert.alert(
-        'Bonus Challenge',
-        'Attempt the bonus challenge for an extra point!',
+        "Bonus Challenge",
+        "Attempt the bonus challenge for an extra point!",
         [
-          { text: 'Skip Bonus', onPress: () => completeChallenge(1) },
-          { text: 'Attempt Bonus', onPress: () => completeChallenge(2) },
+          { text: "Skip Bonus", onPress: () => completeChallenge(1) },
+          { text: "Attempt Bonus", onPress: () => completeChallenge(2) },
         ]
       );
     } else {
@@ -113,73 +105,140 @@ export default function GameBoard({
     }
   };
 
+  const spinWheel = () => {
+    if (isSpinning || challenges.length === 0) return;
+
+    setShowChallenge(false);
+    setCurrentChallenge(null);
+    setIsSpinning(true);
+    rotation.setValue(0);
+
+    Animated.timing(rotation, {
+      toValue: 5,
+      duration: 3000,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => {
+      rotation.setValue(0);
+      handleSpinComplete();
+      setIsSpinning(false);
+    });
+  };
+
   const currentPlayer = players[currentPlayerIndex];
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Online/Offline Status Indicator */}
-      <View style={styles.statusBar}>
-        <View style={[styles.statusIndicator, isOnline ? styles.online : styles.offline]}>
-          <Text style={styles.statusText}>
-            {isOnline ? '🟢 Online' : '🔴 Offline'}
-          </Text>
-        </View>
-        <TouchableOpacity style={styles.rulesButton} onPress={() => setShowRules(true)}>
-          <Text style={styles.rulesButtonText}>📖 Rules</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>KNOTTY ROULETTE</Text>
-        <Text style={styles.currentPlayer}>
-          {currentPlayer.name}'s Turn to Spin
-        </Text>
-        <Text style={styles.passInstruction}>Pass Phone to Next Player</Text>
-      </View>
-
-      {/* Game Area */}
-      <View style={styles.gameArea}>
-        <RouletteWheel
-          ref={wheelRef}
-          isSpinning={isSpinning}
-          style={styles.wheel}
-        />
-
-        {showChallenge && currentChallenge && (
-          <ChallengeDisplay
-            challenge={currentChallenge}
-            playerName={currentPlayer.name}
-            onComplete={attemptBonus}
-            onPass={passChallenge}
-          />
-        )}
-
-        {!showChallenge && (
-          <View style={styles.controls}>
-            <TouchableOpacity
-              style={[styles.spinButton, isSpinning && styles.spinButtonDisabled]}
-              onPress={spinWheel}
-              disabled={isSpinning}
-            >
-              <Text style={styles.spinButtonText}>
-                {isSpinning ? 'Spinning...' : 'Spin the Wheel'}
-              </Text>
-            </TouchableOpacity>
+    <SafeAreaView style={styles.container} edges={["left", "right"]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* Status Bar */}
+        <View style={styles.statusBar}>
+          <View
+            style={[
+              styles.statusIndicator,
+              isOnline ? styles.online : styles.offline,
+            ]}
+          >
+            <Text style={styles.statusText}>
+              {isOnline ? "🟢 Online" : "🔴 Offline"}
+            </Text>
           </View>
-        )}
-      </View>
 
-      {/* Scoreboard */}
-      <Scoreboard players={players} currentPlayerIndex={currentPlayerIndex} />
+          {/* <Text style={styles.statusSubtext}>
+    {isOnline ? 'Connected to Knotty Times' : 'Using offline challenges'}
+  </Text> */}
 
-      {/* Reset Button */}
-      <TouchableOpacity style={styles.resetButton} onPress={onResetGame}>
-        <Text style={styles.resetButtonText}>New Game</Text>
-      </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.rulesButton}
+            onPress={() => setShowRules(true)}
+          >
+            <Text style={styles.rulesButtonText}>📖 Rules</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Game Rules Modal */}
-      <GameRules visible={showRules} onClose={() => setShowRules(false)} />
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>KNOTTY ROULETTE</Text>
+          {/* <Text style={styles.currentPlayer}>{currentPlayer.name}'s Turn</Text>
+          <Text style={styles.passInstruction}>Pass Phone to Next Player</Text> */}
+        </View>
+
+        {/* Game Area */}
+        <LinearGradient
+          colors={["#def6e2", "#84BB78"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gameArea}
+        >
+          {/* Spinning Wheel */}
+          <View style={styles.wheelContainer}>
+            <View style={styles.header}>
+              <Text style={styles.currentPlayer}>
+                {currentPlayer.name}'s Turn
+              </Text>
+              <Text style={styles.passInstruction}>
+                Pass Phone to Next Player
+              </Text>
+            </View>
+            <View style={styles.wheelShadowContainer}>
+              <Animated.Image
+                source={require("../../assets/images/knotty-logo.png")}
+                style={[
+                  styles.wheel,
+                  {
+                    transform: [
+                      {
+                        rotate: rotation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ["0deg", "360deg"],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+                resizeMode="contain"
+              />
+            </View>
+          </View>
+
+          {renderPremiumSection}
+
+          {/* Spin Button */}
+          <TouchableOpacity
+            style={[styles.spinButton, isSpinning && styles.spinButtonDisabled]}
+            onPress={spinWheel}
+            disabled={isSpinning}
+          >
+            <Text style={styles.spinButtonText}>
+              {isSpinning ? "Spinning..." : "Spin the Wheel"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Challenge Display */}
+          {showChallenge && currentChallenge && (
+            <ChallengeDisplay
+              challenge={currentChallenge}
+              playerName={currentPlayer.name}
+              onComplete={attemptBonus}
+              onPass={passChallenge}
+            />
+          )}
+        </LinearGradient>
+
+        {/* Scoreboard */}
+        <Scoreboard players={players} currentPlayerIndex={currentPlayerIndex} />
+
+        {/* Reset Button */}
+        <TouchableOpacity style={styles.resetButton} onPress={onResetGame}>
+          <Text style={styles.resetButtonText}>New Game</Text>
+        </TouchableOpacity>
+
+        {/* Game Rules Modal */}
+        <GameRules visible={showRules} onClose={() => setShowRules(false)} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -187,126 +246,134 @@ export default function GameBoard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#00cc00',
+    backgroundColor: COLORS.DARK_GREEN,
+    paddingVertical: SIZES.PADDING_MEDIUM,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
   },
   statusBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: '#2a2a2a',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: SIZES.PADDING_MEDIUM,
+    paddingVertical: SIZES.PADDING_SMALL,
+    backgroundColor: COLORS.DARK_GREEN,
   },
   statusIndicator: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 15,
+    paddingHorizontal: SIZES.PADDING_SMALL,
+    paddingVertical: 4,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
   },
   online: {
-    backgroundColor: '#00cc00',
+    // backgroundColor: COLORS.ONLINE,
+    backgroundColor: "#2ba1d7ff",
   },
   offline: {
-    backgroundColor: '#ff4444',
+    // backgroundColor: COLORS.OFFLINE,
+    backgroundColor: "#ffcc00",
   },
   statusText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: SIZES.CAPTION,
+    fontFamily: FONTS.PRIMARY,
+    fontWeight: "600",
+  },
+  statusSubtext: {
+    color: COLORS.TEXT_SECONDARY,
+    fontSize: SIZES.CAPTION,
+    textAlign: "center",
+    marginBottom: SIZES.PADDING_SMALL,
+    fontFamily: FONTS.PRIMARY,
   },
   rulesButton: {
-    backgroundColor: '#ffcc00',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
+    backgroundColor: COLORS.YELLOW,
+    paddingHorizontal: SIZES.PADDING_MEDIUM,
+    paddingVertical: SIZES.PADDING_SMALL,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    ...SIZES.SHADOW_SMALL,
   },
   rulesButtonText: {
-    color: '#000',
-    fontSize: 14,
-    fontWeight: 'bold',
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: SIZES.CAPTION,
+    fontFamily: FONTS.PRIMARY,
+    fontWeight: "600",
   },
   header: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+    alignItems: "center",
+    marginBottom: SIZES.PADDING_MEDIUM,
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#ffcc00',
-    textAlign: 'center',
-    marginBottom: 10,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    fontSize: SIZES.TITLE,
+    fontWeight: "bold",
+    color: COLORS.YELLOW,
+    fontFamily: FONTS.PRIMARY,
+    marginBottom: SIZES.PADDING_SMALL,
+    marginTop: SIZES.PADDING_LARGE,
+
+    textAlign: "center",
   },
   currentPlayer: {
-    fontSize: 18,
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: 'bold',
-    backgroundColor: '#00cc00',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginBottom: 5,
+    fontSize: SIZES.SUBTITLE,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.PRIMARY,
+    fontWeight: "800",
+    marginBottom: SIZES.PADDING_SMALL,
   },
   passInstruction: {
-    fontSize: 14,
-    color: '#fff',
-    textAlign: 'center',
-    backgroundColor: '#000',
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    borderRadius: 15,
+    fontSize: SIZES.CAPTION,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.PRIMARY,
+    fontStyle: "italic",
   },
   gameArea: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    backgroundColor: COLORS.LIGHT_GREEN,
+    borderRadius: SIZES.BORDER_RADIUS_LARGE,
+    padding: SIZES.PADDING_MEDIUM,
+    ...SIZES.SHADOW_SMALL,
+    alignItems: "center",
+    marginBottom: SIZES.PADDING_MEDIUM,
+  },
+  wheelContainer: {
+    marginBottom: SIZES.PADDING_LARGE,
+    ...SIZES.SHADOW_LARGE,
+  },
+  wheelShadowContainer: {
+    ...SIZES.SHADOW_MEDIUM,
   },
   wheel: {
-    width: Math.min(width * 0.8, 300),
-    height: Math.min(width * 0.8, 300),
-    marginBottom: 20,
-  },
-  controls: {
-    alignItems: 'center',
-    marginTop: 20,
+    width: width * 0.7,
+    height: 280,
   },
   spinButton: {
-    backgroundColor: '#00cc00',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
-    minWidth: 200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    backgroundColor: COLORS.YELLOW,
+    paddingHorizontal: SIZES.PADDING_XLARGE,
+    paddingVertical: SIZES.PADDING_MEDIUM,
+    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
+    ...SIZES.SHADOW_MEDIUM,
   },
   spinButtonDisabled: {
-    backgroundColor: '#666',
+    opacity: 0.6,
   },
   spinButtonText: {
-    color: '#000',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
+    color: COLORS.TEXT_DARK,
+    fontSize: SIZES.SUBTITLE,
+    fontFamily: FONTS.PRIMARY,
+    fontWeight: "bold",
+    textAlign: "center",
   },
   resetButton: {
-    backgroundColor: '#ffcc00',
-    marginHorizontal: 20,
-    marginBottom: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: 'center',
+    backgroundColor: COLORS.YELLOW,
+    paddingHorizontal: SIZES.PADDING_MEDIUM,
+    paddingVertical: SIZES.PADDING_SMALL,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    alignItems: "center",
   },
   resetButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: SIZES.SUBTITLE,
+    fontFamily: FONTS.PRIMARY,
+    fontWeight: "600",
   },
-}); 
+});

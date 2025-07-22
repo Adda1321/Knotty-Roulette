@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import GameBoard from '../../components/game/GameBoard';
 import PlayerSetup from '../../components/game/PlayerSetup';
+import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { fetchChallenges } from '../../services/api';
 import { Challenge, GameState, Player } from '../../types/game';
 
@@ -13,7 +14,7 @@ export default function HomeScreen() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
@@ -105,7 +106,9 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.BACKGROUND_DARK,
+    padding:0,
+    margin: 0,
   },
   loadingContainer: {
     flex: 1,
@@ -113,8 +116,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#fff',
-    fontSize: 18,
-    fontFamily: 'Montserrat',
+    color: COLORS.TEXT_PRIMARY,
+    fontSize: SIZES.SUBTITLE,
+    fontFamily: FONTS.PRIMARY,
   },
 });

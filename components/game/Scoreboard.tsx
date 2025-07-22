@@ -1,9 +1,8 @@
 import React from 'react';
 import {
-    ScrollView,
     StyleSheet,
     Text,
-    View,
+    View
 } from 'react-native';
 import { Player } from '../../types/game';
 
@@ -13,18 +12,17 @@ interface ScoreboardProps {
 }
 
 export default function Scoreboard({ players, currentPlayerIndex }: ScoreboardProps) {
+  console.log('Scoreboard received players:', players);
+  console.log('Scoreboard players length:', players.length);
+  
   // Sort players by score (highest first)
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Scoreboard</Text>
+      <Text style={styles.title}>Scoreboard:</Text>
       
-      <ScrollView 
-        style={styles.playerList}
-        showsVerticalScrollIndicator={false}
-        horizontal
-      >
+      <View style={styles.playerList}>
         {sortedPlayers.map((player, index) => (
           <View
             key={player.id}
@@ -43,35 +41,37 @@ export default function Scoreboard({ players, currentPlayerIndex }: ScoreboardPr
             )}
           </View>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#2a2a2a',
-    borderRadius: 15,
+    backgroundColor: '#000',
+    borderRadius: 10,
     padding: 15,
     marginHorizontal: 20,
     marginBottom: 10,
   },
   title: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#ffcc00',
+    color: '#fff',
     textAlign: 'center',
     marginBottom: 10,
   },
   playerList: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 10,
   },
   playerCard: {
     backgroundColor: '#333',
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 12,
-    marginRight: 10,
-    minWidth: 100,
+    minWidth: 80,
     alignItems: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
@@ -88,12 +88,12 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   playerScore: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#ffcc00',
   },
   leaderBadge: {
-    fontSize: 16,
-    marginTop: 5,
+    fontSize: 14,
+    marginTop: 3,
   },
 }); 

@@ -41,6 +41,10 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   const startGame = () => {
     const validPlayers = players.filter(name => name.trim());
     
+    console.log('All players array:', players);
+    console.log('Valid players (filtered):', validPlayers);
+    console.log('Valid players length:', validPlayers.length);
+    
     if (validPlayers.length < 2) {
       Alert.alert('Not Enough Players', 'You need at least 2 players to start the game.');
       return;

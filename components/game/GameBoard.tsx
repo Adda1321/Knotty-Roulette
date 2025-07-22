@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Challenge, Player } from '../../types/game';
 import ChallengeDisplay from './ChallengeDisplay';
+import GameRules from './GameRules';
 import RouletteWheel from './RouletteWheel';
 import Scoreboard from './Scoreboard';
 
@@ -22,7 +23,7 @@ interface GameBoardProps {
   onResetGame: () => void;
 }
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function GameBoard({
   players,
@@ -36,6 +37,7 @@ export default function GameBoard({
   const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(null);
   const [showChallenge, setShowChallenge] = useState(false);
   const [recentChallenges, setRecentChallenges] = useState<number[]>([]);
+  const [showRules, setShowRules] = useState(false);
   const wheelRef = useRef<any>(null);
 
   const getNonRepeatingChallenge = (): Challenge => {
@@ -122,18 +124,21 @@ export default function GameBoard({
             {isOnline ? '🟢 Online' : '🔴 Offline'}
           </Text>
         </View>
-        <Text style={styles.statusSubtext}>
-          {isOnline ? 'Connected to Knotty Times' : 'Using offline challenges'}
-        </Text>
+        <TouchableOpacity style={styles.rulesButton} onPress={() => setShowRules(true)}>
+          <Text style={styles.rulesButtonText}>📖 Rules</Text>
+        </TouchableOpacity>
       </View>
 
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Knotty Roulette</Text>
+        <Text style={styles.title}>KNOTTY ROULETTE</Text>
         <Text style={styles.currentPlayer}>
-          {currentPlayer.name}'s Turn
+          {currentPlayer.name}'s Turn to Spin
         </Text>
+        <Text style={styles.passInstruction}>Pass Phone to Next Player</Text>
       </View>
 
+      {/* Game Area */}
       <View style={styles.gameArea}>
         <RouletteWheel
           ref={wheelRef}
@@ -165,11 +170,16 @@ export default function GameBoard({
         )}
       </View>
 
+      {/* Scoreboard */}
       <Scoreboard players={players} currentPlayerIndex={currentPlayerIndex} />
 
+      {/* Reset Button */}
       <TouchableOpacity style={styles.resetButton} onPress={onResetGame}>
         <Text style={styles.resetButtonText}>New Game</Text>
       </TouchableOpacity>
+
+      {/* Game Rules Modal */}
+      <GameRules visible={showRules} onClose={() => setShowRules(false)} />
     </SafeAreaView>
   );
 }
@@ -177,7 +187,7 @@ export default function GameBoard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#00cc00',
   },
   statusBar: {
     flexDirection: 'row',
@@ -203,9 +213,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
   },
-  statusSubtext: {
-    color: '#ccc',
-    fontSize: 10,
+  rulesButton: {
+    backgroundColor: '#ffcc00',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 15,
+  },
+  rulesButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   header: {
     alignItems: 'center',
@@ -213,33 +230,50 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#ffcc00',
     textAlign: 'center',
-    marginBottom: 5,
+    marginBottom: 10,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
   },
   currentPlayer: {
     fontSize: 18,
     color: '#fff',
     textAlign: 'center',
-    opacity: 0.9,
+    fontWeight: 'bold',
+    backgroundColor: '#00cc00',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginBottom: 5,
+  },
+  passInstruction: {
+    fontSize: 14,
+    color: '#fff',
+    textAlign: 'center',
+    backgroundColor: '#000',
+    paddingHorizontal: 15,
+    paddingVertical: 5,
+    borderRadius: 15,
   },
   gameArea: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   wheel: {
-    width: width * 0.8,
-    height: width * 0.8,
-    maxWidth: 300,
-    maxHeight: 300,
+    width: Math.min(width * 0.8, 300),
+    height: Math.min(width * 0.8, 300),
+    marginBottom: 20,
   },
   controls: {
-    marginTop: 30,
     alignItems: 'center',
+    marginTop: 20,
   },
   spinButton: {
     backgroundColor: '#00cc00',
@@ -247,6 +281,11 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 25,
     minWidth: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   spinButtonDisabled: {
     backgroundColor: '#666',

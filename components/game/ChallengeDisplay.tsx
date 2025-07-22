@@ -99,19 +99,17 @@ export default function ChallengeDisplay({
 
         <View style={styles.actionButtons}>
           <TouchableOpacity
-            style={[styles.actionButton, styles.completeButton]}
+            style={styles.completeButton}
             onPress={handleComplete}
           >
-            <Text style={styles.completeButtonText}>
-              {challenge.has_bonus ? 'Complete +1' : 'Complete +1'}
-            </Text>
+            <Text style={styles.completeButtonText}>Complete Challenge</Text>
           </TouchableOpacity>
-
+          
           <TouchableOpacity
-            style={[styles.actionButton, styles.passButton]}
+            style={styles.passButton}
             onPress={onPass}
           >
-            <Text style={styles.passButtonText}>Pass -1</Text>
+            <Text style={styles.passButtonText}>Pass (-1 point)</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -126,96 +124,96 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    zIndex: 1000,
+    padding: 20,
   },
   challengeCard: {
-    backgroundColor: '#2a2a2a',
+    backgroundColor: '#fff',
     borderRadius: 20,
     padding: 25,
-    margin: 20,
+    maxWidth: 400,
+    width: '100%',
     alignItems: 'center',
-    maxWidth: 350,
-    borderWidth: 2,
-    borderColor: '#ffcc00',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
   },
   playerName: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffcc00',
-    marginBottom: 15,
+    color: '#333',
     textAlign: 'center',
+    marginBottom: 15,
   },
   challengeTextContainer: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#f8f8f8',
     borderRadius: 15,
     padding: 20,
     marginBottom: 15,
-    minHeight: 80,
-    justifyContent: 'center',
+    width: '100%',
   },
   challengeText: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#000',
+    color: '#333',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 24,
   },
   bonusIndicator: {
-    backgroundColor: '#ff4444',
-    borderRadius: 10,
+    backgroundColor: '#ffcc00',
     paddingHorizontal: 15,
     paddingVertical: 8,
+    borderRadius: 20,
     marginBottom: 15,
   },
   bonusText: {
-    color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
+    color: '#000',
     textAlign: 'center',
   },
   voteSection: {
-    alignItems: 'center',
     marginBottom: 20,
+    alignItems: 'center',
   },
   voteQuestion: {
-    color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
+    color: '#666',
     marginBottom: 10,
     textAlign: 'center',
   },
   voteButtons: {
     flexDirection: 'row',
-    gap: 20,
-  },
-  voteButton: {
-    backgroundColor: '#333',
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#ffcc00',
-  },
-  voteButtonText: {
-    fontSize: 24,
-  },
-  actionButtons: {
-    flexDirection: 'row',
     gap: 15,
   },
-  actionButton: {
-    paddingHorizontal: 25,
-    paddingVertical: 12,
-    borderRadius: 25,
-    minWidth: 120,
+  voteButton: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    minWidth: 60,
     alignItems: 'center',
+  },
+  voteButtonText: {
+    fontSize: 20,
+  },
+  actionButtons: {
+    width: '100%',
+    gap: 10,
   },
   completeButton: {
     backgroundColor: '#00cc00',
+    paddingVertical: 15,
+    borderRadius: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   completeButtonText: {
     color: '#000',
@@ -224,10 +222,13 @@ const styles = StyleSheet.create({
   },
   passButton: {
     backgroundColor: '#ff4444',
+    paddingVertical: 12,
+    borderRadius: 20,
+    alignItems: 'center',
   },
   passButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 }); 

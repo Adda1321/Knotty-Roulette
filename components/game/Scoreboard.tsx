@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Player } from '../../types/game';
 
@@ -15,36 +15,43 @@ export default function Scoreboard({ players, currentPlayerIndex }: ScoreboardPr
   // Sort players by score (highest first)
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
 
+  const renderPlayerCard = ({ item: player, index }: { item: Player; index: number }) => (
+    <View
+      style={[
+        styles.playerCard,
+        player.id === currentPlayerIndex && styles.currentPlayerCard,
+      ]}
+    >
+      <Text style={[
+        styles.playerName,
+        player.id === currentPlayerIndex && styles.currentPlayerName,
+      ]}>
+        {player.name}
+        {player.id === currentPlayerIndex && ' (Current)'}
+      </Text>
+      <Text style={[
+        styles.playerScore,
+        player.id === currentPlayerIndex && styles.currentPlayerScore,
+      ]}>{player.points}</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Scoreboard:</Text>
+      <Text style={styles.title}>Scoreboard</Text>
       
-      <View style={styles.playersContainer}>
-        {sortedPlayers.map((player, index) => (
-          <View
-            key={player.id}
-            style={[
-              styles.playerCard,
-              player.id === currentPlayerIndex && styles.currentPlayerCard,
-            ]}
-          >
-            <Text style={[
-              styles.playerName,
-              player.id === currentPlayerIndex && styles.currentPlayerName,
-            ]}>
-              {player.name}
-              {player.id === currentPlayerIndex && ' (Current)'}
-            </Text>
-            <Text style={[
-              styles.playerScore,
-              player.id === currentPlayerIndex && styles.currentPlayerScore,
-            ]}>{player.points}</Text>
-            {index === 0 && player.points > 0 && (
-              <Text style={styles.leaderBadge}>👑</Text>
-            )}
-          </View>
-        ))}
-      </View>
+      <FlatList
+        data={sortedPlayers}
+        renderItem={renderPlayerCard}
+        keyExtractor={(item) => item.id.toString()}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.playersContainer}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        style={styles.flatList}
+        bounces={false}
+        alwaysBounceHorizontal={false}
+      />
     </View>
   );
 }
@@ -53,30 +60,38 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.LIGHT_GREEN,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
-    padding: SIZES.PADDING_MEDIUM,
-    margin: SIZES.PADDING_MEDIUM,
+    padding: SIZES.PADDING_SMALL,
+    margin: SIZES.PADDING_SMALL,
+    maxHeight: 150,
+    paddingVertical: SIZES.PADDING_MEDIUM,
+    width: '100%',
     ...SIZES.SHADOW_SMALL,
   },
   title: {
-    fontSize: SIZES.SUBTITLE,
+    fontSize: SIZES.BODY,
     fontWeight: 'bold',
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
     textAlign: 'center',
-    marginBottom: SIZES.PADDING_MEDIUM,
+    marginBottom: SIZES.PADDING_SMALL,
   },
   playersContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: SIZES.PADDING_SMALL,
+    paddingHorizontal: SIZES.PADDING_SMALL,
+    flex: 1,
+    minWidth: '100%',
+  },
+  separator: {
+    width: SIZES.PADDING_SMALL,
   },
   playerCard: {
     backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    padding: SIZES.PADDING_MEDIUM,
-    minWidth: 100,
+    padding: SIZES.PADDING_SMALL,
+    minWidth: 80,
+    maxWidth: 100,
+    height: 60,
     alignItems: 'center',
+    justifyContent: 'center',
     ...SIZES.SHADOW_SMALL,
   },
   currentPlayerCard: {
@@ -85,18 +100,18 @@ const styles = StyleSheet.create({
     borderColor: COLORS.YELLOW,
   },
   playerName: {
-    fontSize: SIZES.CAPTION,
+    fontSize: SIZES.SMALL,
     fontWeight: '600',
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
     textAlign: 'center',
-    marginBottom: SIZES.PADDING_SMALL,
+    marginBottom: 2,
   },
   currentPlayerName: {
     color: COLORS.TEXT_PRIMARY,
   },
   playerScore: {
-    fontSize: SIZES.TITLE,
+    fontSize: SIZES.SUBTITLE,
     fontWeight: 'bold',
     color: COLORS.DARK_GREEN,
     fontFamily: FONTS.PRIMARY,
@@ -104,8 +119,7 @@ const styles = StyleSheet.create({
   currentPlayerScore: {
     color: COLORS.YELLOW,
   },
-  leaderBadge: {
-    fontSize: 14,
-    marginTop: 3,
+  flatList: {
+    width: '100%',
   },
 });

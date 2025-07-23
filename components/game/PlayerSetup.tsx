@@ -1,18 +1,19 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import Button from '../ui/Button';
 
 interface PlayerSetupProps {
   onStartGame: (playerNames: string[]) => void;
@@ -20,7 +21,6 @@ interface PlayerSetupProps {
 
 export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   const [players, setPlayers] = useState<string[]>(['', '']); // Default two empty players
-  const [playerName, setPlayerName] = useState('');
 
   const addPlayer = () => {
     if (players.length < 8) {
@@ -94,29 +94,43 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                   
                   {/* Add Player button after each field when under max */}
                   {index === players.length - 1 && players.length < 8 && (
-                    <TouchableOpacity
-                      style={styles.addPlayerButton}
+                    <Button
+                      text="+ Add Player"
                       onPress={addPlayer}
-                    >
-                      <Text style={styles.addPlayerButtonText}>+ Add Player</Text>
-                    </TouchableOpacity>
+                      backgroundColor={COLORS.DARK_GREEN}
+                      textColor={COLORS.TEXT_PRIMARY}
+                      fontSize={SIZES.CAPTION}
+                      fontWeight="600"
+                      paddingHorizontal={SIZES.PADDING_SMALL}
+                      paddingVertical={SIZES.PADDING_SMALL}
+                      style={styles.addPlayerButton}
+                    />
                   )}
                 </View>
               ))}
             </View>
 
-            <View style={styles.footer}>
-              <Text style={styles.tagline}>A Little Knotty, All Fun</Text>
-              <TouchableOpacity
+            <View style={styles.startButtonContainer}>
+              <LinearGradient
+                colors={[COLORS.YELLOW, COLORS.YELLOW]}
                 style={[
                   styles.startButton,
                   players.filter(p => p.trim()).length < 2 && styles.startButtonDisabled
                 ]}
-                onPress={startGame}
-                disabled={players.filter(p => p.trim()).length < 2}
               >
-                <Text style={styles.startButtonText}>START GAME</Text>
-              </TouchableOpacity>
+                <Button
+                  text="START GAME"
+                  onPress={startGame}
+                  disabled={players.filter(p => p.trim()).length < 2}
+                  backgroundColor="transparent"
+                  textColor={COLORS.TEXT_DARK}
+                  fontSize={SIZES.SUBTITLE}
+                  fontWeight="bold"
+                  paddingHorizontal={0}
+                  paddingVertical={0}
+                  style={styles.gradient}
+                />
+              </LinearGradient>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -198,37 +212,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   addPlayerButton: {
-    backgroundColor: COLORS.DARK_GREEN,
-    paddingVertical: 10,
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
     marginBottom: 15,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.DARK_GREEN,
-    ...SIZES.SHADOW_SMALL,
   },
-  addPlayerButtonText: {
-    color: COLORS.TEXT_PRIMARY,
-    fontSize: SIZES.BODY,
-    fontWeight: '600',
-  },
-  footer: {
+  startButtonContainer: {
     marginTop: 20,
     marginBottom: 40,
   },
-  tagline: {
-    color: COLORS.TEXT_SECONDARY,
-    textAlign: 'center',
-    fontSize: SIZES.BODY,
-    fontWeight: 'bold',
-    fontStyle: 'italic',
-    marginBottom: 30,
-  },
   startButton: {
-    backgroundColor: COLORS.YELLOW,
-    paddingVertical: SIZES.PADDING_LARGE,
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
-    marginTop: SIZES.PADDING_LARGE,
     ...SIZES.SHADOW_MEDIUM,
   },
   startButtonDisabled: {
@@ -238,12 +229,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  startButtonText: {
-    color: COLORS.TEXT_DARK,
-    fontSize: SIZES.SUBTITLE,
-    fontFamily: FONTS.PRIMARY,
-    fontWeight: 'bold',
-    textAlign: 'center',
   },
 });

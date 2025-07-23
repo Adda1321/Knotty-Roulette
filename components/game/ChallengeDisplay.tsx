@@ -13,6 +13,7 @@ import { ANIMATION_CONFIGS, ANIMATION_VALUES } from "../../constants/animations"
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import { logVote } from "../../services/api";
 import { Challenge } from "../../types/game";
+import Button from "../ui/Button";
 import SparkleEffect from "../ui/SparkleEffect";
 
 interface ChallengeDisplayProps {
@@ -110,129 +111,144 @@ export default function ChallengeDisplay({
 
   return (
     <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        <Animated.View 
-          style={[
-            styles.challengeCard,
-            {
-              opacity: cardOpacity,
-              transform: [{ scale: cardScale }],
-            },
-          ]}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
         >
-          {/* Reusable SparkleEffect component */}
-          <SparkleEffect
-            visible={showSparkles}
-            duration={1500}
-            sparkleCount={3}
-            symbols={['✨']}
-            onAnimationComplete={() => setShowSparkles(false)}
-          />
+          <Animated.View 
+            style={[
+              styles.challengeCard,
+              {
+                opacity: cardOpacity,
+                transform: [{ scale: cardScale }],
+              },
+            ]}
+          >
+            {/* Reusable SparkleEffect component */}
+            <SparkleEffect
+              visible={showSparkles}
+              duration={1500}
+              sparkleCount={3}
+              symbols={['✨']}
+              onAnimationComplete={() => setShowSparkles(false)}
+            />
 
-          <Text style={styles.playerName}>{playerName}, your turn!</Text>
+            <Text style={styles.playerName}>{playerName}, your turn!</Text>
 
-          <View style={styles.challengeTextContainer}>
-            <Text style={styles.challengeText}>{challenge.challenge_text}</Text>
-          </View>
-
-          {!hasVoted && (
-            <View style={styles.voteSection}>
-              <Text style={styles.voteQuestion}>
-                Did you like this challenge?
-              </Text>
-              <View style={styles.voteButtons}>
-                <TouchableOpacity
-                  style={[
-                    styles.voteButton,
-                    styles.upvoteButton,
-                    isVoting &&
-                      votingType !== "upvote" &&
-                      styles.voteButtonDisabled,
-                  ]}
-                  onPress={() => handleVote("upvote")}
-                  disabled={isVoting}
-                >
-                  {isVoting && votingType === "upvote" ? (
-                    <ActivityIndicator
-                      color={COLORS.TEXT_PRIMARY}
-                      size="small"
-                    />
-                  ) : (
-                    <Text style={styles.voteButtonText}>👍</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.voteButton,
-                    styles.downvoteButton,
-                    isVoting &&
-                      votingType !== "downvote" &&
-                      styles.voteButtonDisabled,
-                  ]}
-                  onPress={() => handleVote("downvote")}
-                  disabled={isVoting}
-                >
-                  {isVoting && votingType === "downvote" ? (
-                    <ActivityIndicator
-                      color={COLORS.TEXT_PRIMARY}
-                      size="small"
-                    />
-                  ) : (
-                    <Text style={styles.voteButtonText}>👎</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+            <View style={styles.challengeTextContainer}>
+              <Text style={styles.challengeText}>{challenge.challenge_text}</Text>
             </View>
-          )}
 
-          <View style={styles.actionButtons}>
-            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.completeButton]}
-                onPress={handleComplete}
-                onPressIn={() => {
-                  Animated.timing(buttonScale, {
-                    toValue: ANIMATION_VALUES.SCALE_SMALL,
-                    duration: 100,
-                    useNativeDriver: true,
-                  }).start();
-                }}
-                onPressOut={() => {
-                  Animated.timing(buttonScale, {
-                    toValue: ANIMATION_VALUES.SCALE_NORMAL,
-                    duration: 100,
-                    useNativeDriver: true,
-                  }).start();
-                }}
-              >
-                <Text style={styles.actionButtonText}>Complete Challenge +1</Text>
-              </TouchableOpacity>
-            </Animated.View>
-
-            <TouchableOpacity
-              style={[styles.actionButton, styles.passButton]}
-              onPress={onPass}
-            >
-              <Text style={styles.actionButtonText}>Pass (-1 point)</Text>
-            </TouchableOpacity>
-
-            {challenge.has_bonus && (
-              <TouchableOpacity
-                style={[styles.actionButton, styles.bonusButton]}
-                onPress={handleBonus}
-              >
-                <Text style={styles.actionButtonText}>Bonus +2</Text>
-              </TouchableOpacity>
+            {!hasVoted && (
+              <View style={styles.voteSection}>
+                <Text style={styles.voteQuestion}>
+                  Did you like this challenge?
+                </Text>
+                <View style={styles.voteButtons}>
+                  <TouchableOpacity
+                    style={[
+                      styles.voteButton,
+                      styles.upvoteButton,
+                      isVoting &&
+                        votingType !== "upvote" &&
+                        styles.voteButtonDisabled,
+                    ]}
+                    onPress={() => handleVote("upvote")}
+                    disabled={isVoting}
+                  >
+                    {isVoting && votingType === "upvote" ? (
+                      <ActivityIndicator
+                        color={COLORS.TEXT_PRIMARY}
+                        size="small"
+                      />
+                    ) : (
+                      <Text style={styles.voteButtonText}>👍</Text>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.voteButton,
+                      styles.downvoteButton,
+                      isVoting &&
+                        votingType !== "downvote" &&
+                        styles.voteButtonDisabled,
+                    ]}
+                    onPress={() => handleVote("downvote")}
+                    disabled={isVoting}
+                  >
+                    {isVoting && votingType === "downvote" ? (
+                      <ActivityIndicator
+                        color={COLORS.TEXT_PRIMARY}
+                        size="small"
+                      />
+                    ) : (
+                      <Text style={styles.voteButtonText}>👎</Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
             )}
-          </View>
-        </Animated.View>
-      </ScrollView>
-    </View>
+
+            <View style={styles.actionButtons}>
+              <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                <Button
+                  text="Complete Challenge +1"
+                  onPress={handleComplete}
+                  backgroundColor={COLORS.DARK_GREEN}
+                  textColor={COLORS.TEXT_PRIMARY}
+                  fontSize={SIZES.BODY}
+                  fontWeight="600"
+                  paddingHorizontal={SIZES.PADDING_MEDIUM}
+                  paddingVertical={SIZES.PADDING_MEDIUM}
+                  style={styles.actionButton}
+                  onPressIn={() => {
+                    Animated.timing(buttonScale, {
+                      toValue: ANIMATION_VALUES.SCALE_SMALL,
+                      duration: 100,
+                      useNativeDriver: true,
+                    }).start();
+                  }}
+                  onPressOut={() => {
+                    Animated.timing(buttonScale, {
+                      toValue: ANIMATION_VALUES.SCALE_NORMAL,
+                      duration: 100,
+                      useNativeDriver: true,
+                    }).start();
+                  }}
+                />
+              </Animated.View>
+
+              <Button
+                text="Pass (-1 point)"
+                onPress={onPass}
+                backgroundColor={COLORS.OFFLINE}
+                textColor={COLORS.TEXT_PRIMARY}
+                fontSize={SIZES.BODY}
+                fontWeight="600"
+                paddingHorizontal={SIZES.PADDING_MEDIUM}
+                paddingVertical={SIZES.PADDING_MEDIUM}
+                style={styles.actionButton}
+              />
+
+              {challenge.has_bonus && (
+                <Button
+                  text="Bonus +2"
+                  onPress={handleBonus}
+                  backgroundColor={COLORS.YELLOW}
+                  textColor={COLORS.TEXT_DARK}
+                  fontSize={SIZES.BODY}
+                  fontWeight="600"
+                  paddingHorizontal={SIZES.PADDING_MEDIUM}
+                  paddingVertical={SIZES.PADDING_MEDIUM}
+                  style={styles.actionButton}
+                />
+              )}
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </View>
   );
 }
 
@@ -243,7 +259,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(225, 225, 225, 0.84)",
+    // backgroundColor: "rgba(244, 236, 236, 0.77)",
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
   },
   scrollView: {
@@ -334,26 +350,5 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     width: "100%",
-    paddingVertical: SIZES.PADDING_MEDIUM,
-    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
-    justifyContent: "center",
-    alignItems: "center",
-    ...SIZES.SHADOW_SMALL,
-  },
-  completeButton: {
-    backgroundColor: COLORS.DARK_GREEN,
-  },
-  passButton: {
-    backgroundColor: COLORS.OFFLINE,
-  },
-  bonusButton: {
-    backgroundColor: COLORS.DARK_GREEN,
-  },
-  actionButtonText: {
-    color: COLORS.TEXT_PRIMARY,
-    fontSize: SIZES.BODY,
-    fontFamily: FONTS.PRIMARY,
-    fontWeight: "600",
-    textAlign: "center",
   },
 });

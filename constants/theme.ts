@@ -34,6 +34,7 @@ export const COLORS = {
 export const FONTS = {
   PRIMARY: 'Montserrat',
   SECONDARY: 'SpaceMono',
+  TITLE: 'Dosis-Regular', // Google font for the main title
 };
 
 export const SIZES = {
@@ -59,18 +60,25 @@ export const SIZES = {
   SHADOW_SMALL: {
     shadowColor: COLORS.SHADOW,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
   },
   SHADOW_MEDIUM: {
     shadowColor: COLORS.SHADOW,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
   },
   SHADOW_LARGE: {
+    shadowColor: COLORS.SHADOW_DARK,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 15,
+  },
+  SHADOW_CARD: {
     shadowColor: COLORS.SHADOW_DARK,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,

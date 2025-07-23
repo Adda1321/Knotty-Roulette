@@ -1,16 +1,19 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Animated,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import Toast from "react-native-toast-message";
+import { ANIMATION_CONFIGS, ANIMATION_VALUES } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import { logVote } from "../../services/api";
 import { Challenge } from "../../types/game";
+import SparkleEffect from "../ui/SparkleEffect";
 
 interface ChallengeDisplayProps {
   challenge: Challenge;
@@ -30,6 +33,31 @@ export default function ChallengeDisplay({
   const [votingType, setVotingType] = useState<"upvote" | "downvote" | null>(
     null
   );
+  
+  // Animation values
+  const cardScale = useRef(new Animated.Value(0)).current;
+  const cardOpacity = useRef(new Animated.Value(0)).current;
+  const buttonScale = useRef(new Animated.Value(1)).current;
+  
+  // Sparkle effect state
+  const [showSparkles, setShowSparkles] = useState(false);
+
+  // Card reveal animation on mount
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(cardOpacity, {
+        toValue: ANIMATION_VALUES.OPACITY_VISIBLE,
+        ...ANIMATION_CONFIGS.FADE_IN,
+      }),
+      Animated.timing(cardScale, {
+        toValue: ANIMATION_VALUES.SCALE_NORMAL,
+        ...ANIMATION_CONFIGS.SCALE_IN,
+      }),
+    ]).start(() => {
+      // Trigger sparkle effect after card animation completes
+      setShowSparkles(true);
+    });
+  }, [cardOpacity, cardScale]);
 
   const handleVote = async (voteType: "upvote" | "downvote") => {
     if (hasVoted || isVoting) return;
@@ -88,7 +116,24 @@ export default function ChallengeDisplay({
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <View style={styles.challengeCard}>
+        <Animated.View 
+          style={[
+            styles.challengeCard,
+            {
+              opacity: cardOpacity,
+              transform: [{ scale: cardScale }],
+            },
+          ]}
+        >
+          {/* Reusable SparkleEffect component */}
+          <SparkleEffect
+            visible={showSparkles}
+            duration={1500}
+            sparkleCount={3}
+            symbols={['✨']}
+            onAnimationComplete={() => setShowSparkles(false)}
+          />
+
           <Text style={styles.playerName}>{playerName}, your turn!</Text>
 
           <View style={styles.challengeTextContainer}>
@@ -146,12 +191,28 @@ export default function ChallengeDisplay({
           )}
 
           <View style={styles.actionButtons}>
-            <TouchableOpacity
-              style={[styles.actionButton, styles.completeButton]}
-              onPress={handleComplete}
-            >
-              <Text style={styles.actionButtonText}>Complete Challenge +1</Text>
-            </TouchableOpacity>
+            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.completeButton]}
+                onPress={handleComplete}
+                onPressIn={() => {
+                  Animated.timing(buttonScale, {
+                    toValue: ANIMATION_VALUES.SCALE_SMALL,
+                    duration: 100,
+                    useNativeDriver: true,
+                  }).start();
+                }}
+                onPressOut={() => {
+                  Animated.timing(buttonScale, {
+                    toValue: ANIMATION_VALUES.SCALE_NORMAL,
+                    duration: 100,
+                    useNativeDriver: true,
+                  }).start();
+                }}
+              >
+                <Text style={styles.actionButtonText}>Complete Challenge +1</Text>
+              </TouchableOpacity>
+            </Animated.View>
 
             <TouchableOpacity
               style={[styles.actionButton, styles.passButton]}
@@ -169,7 +230,7 @@ export default function ChallengeDisplay({
               </TouchableOpacity>
             )}
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -197,16 +258,12 @@ const styles = StyleSheet.create({
   },
   challengeCard: {
     backgroundColor: "#fff",
-    borderRadius: 20,
-    padding: 25,
+    borderRadius: 24,
+    padding: 28,
     maxWidth: 450,
     width: "100%",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 10,
+    ...SIZES.SHADOW_CARD,
   },
   playerName: {
     fontSize: SIZES.SUBTITLE,
@@ -250,7 +307,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: SIZES.PADDING_SMALL,
     paddingVertical: SIZES.PADDING_SMALL,
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
     justifyContent: "center",
     alignItems: "center",
     ...SIZES.SHADOW_SMALL,
@@ -277,8 +334,10 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     width: "100%",
-    paddingVertical: SIZES.PADDING_SMALL,
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    paddingVertical: SIZES.PADDING_MEDIUM,
+    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
+    justifyContent: "center",
+    alignItems: "center",
     ...SIZES.SHADOW_SMALL,
   },
   completeButton: {

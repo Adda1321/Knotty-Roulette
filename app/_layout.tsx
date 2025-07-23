@@ -10,6 +10,8 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    'Dosis-Regular': require('../assets/fonts/Dosis-Regular.ttf'),
+    'Dosis-Bold': require('../assets/fonts/Dosis-Bold.ttf'),
   });
 
   if (!loaded) {

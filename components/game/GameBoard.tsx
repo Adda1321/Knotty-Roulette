@@ -5,7 +5,6 @@ import {
   Alert,
   Animated,
   Dimensions,
-  Easing,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ANIMATION_CONFIGS, ANIMATION_VALUES } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import { Challenge, Player } from "../../types/game";
 import ChallengeDisplay from "./ChallengeDisplay";
@@ -48,6 +48,8 @@ export default function GameBoard({
   const [recentChallenges, setRecentChallenges] = useState<number[]>([]);
   const [showRules, setShowRules] = useState(false);
   const rotation = useRef(new Animated.Value(0)).current;
+  const spinButtonScale = useRef(new Animated.Value(1)).current;
+  const wheelScale = useRef(new Animated.Value(1)).current;
 
   const getNonRepeatingChallenge = (): Challenge => {
     const available = challenges.filter(
@@ -113,11 +115,37 @@ export default function GameBoard({
     setIsSpinning(true);
     rotation.setValue(0);
 
+    // Animate spin button press
+    Animated.sequence([
+      Animated.timing(spinButtonScale, {
+        toValue: ANIMATION_VALUES.SCALE_SMALL,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(spinButtonScale, {
+        toValue: ANIMATION_VALUES.SCALE_NORMAL,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Animate wheel scale during spin
+    Animated.sequence([
+      Animated.timing(wheelScale, {
+        toValue: ANIMATION_VALUES.SCALE_LARGE,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(wheelScale, {
+        toValue: ANIMATION_VALUES.SCALE_NORMAL,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     Animated.timing(rotation, {
       toValue: 5,
-      duration: 3000,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      ...ANIMATION_CONFIGS.SPIN_WHEEL,
     }).start(() => {
       rotation.setValue(0);
       handleSpinComplete();
@@ -190,6 +218,9 @@ export default function GameBoard({
                           outputRange: ["0deg", "360deg"],
                         }),
                       },
+                      {
+                        scale: wheelScale,
+                      },
                     ],
                   },
                 ]}
@@ -201,15 +232,17 @@ export default function GameBoard({
           {renderPremiumSection}
 
           {/* Spin Button */}
-          <TouchableOpacity
-            style={[styles.spinButton, isSpinning && styles.spinButtonDisabled]}
-            onPress={spinWheel}
-            disabled={isSpinning}
-          >
-            <Text style={styles.spinButtonText}>
-              {isSpinning ? "Spinning..." : "Spin the Wheel"}
-            </Text>
-          </TouchableOpacity>
+          <Animated.View style={{ transform: [{ scale: spinButtonScale }] }}>
+            <TouchableOpacity
+              style={[styles.spinButton, isSpinning && styles.spinButtonDisabled]}
+              onPress={spinWheel}
+              disabled={isSpinning}
+            >
+              <Text style={styles.spinButtonText}>
+                {isSpinning ? "Spinning..." : "Spin the Wheel"}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
 
           {/* Challenge Display */}
           {showChallenge && currentChallenge && (
@@ -302,10 +335,9 @@ const styles = StyleSheet.create({
     fontSize: SIZES.TITLE,
     fontWeight: "bold",
     color: COLORS.YELLOW,
-    fontFamily: FONTS.PRIMARY,
+    fontFamily: FONTS.TITLE,
     marginBottom: SIZES.PADDING_SMALL,
     marginTop: SIZES.PADDING_LARGE,
-
     textAlign: "center",
   },
   currentPlayer: {

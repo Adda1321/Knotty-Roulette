@@ -1,15 +1,15 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     fontSize: SIZES.TITLE,
     fontWeight: 'bold',
     color: COLORS.YELLOW,
-    fontFamily: FONTS.PRIMARY,
+    fontFamily: FONTS.TITLE,
     marginBottom: SIZES.PADDING_SMALL,
     marginTop: SIZES.PADDING_LARGE,
     

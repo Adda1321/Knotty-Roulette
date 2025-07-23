@@ -114,7 +114,7 @@ const styles = StyleSheet.create({
     fontSize: SIZES.TITLE,
     fontWeight: 'bold',
     color: COLORS.YELLOW,
-    fontFamily: FONTS.PRIMARY,
+    fontFamily: FONTS.TITLE,
     textAlign: 'center',
     marginBottom: SIZES.PADDING_SMALL,
   },

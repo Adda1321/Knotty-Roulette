@@ -1,10 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import GameBoard from '../../components/game/GameBoard';
 import PlayerSetup from '../../components/game/PlayerSetup';
+import Loader from '../../components/ui/Loader';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { fetchChallenges } from '../../services/api';
 import { Challenge, GameState, Player } from '../../types/game';
@@ -59,7 +60,7 @@ export default function HomeScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading Knotty Roulette...</Text>
+          <Loader size={60} color={COLORS.YELLOW} />
         </View>
         <Toast />
       </SafeAreaView>

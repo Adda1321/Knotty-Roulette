@@ -147,10 +147,6 @@ export default function GameBoard({
             </Text>
           </View>
 
-          {/* <Text style={styles.statusSubtext}>
-    {isOnline ? 'Connected to Knotty Times' : 'Using offline challenges'}
-  </Text> */}
-
           <TouchableOpacity
             style={styles.rulesButton}
             onPress={() => setShowRules(true)}
@@ -162,8 +158,6 @@ export default function GameBoard({
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>KNOTTY ROULETTE</Text>
-          {/* <Text style={styles.currentPlayer}>{currentPlayer.name}'s Turn</Text>
-          <Text style={styles.passInstruction}>Pass Phone to Next Player</Text> */}
         </View>
 
         {/* Game Area */}
@@ -177,7 +171,7 @@ export default function GameBoard({
           <View style={styles.wheelContainer}>
             <View style={styles.header}>
               <Text style={styles.currentPlayer}>
-                {currentPlayer.name}'s Turn
+                {`${currentPlayer.name}'s Turn`}
               </Text>
               <Text style={styles.passInstruction}>
                 Pass Phone to Next Player

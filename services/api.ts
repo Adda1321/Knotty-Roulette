@@ -52,20 +52,43 @@ export async function logVote(voteData: VoteData): Promise<boolean> {
     formData.append('challenge_text', voteData.challengeText);
     // No nonce required for public API calls
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     const response = await fetch(WORDPRESS_CONFIG.AJAX_URL, {
       method: 'POST',
       body: formData,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error('Server error: Vote submission failed');
+    }
+    
     return data.success;
   } catch (error) {
     console.error('Error logging vote:', error);
-    return false;
+    
+    // Re-throw the error with more specific information
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Network error: No internet connection');
+    } else if ((error as any).name === 'AbortError' || error instanceof Error && error.message.includes('timeout')) {
+      throw new Error('Request timeout: Please try again');
+    } else if (error instanceof Error && error.message.includes('HTTP error! status: 500')) {
+      throw new Error('Server error: Please try again later');
+    } else if (error instanceof Error && error.message.includes('HTTP error! status: 404')) {
+      throw new Error('Server error: Service not found');
+    } else {
+      throw new Error(error instanceof Error ? error.message : 'Unknown error occurred');
+    }
   }
 }
 

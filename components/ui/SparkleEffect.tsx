@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
-import { ANIMATION_VALUES } from '../../constants/animations';
-import { COLORS } from '../../constants/theme';
+import React, { useCallback, useEffect, useRef } from "react";
+import { Animated, Easing, StyleSheet, Text, View } from "react-native";
+import { ANIMATION_VALUES } from "../../constants/animations";
+import { COLORS } from "../../constants/theme";
 
 interface SparkleEffectProps {
   visible: boolean;
@@ -16,28 +16,38 @@ export default function SparkleEffect({
   visible,
   duration = 1200,
   sparkleCount = 5,
-  symbols = ['✨', '⭐', '✨', '⭐', '✨'],
+  symbols = ["✨", "⭐", "✨", "⭐", "✨"],
   containerStyle,
   onAnimationComplete,
 }: SparkleEffectProps) {
-  // Create sparkle animations using useMemo to avoid recreating on every render
-  const sparkleAnimations = useMemo(() => {
-    return Array.from({ length: sparkleCount }, () => ({
-      opacity: new Animated.Value(0),
-      scale: new Animated.Value(0.1), // Start even smaller for smoother appearance
-    }));
+  // Use refs to store animation values to avoid recreation
+  const animationRefs = useRef<
+    {
+      opacity: Animated.Value;
+      scale: Animated.Value;
+    }[]
+  >([]);
+
+  // Initialize animation refs only once
+  useEffect(() => {
+    if (animationRefs.current.length === 0) {
+      animationRefs.current = Array.from({ length: sparkleCount }, () => ({
+        opacity: new Animated.Value(0),
+        scale: new Animated.Value(0.1),
+      }));
+    }
   }, [sparkleCount]);
 
-  useEffect(() => {
+  const startAnimation = useCallback(() => {
     if (!visible) return;
 
     // Reset all animations
-    sparkleAnimations.forEach(({ opacity, scale }) => {
+    animationRefs.current.forEach(({ opacity, scale }) => {
       opacity.setValue(0);
-      scale.setValue(0.1); // Reset to very small scale
+      scale.setValue(0.1);
     });
 
-    // Create sparkle animation function with equally smooth appearance and disappearance
+    // Create sparkle animation function
     const createSparkleAnimation = (
       sparkleOpacity: Animated.Value,
       sparkleScale: Animated.Value,
@@ -49,28 +59,28 @@ export default function SparkleEffect({
           Animated.timing(sparkleOpacity, {
             toValue: ANIMATION_VALUES.OPACITY_VISIBLE,
             duration: 800,
-            easing: Easing.inOut(Easing.quad), // Same smooth easing as disappearance
+            easing: Easing.inOut(Easing.quad),
             useNativeDriver: true,
           }),
           Animated.timing(sparkleScale, {
             toValue: ANIMATION_VALUES.SCALE_LARGE,
             duration: 800,
-            easing: Easing.inOut(Easing.quad), // Same smooth easing as disappearance
+            easing: Easing.inOut(Easing.quad),
             useNativeDriver: true,
           }),
         ]),
-        Animated.delay(600), // Hold sparkle visible longer
+        Animated.delay(600),
         Animated.parallel([
           Animated.timing(sparkleOpacity, {
             toValue: ANIMATION_VALUES.OPACITY_HIDDEN,
             duration: 800,
-            easing: Easing.inOut(Easing.quad), // Same smooth easing as appearance
+            easing: Easing.inOut(Easing.quad),
             useNativeDriver: true,
           }),
           Animated.timing(sparkleScale, {
             toValue: ANIMATION_VALUES.SCALE_NORMAL,
             duration: 800,
-            easing: Easing.inOut(Easing.quad), // Same smooth easing as appearance
+            easing: Easing.inOut(Easing.quad),
             useNativeDriver: true,
           }),
         ]),
@@ -79,7 +89,7 @@ export default function SparkleEffect({
 
     // Calculate delays for staggered effect
     const delayInterval = duration / sparkleCount;
-    const animations = sparkleAnimations.map(({ opacity, scale }, index) =>
+    const animations = animationRefs.current.map(({ opacity, scale }, index) =>
       createSparkleAnimation(opacity, scale, index * delayInterval)
     );
 
@@ -87,13 +97,25 @@ export default function SparkleEffect({
     Animated.parallel(animations).start(() => {
       onAnimationComplete?.();
     });
-  }, [visible, duration, sparkleCount, onAnimationComplete, sparkleAnimations]);
+  }, [visible, duration, sparkleCount, onAnimationComplete]);
+
+  // Start animation when visible changes
+  useEffect(() => {
+    if (visible) {
+      // Use setTimeout to defer the animation start to avoid React rendering conflicts
+      const timer = setTimeout(() => {
+        startAnimation();
+      }, 0);
+
+      return () => clearTimeout(timer);
+    }
+  }, [visible, startAnimation]);
 
   if (!visible) return null;
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {sparkleAnimations.map(({ opacity, scale }, index) => (
+      {animationRefs.current.map(({ opacity, scale }, index) => (
         <Animated.View
           key={index}
           style={[
@@ -116,7 +138,7 @@ export default function SparkleEffect({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -124,7 +146,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   sparkle: {
-    position: 'absolute',
+    position: "absolute",
   },
   sparkle1: {
     top: -15,
@@ -150,4 +172,4 @@ const styles = StyleSheet.create({
     fontSize: 20,
     color: COLORS.YELLOW,
   },
-}); 
+});

@@ -46,7 +46,10 @@ export default function Scoreboard({ players, currentPlayerIndex }: ScoreboardPr
         keyExtractor={(item) => item.id.toString()}
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.playersContainer}
+        contentContainerStyle={[
+          styles.playersContainer,
+          sortedPlayers.length <= 3 && styles.centerContent
+        ]}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         style={styles.flatList}
         bounces={false}
@@ -77,8 +80,12 @@ const styles = StyleSheet.create({
   },
   playersContainer: {
     paddingHorizontal: SIZES.PADDING_SMALL,
-    flex: 1,
-    minWidth: '100%',
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   separator: {
     width: SIZES.PADDING_SMALL,

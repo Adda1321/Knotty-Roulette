@@ -4,10 +4,10 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import Button from '../ui/Button';
 
 interface GameRulesProps {
   visible: boolean;
@@ -77,9 +77,19 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
           </ScrollView>
 
           {/* Close Button */}
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Got it!</Text>
-          </TouchableOpacity>
+          <Button
+            text="Got it!"
+            onPress={onClose}
+            backgroundColor={COLORS.YELLOW}
+            textColor={COLORS.TEXT_DARK}
+            fontSize={SIZES.SUBTITLE}
+            fontWeight="bold"
+            fontFamily={FONTS.PRIMARY}
+            // paddingVertical={SIZES.PADDING_MEDIUM}
+            style={styles.closeButton}
+              shadowIntensity={5}
+            shadowRadius={10}
+          />
         </View>
       </View>
     </Modal>
@@ -97,7 +107,7 @@ const styles = StyleSheet.create({
     backgroundColor:COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     margin: SIZES.PADDING_MEDIUM,
-    maxHeight: '80%',
+    maxHeight: '90%',
     width: '90%',
     maxWidth: 400,
     height:"100%",
@@ -112,9 +122,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: SIZES.TITLE,
-    fontWeight: 'bold',
     color: COLORS.YELLOW,
-    fontFamily: FONTS.TITLE,
+    fontFamily: FONTS.DOSIS_BOLD,
     textAlign: 'center',
     marginBottom: SIZES.PADDING_SMALL,
   },
@@ -168,18 +177,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   closeButton: {
-
-    backgroundColor: COLORS.YELLOW,
-    paddingVertical: SIZES.PADDING_MEDIUM,
-    margin: SIZES.PADDING_LARGE,
-    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
-    ...SIZES.SHADOW_MEDIUM,
-  },
-  closeButtonText: {
-    color: COLORS.TEXT_DARK,
-    fontSize: SIZES.SUBTITLE,
-    fontWeight: 'bold',
-    fontFamily: FONTS.PRIMARY,
-    textAlign: 'center',
+    margin: SIZES.PADDING_SMALL,
+    // marginBottom: SIZES.PADDING_LARGE,
   },
 }); 

@@ -16,6 +16,8 @@ interface ButtonProps extends TouchableOpacityProps {
   glareColor?: string;
   glareDuration?: number;
   glareDelay?: number;
+  shadowIntensity?: number;
+  shadowRadius?: number;
 }
 
 export default function Button({
@@ -31,6 +33,8 @@ export default function Button({
   glareColor = 'rgba(255, 255, 255, 0.6)',
   glareDuration = 2000,
   glareDelay = 1000,
+  shadowIntensity = 0,
+  shadowRadius = 0,
   style,
   ...props
 }: ButtonProps) {
@@ -96,6 +100,16 @@ export default function Button({
           backgroundColor,
           paddingHorizontal,
           paddingVertical,
+          // Apply custom shadow if specified
+          ...(shadowIntensity > 0 && {
+            // iOS shadow properties
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: Math.min(shadowIntensity, 12) },
+            shadowOpacity: Math.min(shadowIntensity * 0.08, 0.8),
+            shadowRadius: Math.min(shadowRadius || shadowIntensity * 1.5, 20),
+            // Android elevation
+            elevation: Math.min(shadowIntensity * 1.5, 20),
+          }),
         },
         style,
       ]}
@@ -145,7 +159,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden', // Important for glare effect
-    ...SIZES.SHADOW_SMALL,
   },
   buttonText: {
     textAlign: 'center',

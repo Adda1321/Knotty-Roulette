@@ -164,16 +164,24 @@ export default function GameBoard({
             text="📖 Rules"
             onPress={() => setShowRules(true)}
             backgroundColor={COLORS.YELLOW}
-            textColor={COLORS.TEXT_PRIMARY}
+            textColor={COLORS.TEXT_DARK}
+            shadowIntensity={5}
+            shadowRadius={10}
+             showGlare={true}
+                glareColor="rgba(255, 255, 255, 0.47)"
+                glareDuration={3000}
+                glareDelay={80}
             fontSize={SIZES.CAPTION}
             fontWeight="600"
           />
-          
+
           <Button
             text="🔄 New Game"
             onPress={onResetGame}
             backgroundColor={COLORS.YELLOW}
-            textColor={COLORS.TEXT_PRIMARY}
+            textColor={COLORS.TEXT_DARK}
+            shadowIntensity={5}
+            shadowRadius={10}
             fontSize={SIZES.CAPTION}
             fontWeight="600"
           />
@@ -242,6 +250,8 @@ export default function GameBoard({
                 glareColor="rgba(255, 255, 255, 0.7)"
                 glareDuration={3000}
                 glareDelay={30}
+                shadowIntensity={5}
+                shadowRadius={10}
                 paddingHorizontal={SIZES.PADDING_LARGE}
                 paddingVertical={SIZES.PADDING_SMALL}
                 style={[
@@ -253,7 +263,10 @@ export default function GameBoard({
           </LinearGradient>
 
           {/* Scoreboard */}
-          <Scoreboard players={players} currentPlayerIndex={currentPlayerIndex} />
+          <Scoreboard
+            players={players}
+            currentPlayerIndex={currentPlayerIndex}
+          />
 
           {/* Challenge Display - Moved outside game area */}
           {showChallenge && currentChallenge && (
@@ -293,15 +306,14 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     alignItems: "center",
     marginBottom: SIZES.PADDING_SMALL,
   },
   title: {
-    
     fontSize: SIZES.EXTRALARGE,
     fontFamily: FONTS.DOSIS_BOLD,
     color: COLORS.YELLOW,
@@ -328,7 +340,7 @@ const styles = StyleSheet.create({
     ...SIZES.SHADOW_SMALL,
     alignItems: "center",
     marginBottom: SIZES.PADDING_SMALL,
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
   },
   wheelContainer: {
@@ -344,7 +356,6 @@ const styles = StyleSheet.create({
   },
   spinButton: {
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
-    ...SIZES.SHADOW_MEDIUM,
   },
   spinButtonDisabled: {
     opacity: 0.6,

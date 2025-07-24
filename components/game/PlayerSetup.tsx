@@ -125,7 +125,8 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                   backgroundColor="transparent"
                   textColor={COLORS.TEXT_DARK}
                   fontSize={SIZES.SUBTITLE}
-                  fontWeight="bold"
+                  // fontWeight="bold"
+                  fontFamily={FONTS.DOSIS_BOLD}
                   paddingHorizontal={0}
                   paddingVertical={0}
                   style={styles.gradient}

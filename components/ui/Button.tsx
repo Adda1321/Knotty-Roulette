@@ -10,6 +10,7 @@ interface ButtonProps extends TouchableOpacityProps {
   textColor?: string;
   fontSize?: number;
   fontWeight?: 'normal' | 'bold' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900';
+  fontFamily?: string;
 }
 
 export default function Button({
@@ -20,6 +21,7 @@ export default function Button({
   textColor = COLORS.TEXT_PRIMARY,
   fontSize = SIZES.CAPTION,
   fontWeight = '600',
+  fontFamily = FONTS.PRIMARY,
   style,
   ...props
 }: ButtonProps) {
@@ -43,6 +45,7 @@ export default function Button({
             color: textColor,
             fontSize,
             fontWeight,
+            fontFamily,
           },
         ]}
       >
@@ -60,7 +63,6 @@ const styles = StyleSheet.create({
     ...SIZES.SHADOW_SMALL,
   },
   buttonText: {
-    fontFamily: FONTS.PRIMARY,
     textAlign: 'center',
   },
 }); 

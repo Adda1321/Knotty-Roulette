@@ -236,7 +236,8 @@ export default function GameBoard({
                 backgroundColor={COLORS.YELLOW}
                 textColor={COLORS.TEXT_DARK}
                 fontSize={SIZES.BODY}
-                fontWeight="bold"
+                // fontWeight="bold"
+                fontFamily={FONTS.DOSIS_BOLD}
                 paddingHorizontal={SIZES.PADDING_LARGE}
                 paddingVertical={SIZES.PADDING_SMALL}
                 style={[

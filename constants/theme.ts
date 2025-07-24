@@ -32,7 +32,7 @@ export const COLORS = {
 };
 
 export const FONTS = {
-  PRIMARY: 'Montserrat',
+  PRIMARY: 'Dosis-Regular',
   DOSIS: 'Dosis-Regular',
   SECONDARY: 'SpaceMono',
   DOSIS_BOLD: 'Dosis-Bold',

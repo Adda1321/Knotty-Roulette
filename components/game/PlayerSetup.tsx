@@ -156,10 +156,9 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.PADDING_XLARGE,
   },
   title: {
-    fontSize: SIZES.TITLE,
-    fontWeight: 'bold',
+    fontSize: SIZES.EXTRALARGE,
+    fontFamily: FONTS.DOSIS_BOLD,
     color: COLORS.YELLOW,
-    fontFamily: FONTS.TITLE,
     marginBottom: SIZES.PADDING_SMALL,
     marginTop: SIZES.PADDING_LARGE,
     

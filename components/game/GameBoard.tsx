@@ -2,17 +2,17 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import React, { useRef, useState } from "react";
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    StyleSheet,
-    Text,
-    View,
+  Alert,
+  Animated,
+  Dimensions,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    ANIMATION_CONFIGS,
-    ANIMATION_VALUES,
+  ANIMATION_CONFIGS,
+  ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import { Challenge, Player } from "../../types/game";
@@ -296,10 +296,10 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.PADDING_SMALL,
   },
   title: {
-    fontSize: SIZES.TITLE,
-    fontWeight: "bold",
+    
+    fontSize: SIZES.EXTRALARGE,
+    fontFamily: FONTS.DOSIS_BOLD,
     color: COLORS.YELLOW,
-    fontFamily: FONTS.TITLE,
     marginBottom: SIZES.PADDING_XLARGE,
     textAlign: "center",
   },

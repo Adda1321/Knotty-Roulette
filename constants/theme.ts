@@ -33,12 +33,15 @@ export const COLORS = {
 
 export const FONTS = {
   PRIMARY: 'Montserrat',
+  DOSIS: 'Dosis-Regular',
   SECONDARY: 'SpaceMono',
-  TITLE: 'Dosis-Regular', // Google font for the main title
+  DOSIS_BOLD: 'Dosis-Bold',
+  FUN: 'FontdinerSwanky',
 };
 
 export const SIZES = {
   // Font Sizes
+  EXTRALARGE: 32,
   TITLE: 24,
   SUBTITLE: 18,
   BODY: 16,

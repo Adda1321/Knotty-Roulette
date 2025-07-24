@@ -238,6 +238,10 @@ export default function GameBoard({
                 fontSize={SIZES.BODY}
                 // fontWeight="bold"
                 fontFamily={FONTS.DOSIS_BOLD}
+                showGlare={!isSpinning}
+                glareColor="rgba(255, 255, 255, 0.7)"
+                glareDuration={3000}
+                glareDelay={30}
                 paddingHorizontal={SIZES.PADDING_LARGE}
                 paddingVertical={SIZES.PADDING_SMALL}
                 style={[

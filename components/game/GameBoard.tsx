@@ -14,9 +14,11 @@ import {
     ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import audioService from "../../services/audio";
 import { Challenge, Player } from "../../types/game";
 import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
+import SoundSettings from "../ui/SoundSettings";
 import ChallengeDisplay from "./ChallengeDisplay";
 import GameRules from "./GameRules";
 import Scoreboard from "./Scoreboard";
@@ -84,11 +86,27 @@ export default function GameBoard({
   };
 
   const passChallenge = () => {
+    // Play pass sound and haptic
+    audioService.playSound('passChallenge');
+    audioService.playHaptic('warning');
+    
     setCompletionData({ points: -1, action: 'pass' });
     setShowCompletionModal(true);
   };
 
   const handleChallengeComplete = (points: number, action: 'complete' | 'pass' | 'bonus') => {
+    // Play appropriate sound and haptic based on action
+    if (action === 'complete') {
+      audioService.playSound('challengeComplete');
+      audioService.playHaptic('success');
+    } else if (action === 'bonus') {
+      audioService.playSound('bonusAchieved');
+      audioService.playHaptic('success');
+    } else if (action === 'pass') {
+      audioService.playSound('passChallenge');
+      audioService.playHaptic('warning');
+    }
+
     setCompletionData({ points, action });
     setShowCompletionModal(true);
   };
@@ -125,6 +143,10 @@ export default function GameBoard({
 
   const spinWheel = () => {
     if (isSpinning || challenges.length === 0) return;
+
+    // Play wheel spin sound and haptic
+    audioService.playSound('wheelSpin');
+    audioService.playHaptic('medium');
 
     setShowChallenge(false);
     setCurrentChallenge(null);
@@ -176,20 +198,23 @@ export default function GameBoard({
       <View style={styles.content}>
         {/* Status Bar */}
         <View style={styles.statusBar}>
-          <Button
-            text="📖 Rules"
-            onPress={() => setShowRules(true)}
-            backgroundColor={COLORS.YELLOW}
-            textColor={COLORS.TEXT_DARK}
-            shadowIntensity={5}
-            shadowRadius={10}
-            showGlare={true}
-            glareColor="rgba(255, 255, 255, 0.47)"
-            glareDuration={3000}
-            glareDelay={80}
-            fontSize={SIZES.CAPTION}
-            fontWeight="600"
-          />
+          <View style={styles.leftButtons}>
+            <Button
+              text="📖 Rules"
+              onPress={() => setShowRules(true)}
+              backgroundColor={COLORS.YELLOW}
+              textColor={COLORS.TEXT_DARK}
+              shadowIntensity={5}
+              shadowRadius={10}
+              showGlare={true}
+              glareColor="rgba(255, 255, 255, 0.47)"
+              glareDuration={3000}
+              glareDelay={80}
+              fontSize={SIZES.CAPTION}
+              fontWeight="600"
+            />
+            <SoundSettings onPress={() => {}} />
+          </View>
 
           <Button
             text="🔄 New Game"
@@ -341,6 +366,11 @@ const styles = StyleSheet.create({
     paddingTop: SIZES.PADDING_LARGE,
     paddingVertical: SIZES.PADDING_SMALL,
     backgroundColor: COLORS.DARK_GREEN,
+  },
+  leftButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: SIZES.PADDING_SMALL,
   },
   mainContent: {
     flex: 1,

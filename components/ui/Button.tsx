@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import audioService from '../../services/audio';
 
 interface ButtonProps extends TouchableOpacityProps {
   backgroundColor?: string;
@@ -92,6 +93,17 @@ export default function Button({
     }
   }, [showGlare, glareAnimation, glareOpacity, glareDuration, glareDelay]);
 
+  const handlePress = (event: any) => {
+    // Play button press sound and haptic
+    audioService.playSound('buttonPress');
+    audioService.playHaptic('light');
+    
+    // Call the original onPress if provided
+    if (props.onPress) {
+      props.onPress(event);
+    }
+  };
+
   return (
     <TouchableOpacity
       style={[
@@ -113,6 +125,7 @@ export default function Button({
         },
         style,
       ]}
+      onPress={handlePress}
       {...props}
     >
       {/* Glare Effect */}

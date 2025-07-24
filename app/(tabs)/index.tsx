@@ -9,6 +9,7 @@ import CustomModal from '../../components/ui/CustomModal';
 import Loader from '../../components/ui/Loader';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { fetchChallenges } from '../../services/api';
+import audioService from '../../services/audio';
 import { Challenge, GameState, Player } from '../../types/game';
 
 export default function HomeScreen() {
@@ -88,6 +89,10 @@ export default function HomeScreen() {
             
             // Check for winner (first to 10 points)
             if (updatedPlayers[playerIndex].points >= 10) {
+              // Play game over sound and haptic
+              audioService.playSound('gameOver');
+              audioService.playHaptic('success');
+              
               setGameState('gameOver');
               setWinner(updatedPlayers[playerIndex]);
               setShowGameOverModal(true);

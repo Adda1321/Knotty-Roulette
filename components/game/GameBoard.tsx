@@ -167,10 +167,10 @@ export default function GameBoard({
             textColor={COLORS.TEXT_DARK}
             shadowIntensity={5}
             shadowRadius={10}
-             showGlare={true}
-                glareColor="rgba(255, 255, 255, 0.47)"
-                glareDuration={3000}
-                glareDelay={80}
+            showGlare={true}
+            glareColor="rgba(255, 255, 255, 0.47)"
+            glareDuration={3000}
+            glareDelay={80}
             fontSize={SIZES.CAPTION}
             fontWeight="600"
           />
@@ -211,7 +211,14 @@ export default function GameBoard({
                   Pass Phone to Next Player
                 </Text>
               </View>
-              <View style={styles.wheelShadowContainer}>
+              <Animated.View
+                style={[
+                  styles.wheelShadowContainer,
+                  {
+                    transform: [{ scale: wheelScale }],
+                  },
+                ]}
+              >
                 <Animated.Image
                   source={require("../../assets/images/knotty-logo.png")}
                   style={[
@@ -224,15 +231,12 @@ export default function GameBoard({
                             outputRange: ["0deg", "360deg"],
                           }),
                         },
-                        {
-                          scale: wheelScale,
-                        },
                       ],
                     },
                   ]}
                   resizeMode="contain"
                 />
-              </View>
+              </Animated.View>
             </View>
 
             {/* Spin Button */}
@@ -348,7 +352,20 @@ const styles = StyleSheet.create({
     ...SIZES.SHADOW_LARGE,
   },
   wheelShadowContainer: {
-    ...SIZES.SHADOW_MEDIUM,
+    // Enhanced shadow for wheel depth
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    elevation: 20,
+    // Make container circular to match wheel shape
+    borderRadius: width * 0.25 + 8, // Half of wheel width + padding
+    // Add padding to ensure shadow is visible
+    padding: 12,
+    // Ensure shadow is visible on all sides
+    overflow: "visible",
+    // Force shadow rendering
+    // backgroundColor: 'transparent',
   },
   wheel: {
     width: width * 0.5,

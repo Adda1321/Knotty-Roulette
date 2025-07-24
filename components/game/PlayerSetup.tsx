@@ -1,19 +1,19 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useState } from 'react';
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import Button from '../ui/Button';
+import CustomModal from '../ui/CustomModal';
 
 interface PlayerSetupProps {
   onStartGame: (playerNames: string[]) => void;
@@ -21,6 +21,7 @@ interface PlayerSetupProps {
 
 export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   const [players, setPlayers] = useState<string[]>(['', '']); // Default two empty players
+  const [showNotEnoughPlayersModal, setShowNotEnoughPlayersModal] = useState(false);
 
   const addPlayer = () => {
     if (players.length < 8) {
@@ -45,7 +46,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
     const validPlayers = players.filter(name => name.trim());
     
     if (validPlayers.length < 2) {
-      Alert.alert('Not Enough Players', 'You need at least 2 players to start the game.');
+      setShowNotEnoughPlayersModal(true);
       return;
     }
 
@@ -136,6 +137,17 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
+
+      {/* Not Enough Players Modal */}
+      <CustomModal
+        visible={showNotEnoughPlayersModal}
+        onClose={() => setShowNotEnoughPlayersModal(false)}
+        title="Not Enough Players"
+        message="You need at least 2 players to start the game."
+        showCloseButton={true}
+        closeButtonText="OK"
+        showConfirmButton={false}
+      />
     </LinearGradient>
   );
 }

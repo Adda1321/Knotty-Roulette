@@ -22,7 +22,7 @@ import SparkleEffect from "../ui/SparkleEffect";
 interface ChallengeDisplayProps {
   challenge: Challenge;
   playerName: string;
-  onComplete: () => void;
+  onComplete: (points: number, action: 'complete' | 'pass' | 'bonus') => void;
   onPass: () => void;
 }
 
@@ -128,12 +128,12 @@ export default function ChallengeDisplay({
   };
 
   const handleComplete = () => {
-    onComplete();
+    onComplete(1, 'complete');
   };
 
   const handleBonus = () => {
     // Bonus gives 2 points instead of 1
-    onComplete();
+    onComplete(2, 'bonus');
   };
 
   return (

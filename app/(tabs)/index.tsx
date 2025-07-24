@@ -1,10 +1,11 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import GameBoard from '../../components/game/GameBoard';
 import PlayerSetup from '../../components/game/PlayerSetup';
+import CustomModal from '../../components/ui/CustomModal';
 import Loader from '../../components/ui/Loader';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { fetchChallenges } from '../../services/api';
@@ -17,6 +18,8 @@ export default function HomeScreen() {
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isOnline, setIsOnline] = useState(true);
+  const [showGameOverModal, setShowGameOverModal] = useState(false);
+  const [winner, setWinner] = useState<Player | null>(null);
 
   useEffect(() => {
     loadChallenges();
@@ -86,11 +89,8 @@ export default function HomeScreen() {
             // Check for winner (first to 10 points)
             if (updatedPlayers[playerIndex].points >= 10) {
               setGameState('gameOver');
-              Alert.alert(
-                'Game Over!',
-                `${updatedPlayers[playerIndex].name} wins with ${updatedPlayers[playerIndex].points} points!`,
-                [{ text: 'New Game', onPress: resetGame }]
-              );
+              setWinner(updatedPlayers[playerIndex]);
+              setShowGameOverModal(true);
             } else {
               // Move to next player
               setCurrentPlayerIndex((playerIndex + 1) % players.length);
@@ -99,6 +99,20 @@ export default function HomeScreen() {
           onResetGame={resetGame}
         />
       )}
+
+      {/* Game Over Modal */}
+      <CustomModal
+        visible={showGameOverModal}
+        onClose={() => {
+          setShowGameOverModal(false);
+          resetGame();
+        }}
+        title="Game Over!"
+        message={winner ? `${winner.name} wins with ${winner.points} points!` : ''}
+        showCloseButton={true}
+        closeButtonText="New Game"
+        showConfirmButton={false}
+      />
       <Toast />
     </SafeAreaView>
   );

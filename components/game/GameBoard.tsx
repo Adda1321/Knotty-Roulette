@@ -2,21 +2,21 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import React, { useRef, useState } from "react";
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  StyleSheet,
-  Text,
-  View,
+    Animated,
+    Dimensions,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  ANIMATION_CONFIGS,
-  ANIMATION_VALUES,
+    ANIMATION_CONFIGS,
+    ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import { Challenge, Player } from "../../types/game";
 import Button from "../ui/Button";
+import CustomModal from "../ui/CustomModal";
 import ChallengeDisplay from "./ChallengeDisplay";
 import GameRules from "./GameRules";
 import Scoreboard from "./Scoreboard";
@@ -47,6 +47,11 @@ export default function GameBoard({
   const [showChallenge, setShowChallenge] = useState(false);
   const [recentChallenges, setRecentChallenges] = useState<number[]>([]);
   const [showRules, setShowRules] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completionData, setCompletionData] = useState<{
+    points: number;
+    action: 'complete' | 'pass' | 'bonus';
+  } | null>(null);
   const rotation = useRef(new Animated.Value(0)).current;
   const spinButtonScale = useRef(new Animated.Value(1)).current;
   const wheelScale = useRef(new Animated.Value(1)).current;
@@ -74,36 +79,47 @@ export default function GameBoard({
 
   const completeChallenge = (points: number) => {
     setShowChallenge(false);
+    setIsSpinning(false); // Ensure spinning state is reset
     onPlayerTurnComplete(currentPlayerIndex, points);
   };
 
   const passChallenge = () => {
-    Alert.alert(
-      "Pass Challenge",
-      "Are you sure you want to pass? You will lose 1 point.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Pass",
-          style: "destructive",
-          onPress: () => completeChallenge(-1),
-        },
-      ]
-    );
+    setCompletionData({ points: -1, action: 'pass' });
+    setShowCompletionModal(true);
   };
 
-  const attemptBonus = () => {
-    if (currentChallenge?.has_bonus) {
-      Alert.alert(
-        "Bonus Challenge",
-        "Attempt the bonus challenge for an extra point!",
-        [
-          { text: "Skip Bonus", onPress: () => completeChallenge(1) },
-          { text: "Attempt Bonus", onPress: () => completeChallenge(2) },
-        ]
-      );
-    } else {
-      completeChallenge(1);
+  const handleChallengeComplete = (points: number, action: 'complete' | 'pass' | 'bonus') => {
+    setCompletionData({ points, action });
+    setShowCompletionModal(true);
+  };
+
+  const getCompletionModalTitle = () => {
+    if (!completionData) return '';
+    
+    switch (completionData.action) {
+      case 'complete':
+        return '🎉 Challenge Complete!';
+      case 'bonus':
+        return '🌟 Bonus Achieved!';
+      case 'pass':
+        return '😅 Challenge Passed';
+      default:
+        return 'Challenge Result';
+    }
+  };
+
+  const getCompletionModalMessage = () => {
+    if (!completionData) return '';
+    
+    switch (completionData.action) {
+      case 'complete':
+        return `Amazing job! You've earned +${completionData.points} point! 🎯\n\nKeep up the fantastic work!`;
+      case 'bonus':
+        return `Incredible! You've earned +${completionData.points} points! 🌟\n\nYou're absolutely crushing it!`;
+      case 'pass':
+        return `No worries! Sometimes you gotta know when to fold 'em! 😄\n\nYou lost ${Math.abs(completionData.points)} point, but there's always next time! 💪`;
+      default:
+        return 'Challenge completed!';
     }
   };
 
@@ -242,6 +258,7 @@ export default function GameBoard({
             {/* Spin Button */}
             <Animated.View style={{ transform: [{ scale: spinButtonScale }] }}>
               <Button
+                key={`spin-button-${showCompletionModal}`} // Force re-render when modal state changes
                 text={isSpinning ? "Spinning..." : "Spin the Wheel"}
                 onPress={spinWheel}
                 disabled={isSpinning}
@@ -277,7 +294,7 @@ export default function GameBoard({
             <ChallengeDisplay
               challenge={currentChallenge}
               playerName={currentPlayer.name}
-              onComplete={attemptBonus}
+              onComplete={handleChallengeComplete}
               onPass={passChallenge}
             />
           )}
@@ -285,6 +302,23 @@ export default function GameBoard({
 
         {/* Game Rules Modal */}
         <GameRules visible={showRules} onClose={() => setShowRules(false)} />
+
+
+
+        {/* Challenge Completion Modal */}
+        <CustomModal
+          visible={showCompletionModal}
+          onClose={() => {
+            setShowCompletionModal(false);
+            completeChallenge(completionData?.points || 0);
+          }}
+          title={getCompletionModalTitle()}
+          message={getCompletionModalMessage()}
+          showCloseButton={true}
+          closeButtonText="Spin Again"
+          showConfirmButton={false}
+          showSparkles={completionData?.action === 'complete' || completionData?.action === 'bonus'}
+        />
       </View>
     </SafeAreaView>
   );

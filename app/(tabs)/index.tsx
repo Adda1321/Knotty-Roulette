@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import GameBoard from '../../components/game/GameBoard';
@@ -63,9 +63,7 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Loader size={60} color={COLORS.YELLOW} />
-        </View>
+        <Loader />
         <Toast />
       </SafeAreaView>
     );
@@ -117,6 +115,7 @@ export default function HomeScreen() {
         showCloseButton={true}
         closeButtonText="New Game"
         showConfirmButton={false}
+        showSparkles={true}
       />
       <Toast />
     </SafeAreaView>
@@ -129,11 +128,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.BACKGROUND_DARK,
     padding:0,
     margin: 0,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   loadingText: {
     color: COLORS.TEXT_PRIMARY,

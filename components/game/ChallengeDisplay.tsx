@@ -15,6 +15,7 @@ import {
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import { logVote } from "../../services/api";
+import audioService from "../../services/audio";
 import { Challenge } from "../../types/game";
 import Button from "../ui/Button";
 import SparkleEffect from "../ui/SparkleEffect";
@@ -128,6 +129,7 @@ export default function ChallengeDisplay({
   };
 
   const handleComplete = () => {
+    console.log("Challenge completed");
     onComplete(1, 'complete');
   };
 
@@ -186,7 +188,10 @@ export default function ChallengeDisplay({
                       votingType !== "upvote" &&
                       styles.voteButtonDisabled,
                   ]}
-                  onPress={() => handleVote("upvote")}
+                  onPress={() => {
+                    audioService.playHaptic('light');
+                    handleVote("upvote");
+                  }}
                   disabled={isVoting}
                 >
                   {isVoting && votingType === "upvote" ? (
@@ -206,7 +211,10 @@ export default function ChallengeDisplay({
                       votingType !== "downvote" &&
                       styles.voteButtonDisabled,
                   ]}
-                  onPress={() => handleVote("downvote")}
+                  onPress={() => {
+                    audioService.playHaptic('light');
+                    handleVote("downvote");
+                  }}
                   disabled={isVoting}
                 >
                   {isVoting && votingType === "downvote" ? (
@@ -268,7 +276,7 @@ export default function ChallengeDisplay({
                 text="Bonus +2"
                 onPress={handleBonus}
                 backgroundColor={COLORS.YELLOW}
-                textColor={COLORS.TEXT_DARK}
+                textColor={COLORS.TEXT_PRIMARY}
                 fontSize={SIZES.BODY}
                 fontWeight="600"
                 paddingHorizontal={SIZES.PADDING_MEDIUM}

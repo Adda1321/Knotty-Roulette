@@ -88,4 +88,21 @@ export const SIZES = {
     shadowRadius: 16,
     elevation: 12,
   },
+  
+  // Text Shadows
+  TEXT_SHADOW_SMALL: {
+    textShadowColor: 'rgba(42, 42, 42, 0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 4,
+  },
+  TEXT_SHADOW_MEDIUM: {
+    textShadowColor: 'rgba(42, 42, 42, 0.5)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+  },
+  TEXT_SHADOW_LARGE: {
+    textShadowColor: 'rgba(0, 0, 0, 0.9)',
+    textShadowOffset: { width: 3, height: 3 },
+    textShadowRadius: 6,
+  },
 }; 

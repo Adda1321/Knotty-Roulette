@@ -2,16 +2,16 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import React, { useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    StyleSheet,
-    Text,
-    View,
+  Animated,
+  Dimensions,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    ANIMATION_CONFIGS,
-    ANIMATION_VALUES,
+  ANIMATION_CONFIGS,
+  ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
@@ -208,7 +208,7 @@ export default function GameBoard({
               shadowRadius={10}
               showGlare={true}
               glareColor="rgba(255, 255, 255, 0.47)"
-              glareDuration={3000}
+              glareDuration={3500}
               glareDelay={80}
               fontSize={SIZES.CAPTION}
               fontWeight="600"
@@ -387,6 +387,7 @@ const styles = StyleSheet.create({
     color: COLORS.YELLOW,
     marginBottom: SIZES.PADDING_XLARGE,
     textAlign: "center",
+    ...SIZES.TEXT_SHADOW_MEDIUM,
   },
   currentPlayer: {
     fontSize: SIZES.SUBTITLE,
@@ -394,6 +395,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.PRIMARY,
     fontWeight: "800",
     marginBottom: SIZES.PADDING_SMALL,
+    ...SIZES.TEXT_SHADOW_SMALL,
   },
   passInstruction: {
     fontSize: SIZES.CAPTION,
@@ -419,8 +421,8 @@ const styles = StyleSheet.create({
     // Enhanced shadow for wheel depth
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.8,
-    shadowRadius: 12,
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
     elevation: 20,
     // Make container circular to match wheel shape
     borderRadius: width * 0.25 + 8, // Half of wheel width + padding

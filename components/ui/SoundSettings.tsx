@@ -42,7 +42,10 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
     <>
       <TouchableOpacity
         style={styles.settingsButton}
-        onPress={handleSettingsPress}
+        onPress={() => {
+          audioService.playHaptic('light');
+          handleSettingsPress();
+        }}
       >
         <Ionicons
           name="settings"
@@ -78,11 +81,16 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                 </View>
                 <TouchableOpacity
                   style={[styles.toggleButton, isMuted && styles.toggleButtonMuted]}
-                  onPress={handleToggleMute}
+                  onPress={() => {
+                    audioService.playHaptic('light');
+                    handleToggleMute();
+                  }}
                 >
-                  <Text style={styles.toggleText}>
-                    {isMuted ? "🔇" : "🔊"}
-                  </Text>
+                  <Ionicons
+                    name={isMuted ? "volume-mute" : "volume-high"}
+                    size={24}
+                    color={COLORS.TEXT_PRIMARY}
+                  />
                 </TouchableOpacity>
               </View>
 

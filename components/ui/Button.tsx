@@ -22,22 +22,23 @@ interface ButtonProps extends TouchableOpacityProps {
 }
 
 export default function Button({
-  backgroundColor = COLORS.YELLOW,
-  text,
-  paddingHorizontal = SIZES.PADDING_MEDIUM,
-  paddingVertical = SIZES.PADDING_SMALL,
-  textColor = COLORS.TEXT_PRIMARY,
-  fontSize = SIZES.CAPTION,
-  fontWeight = '600',
-  fontFamily = FONTS.PRIMARY,
-  showGlare = false,
-  glareColor = 'rgba(255, 255, 255, 0.6)',
-  glareDuration = 2000,
-  glareDelay = 1000,
-  shadowIntensity = 0,
-  shadowRadius = 0,
-  style,
-  ...props
+  backgroundColor = COLORS.YELLOW, // Default to theme yellow color
+  text, // Required text content
+  paddingHorizontal = SIZES.PADDING_MEDIUM, // Default horizontal padding from theme
+  paddingVertical = SIZES.PADDING_SMALL, // Default vertical padding from theme
+  textColor = COLORS.TEXT_PRIMARY, // Default text color from theme
+  fontSize = SIZES.CAPTION, // Default font size from theme
+  fontWeight = '600', // Default semi-bold font weight
+  fontFamily = FONTS.PRIMARY, // Default font family from theme
+  showGlare = false, // Glare effect disabled by default
+  glareColor = 'rgba(255, 255, 255, 0.6)', // Semi-transparent white glare
+  glareDuration = 2000, // 2 seconds for complete glare cycle
+  glareDelay = 1000, // 1 second delay between glare cycles
+  shadowIntensity = 0, // No shadow by default
+  shadowRadius = 0, // No shadow blur by default
+ 
+  style, // Additional custom styles
+  ...props // All other TouchableOpacity props
 }: ButtonProps) {
   const glareAnimation = useRef(new Animated.Value(-150)).current;
   const glareOpacity = useRef(new Animated.Value(0)).current;
@@ -46,7 +47,7 @@ export default function Button({
     if (showGlare) {
       const startGlare = () => {
         // Reset position and opacity
-        glareAnimation.setValue(-150);
+        glareAnimation.setValue(-200);
         glareOpacity.setValue(0);
         
         // Create smooth entry, movement, and exit sequence
@@ -54,26 +55,26 @@ export default function Button({
           // Fade in
           Animated.timing(glareOpacity, {
             toValue: 0.9,
-            duration: 400,
+            duration: 300,
             useNativeDriver: true,
           }),
           // Move across with smooth transition
           Animated.parallel([
             Animated.timing(glareAnimation, {
-              toValue: 150,
-              duration: glareDuration - 800, // Reserve time for fade in/out
+              toValue: 250, // Increased to ensure it goes past the button edge
+              duration: glareDuration - 600, // Reserve time for fade in/out
               useNativeDriver: true,
             }),
             Animated.timing(glareOpacity, {
-              toValue: 0.6,
-              duration: glareDuration - 800,
+              toValue: 0.7,
+              duration: glareDuration - 600,
               useNativeDriver: true,
             }),
           ]),
           // Fade out
           Animated.timing(glareOpacity, {
             toValue: 0,
-            duration: 400,
+            duration: 300,
             useNativeDriver: true,
           }),
         ]).start(() => {
@@ -178,17 +179,17 @@ const styles = StyleSheet.create({
   },
   glare: {
     position: 'absolute',
-    top: -20,
-    left: -20,
-    right: -20,
-    bottom: -20,
-    width: 120,
-    height: 20,
-    borderRadius: 10,
+    top: -30,
+    left: -30,
+    right: -30,
+    bottom: -30,
+    width: 150, // Increased width for better coverage
+    height: 25, // Slightly taller for better visibility
+    borderRadius: 12,
   },
   gradient: {
     width: '100%',
     height: '100%',
-    borderRadius: 10,
+    borderRadius: 12,
   },
 }); 

@@ -1,13 +1,13 @@
 import React from 'react';
 import {
-    Modal,
-    StyleSheet,
-    Text,
-    View,
+  Modal,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import Button from './Button';
-import SparkleEffect from './SparkleEffect';
+import ModalSparkles from './ModalSparkles';
 
 interface CustomModalProps {
   visible: boolean;
@@ -22,6 +22,10 @@ interface CustomModalProps {
   showConfirmButton?: boolean;
   destructive?: boolean;
   showSparkles?: boolean;
+  sparkleStaggerDelay?: number;
+  sparkleFadeDelay?: number;
+  sparkleFadeDuration?: number;
+  sparkleAppearDuration?: number;
 }
 
 export default function CustomModal({
@@ -37,7 +41,14 @@ export default function CustomModal({
   showConfirmButton = false,
   destructive = false,
   showSparkles = false,
+  sparkleStaggerDelay = 100,
+  sparkleFadeDelay = 200,
+  sparkleFadeDuration = 300,
+  sparkleAppearDuration = 300,
 }: CustomModalProps) {
+  // Don't render anything if modal is not visible
+  if (!visible) return null;
+
   return (
     <Modal
       visible={visible}
@@ -47,6 +58,16 @@ export default function CustomModal({
     >
       <View style={styles.overlay}>
         <View style={styles.container}>
+          {/* ModalSparkles wraps the entire modal */}
+          <ModalSparkles 
+            visible={showSparkles} 
+            onComplete={() => console.log('Modal sparkles completed')}
+            staggerDelay={sparkleStaggerDelay}
+            fadeDelay={sparkleFadeDelay}
+            fadeDuration={sparkleFadeDuration}
+            appearDuration={sparkleAppearDuration}
+          />
+          
           {/* Header */}
           {title && (
             <View style={styles.header}>
@@ -56,17 +77,6 @@ export default function CustomModal({
 
           {/* Content */}
           <View style={styles.content}>
-            {showSparkles && (
-              <View style={styles.sparkleContainer}>
-                <SparkleEffect
-                  visible={true}
-                  duration={3000}
-                  sparkleCount={8}
-                  symbols={["✨", "🌟", "💫", "⭐", "🎉"]}
-                  onAnimationComplete={() => {}}
-                />
-              </View>
-            )}
             {message && (
               <Text style={styles.message}>{message}</Text>
             )}
@@ -88,7 +98,7 @@ export default function CustomModal({
                 paddingVertical={SIZES.PADDING_MEDIUM}
                 showGlare={true}
                 glareColor="rgba(255, 255, 255, 0.6)"
-                glareDuration={2000}
+                glareDuration={4000}
                 glareDelay={50}
                 shadowIntensity={5}
                 shadowRadius={8}
@@ -133,6 +143,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     ...SIZES.SHADOW_LARGE,
+    position: 'relative', // Important for sparkle positioning
   },
   header: {
     backgroundColor: COLORS.DARK_GREEN,
@@ -169,14 +180,5 @@ const styles = StyleSheet.create({
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  sparkleContainer: {
-    position: 'absolute',
-    top: -20,
-    left: -20,
-    right: -20,
-    bottom: -20,
-    zIndex: 1,
-    pointerEvents: 'none',
   },
 }); 

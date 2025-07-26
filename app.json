@@ -4,13 +4,14 @@
     "slug": "knotty-roulette",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/knotty-roulette.png",
+    "icon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png",
     "scheme": "knottyroulette",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.adilmustafa.knottyroulette",
+      "icon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png",
       "infoPlist": {
         "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
         "SKAdNetworkItems": [
@@ -49,9 +50,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/knotty-roulette.png",
+        "foregroundImage": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png",
         "backgroundColor": "#00cc00"
       },
+      "icon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png",
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.RECORD_AUDIO",
@@ -62,7 +64,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/knotty-roulette.png"
+      "favicon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png"
     },
     "plugins": [
       "expo-router",
@@ -70,9 +72,9 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/knotty-roulette.png",
-          "imageWidth": 200,
+          "imageWidth": 300,
           "resizeMode": "contain",
-          "backgroundColor": "#00cc00"
+          "backgroundColor": "#6bc26e"
         }
       ],
       "expo-audio",

@@ -28,7 +28,6 @@ export default function UserTierToggle({ onTierChange }: UserTierToggleProps) {
     }
   };
 
-  const currentTier = userService.isPremium() ? 'Premium' : 'Free';
   const buttonText = userService.isPremium() ? 'Switch to Free' : 'Switch to Premium';
 
   return (

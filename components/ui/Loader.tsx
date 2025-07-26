@@ -11,19 +11,9 @@ export default function Loader({
   size = 40, 
   color = COLORS.YELLOW 
 }: LoaderProps) {
-  const spinValue = useRef(new Animated.Value(0)).current;
   const pulseValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // Spinning animation for the outer ring
-    const spinAnimation = Animated.loop(
-      Animated.timing(spinValue, {
-        toValue: 1,
-        duration: 2000,
-        useNativeDriver: true,
-      })
-    );
-
     // Pulsing animation for the logo
     const pulseAnimation = Animated.loop(
       Animated.sequence([
@@ -40,17 +30,13 @@ export default function Loader({
       ])
     );
     
-    // Start animations
-    spinAnimation.start();
+    // Start animation
     pulseAnimation.start();
 
     return () => {
-      spinAnimation.stop();
       pulseAnimation.stop();
     };
-  }, [spinValue, pulseValue]);
-
-  
+  }, [pulseValue]);
 
   const pulse = pulseValue.interpolate({
     inputRange: [0, 1],
@@ -61,8 +47,6 @@ export default function Loader({
     <View style={styles.container}>
       {/* Main content container */}
       <View style={styles.contentContainer}>
-        
-
         {/* Logo container with pulsing effect */}
         <Animated.View
           style={[
@@ -78,18 +62,6 @@ export default function Loader({
             resizeMode="contain"
           />
         </Animated.View>
-
-        {/* Loading text */}
-        {/* <Animated.Text
-          style={[
-            styles.loadingText,
-            {
-              opacity: pulseValue,
-            },
-          ]}
-        >
-          Loading...
-        </Animated.Text> */}
       </View>
     </View>
   );

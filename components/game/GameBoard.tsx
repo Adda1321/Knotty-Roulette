@@ -17,12 +17,14 @@ import {
   ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import adService from "../../services/adService";
 import audioService from "../../services/audio";
 import { Challenge, Player } from "../../types/game";
 import Button from "../ui/Button";
 
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
+import UserTierToggle from "../ui/UserTierToggle";
 import ChallengeDisplay from "./ChallengeDisplay";
 import GameRules from "./GameRules";
 import Scoreboard from "./Scoreboard";
@@ -150,13 +152,16 @@ export default function GameBoard({
     }
   };
 
-  const spinWheel = () => {
+  const spinWheel = async () => {
     if (isSpinning || challenges.length === 0) return;
     audioService.playSound("buttonPress");
 
     // Play wheel spin sound and haptic
     audioService.playSound("wheelSpin");
     audioService.playHaptic("medium");
+
+    // Track spin for ad display (every 3 spins for free users)
+    await adService.trackSpin();
 
     setShowChallenge(false);
     setCurrentChallenge(null);
@@ -270,6 +275,9 @@ export default function GameBoard({
   const currentPlayer = players[currentPlayerIndex];
   return (
     <SafeAreaView style={styles.container} edges={["left", "right"]}>
+      {/* Development: User Tier Toggle */}
+      <UserTierToggle />
+      
       <View style={styles.content}>
         {/* Status Bar */}
         <View style={styles.statusBar}>
@@ -657,3 +665,4 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 });
+ 

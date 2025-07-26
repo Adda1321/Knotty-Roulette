@@ -8,8 +8,10 @@ import PlayerSetup from '../../components/game/PlayerSetup';
 import CustomModal from '../../components/ui/CustomModal';
 import Loader from '../../components/ui/Loader';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import adService from '../../services/adService';
 import { fetchChallenges } from '../../services/api';
 import audioService from '../../services/audio';
+import userService from '../../services/userService';
 import { Challenge, GameState, Player } from '../../types/game';
 
 export default function HomeScreen() {
@@ -23,8 +25,25 @@ export default function HomeScreen() {
   const [winner, setWinner] = useState<Player | null>(null);
 
   useEffect(() => {
-    loadChallenges();
+    initializeServices();
   }, []);
+
+  const initializeServices = async () => {
+    try {
+      // Initialize user service first
+      await userService.initialize();
+      
+      // Initialize ad service (depends on user service)
+      await adService.initialize();
+      
+      // Load challenges
+      await loadChallenges();
+    } catch (error) {
+      console.error('Error initializing services:', error);
+      // Still try to load challenges even if services fail
+      await loadChallenges();
+    }
+  };
 
   const loadChallenges = async () => {
     setIsLoading(true);
@@ -52,6 +71,9 @@ export default function HomeScreen() {
     setPlayers(newPlayers);
     setCurrentPlayerIndex(0);
     setGameState('playing');
+    
+    // Reset ad service spin counter for new game
+    adService.resetSpinCounter();
   };
 
   const resetGame = () => {

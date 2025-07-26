@@ -2,23 +2,25 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import React, { useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  StyleSheet,
-  Text,
-  View,
+    Animated,
+    Dimensions,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  ANIMATION_CONFIGS,
-  ANIMATION_VALUES,
+    ANIMATION_CONFIGS,
+    ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import adService from "../../services/adService";
 import audioService from "../../services/audio";
 import { Challenge, Player } from "../../types/game";
 import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
+import UserTierToggle from "../ui/UserTierToggle";
 import ChallengeDisplay from "./ChallengeDisplay";
 import GameRules from "./GameRules";
 import Scoreboard from "./Scoreboard";
@@ -141,12 +143,15 @@ export default function GameBoard({
     }
   };
 
-  const spinWheel = () => {
+  const spinWheel = async () => {
     if (isSpinning || challenges.length === 0) return;
 
     // Play wheel spin sound and haptic
     audioService.playSound('wheelSpin');
     audioService.playHaptic('medium');
+
+    // Track spin for ad display (every 3 spins for free users)
+    await adService.trackSpin();
 
     setShowChallenge(false);
     setCurrentChallenge(null);
@@ -195,6 +200,9 @@ export default function GameBoard({
 
   return (
     <SafeAreaView style={styles.container} edges={["left", "right"]}>
+      {/* Development: User Tier Toggle */}
+      <UserTierToggle />
+      
       <View style={styles.content}>
         {/* Status Bar */}
         <View style={styles.statusBar}>
@@ -444,3 +452,4 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
 });
+ 

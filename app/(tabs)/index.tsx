@@ -11,6 +11,7 @@ import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import adService from '../../services/adService';
 import { fetchChallenges } from '../../services/api';
 import audioService from '../../services/audio';
+import purchaseService from '../../services/purchaseService';
 import userService from '../../services/userService';
 import { Challenge, GameState, Player } from '../../types/game';
 
@@ -35,6 +36,7 @@ export default function HomeScreen() {
       
       // Initialize ad service (depends on user service)
       await adService.initialize();
+      await purchaseService.initialize();
       
       // Load challenges
       await loadChallenges();

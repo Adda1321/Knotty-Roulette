@@ -25,19 +25,19 @@ class AdService {
    * Initialize the ad service
    */
   async initialize(): Promise<void> {
-    try {
-      // Only initialize ads for free users
-      if (userService.isFree()) {
-        console.log('🎯 AdMob: Initializing for free user');
-        console.log(`📱 Platform: ${Platform.OS}`);
-        console.log(`🎯 Ad Unit ID: ${AD_CONFIG.INTERSTITIAL_ID}`);
-        await this.loadInterstitialAd();
-      } else {
-        console.log('👑 AdMob: No ads for premium user');
-      }
-    } catch (error) {
-      console.warn('Failed to initialize ad service:', error);
+    if (userService.isFree()) {
+      console.log('🎯 AdMob: Initializing for free user');
+      console.log(`📱 Platform: ${Platform.OS}`);
+      console.log(`🎯 Ad Unit ID: ${AD_CONFIG.INTERSTITIAL_ID}`);
+      await this.loadInterstitialAd();
+    } else {
+      console.log('👑 AdMob: No ads for premium user');
     }
+
+    // Listen for user tier changes
+    userService.onTierChange(() => {
+      this.onUserTierChange();
+    });
   }
 
   /**

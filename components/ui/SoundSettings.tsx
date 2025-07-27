@@ -9,7 +9,9 @@ import {
 } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import audioService from '../../services/audio';
+import userService from '../../services/userService';
 import Button from './Button';
+import PremiumUpgradeModal from './PremiumUpgradeModal';
 
 interface SoundSettingsProps {
   onPress: () => void;
@@ -18,6 +20,7 @@ interface SoundSettingsProps {
 export default function SoundSettings({ onPress }: SoundSettingsProps) {
   const [isMuted, setIsMuted] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   useEffect(() => {
     // Initialize audio service and get current mute state
@@ -35,6 +38,12 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
   };
 
   const closeSettings = () => {
+    setShowSettings(false);
+  };
+
+  const handlePremiumSuccess = () => {
+    setShowPremiumModal(false);
+    // Refresh the component to show premium status
     setShowSettings(false);
   };
 
@@ -94,6 +103,57 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                 </TouchableOpacity>
               </View>
 
+              {/* Premium Upgrade Section */}
+              {userService.isFree() && (
+                <View style={styles.premiumSection}>
+                  <View style={styles.settingRow}>
+                    <View style={styles.settingInfo}>
+                      <Ionicons
+                        name="diamond"
+                        size={24}
+                        color={COLORS.YELLOW}
+                      />
+                      <Text style={[styles.settingText, styles.premiumText]}>
+                        Upgrade to Premium
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.upgradeButton}
+                      onPress={() => {
+                        audioService.playHaptic('light');
+                        setShowPremiumModal(true);
+                      }}
+                    >
+                      <Text style={styles.upgradeButtonText}>$4.99</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.premiumSubtext}>
+                    Remove ads and unlock premium features
+                  </Text>
+                </View>
+              )}
+
+              {/* Premium Status */}
+              {userService.isPremium() && (
+                <View style={styles.premiumSection}>
+                  <View style={styles.settingRow}>
+                    <View style={styles.settingInfo}>
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={24}
+                        color={COLORS.YELLOW}
+                      />
+                      <Text style={[styles.settingText, styles.premiumText]}>
+                        Premium Active
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.premiumSubtext}>
+                    Enjoy ad-free gaming experience
+                  </Text>
+                </View>
+              )}
+
               <View style={styles.infoSection}>
                 <Text style={styles.infoTitle}>Sound Effects Include:</Text>
                 <Text style={styles.infoText}>• Wheel spinning</Text>
@@ -119,6 +179,13 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
           </View>
         </View>
       </Modal>
+
+      {/* Premium Upgrade Modal */}
+      <PremiumUpgradeModal
+        visible={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        onPurchaseSuccess={handlePremiumSuccess}
+      />
     </>
   );
 }
@@ -215,5 +282,35 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     width: '100%',
+  },
+  premiumSection: {
+    backgroundColor: COLORS.CARD_BORDER,
+    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
+    padding: SIZES.PADDING_MEDIUM,
+    marginTop: SIZES.PADDING_LARGE,
+    marginBottom: SIZES.PADDING_LARGE,
+  },
+  premiumText: {
+    color: COLORS.YELLOW,
+    fontWeight: '600',
+  },
+  upgradeButton: {
+    backgroundColor: COLORS.YELLOW,
+    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
+    padding: SIZES.PADDING_MEDIUM,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  upgradeButtonText: {
+    fontSize: SIZES.BODY,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.DOSIS_BOLD,
+  },
+  premiumSubtext: {
+    fontSize: SIZES.CAPTION,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.PRIMARY,
+    marginTop: SIZES.PADDING_SMALL,
+    textAlign: 'center',
   },
 }); 

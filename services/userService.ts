@@ -1,103 +1,94 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface UserTier {
-  isPremium: boolean;
-  subscriptionType?: 'monthly' | 'yearly' | 'lifetime';
+  tier: 'free' | 'premium';
+  subscriptionType?: 'lifetime' | 'monthly' | 'yearly';
+  purchaseDate?: string;
   expiryDate?: string;
 }
 
-const USER_TIER_KEY = 'user_tier';
-
 class UserService {
-  private userTier: UserTier = { isPremium: false };
+  private userTier: UserTier = { tier: 'free' };
+  private isInitialized = false;
+  private tierChangeCallbacks: (() => void)[] = [];
 
-  /**
-   * Initialize user service and load user tier from storage
-   */
   async initialize(): Promise<void> {
     try {
-      const storedTier = await AsyncStorage.getItem(USER_TIER_KEY);
+      const storedTier = await AsyncStorage.getItem('userTier');
       if (storedTier) {
         this.userTier = JSON.parse(storedTier);
       }
+      this.isInitialized = true;
+      console.log('✅ UserService initialized:', this.userTier);
     } catch (error) {
-      console.warn('Failed to load user tier from storage:', error);
-      // Default to free tier if loading fails
-      this.userTier = { isPremium: false };
+      console.error('❌ Failed to initialize UserService:', error);
     }
   }
 
-  /**
-   * Get current user tier
-   */
   getUserTier(): UserTier {
-    return { ...this.userTier };
+    return this.userTier;
   }
 
-  /**
-   * Check if user is premium
-   */
   isPremium(): boolean {
-    return this.userTier.isPremium;
+    return this.userTier.tier === 'premium' && !this.isSubscriptionExpired();
   }
 
-  /**
-   * Check if user is free tier
-   */
   isFree(): boolean {
-    return !this.userTier.isPremium;
+    return !this.isPremium();
   }
 
-  /**
-   * Update user tier (for future in-app purchase integration)
-   */
   async updateUserTier(tier: UserTier): Promise<void> {
-    try {
-      this.userTier = { ...tier };
-      await AsyncStorage.setItem(USER_TIER_KEY, JSON.stringify(tier));
-    } catch (error) {
-      console.error('Failed to save user tier:', error);
-      throw new Error('Failed to update user tier');
-    }
+    this.userTier = tier;
+    await AsyncStorage.setItem('userTier', JSON.stringify(tier));
+    
+    // Notify all callbacks about tier change
+    this.tierChangeCallbacks.forEach(callback => callback());
+    
+    console.log('✅ User tier updated:', tier);
   }
 
-  /**
-   * Set user as premium (for testing purposes)
-   */
-  async setPremium(subscriptionType: 'monthly' | 'yearly' | 'lifetime' = 'monthly'): Promise<void> {
-    const expiryDate = subscriptionType === 'lifetime' 
-      ? undefined 
-      : new Date(Date.now() + (subscriptionType === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toISOString();
-    
+  async setPremium(subscriptionType: 'lifetime' | 'monthly' | 'yearly' = 'lifetime'): Promise<void> {
+    const purchaseDate = new Date().toISOString();
+    let expiryDate: string | undefined;
+
+    if (subscriptionType === 'monthly') {
+      expiryDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    } else if (subscriptionType === 'yearly') {
+      expiryDate = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
     await this.updateUserTier({
-      isPremium: true,
+      tier: 'premium',
       subscriptionType,
+      purchaseDate,
       expiryDate,
     });
   }
 
-  /**
-   * Set user as free tier
-   */
   async setFree(): Promise<void> {
-    await this.updateUserTier({
-      isPremium: false,
-    });
+    await this.updateUserTier({ tier: 'free' });
   }
 
-  /**
-   * Check if premium subscription is expired
-   */
   isSubscriptionExpired(): boolean {
-    if (!this.userTier.isPremium || !this.userTier.expiryDate) {
+    if (this.userTier.tier !== 'premium' || !this.userTier.expiryDate) {
       return false;
     }
-    
+
     const expiryDate = new Date(this.userTier.expiryDate);
-    return expiryDate < new Date();
+    const now = new Date();
+    return now > expiryDate;
+  }
+
+  // Add callback for tier changes
+  onTierChange(callback: () => void): void {
+    this.tierChangeCallbacks.push(callback);
+  }
+
+  // Remove callback
+  removeTierChangeCallback(callback: () => void): void {
+    this.tierChangeCallbacks = this.tierChangeCallbacks.filter(cb => cb !== callback);
   }
 }
 
-// Export singleton instance
 const userService = new UserService();
 export default userService; 

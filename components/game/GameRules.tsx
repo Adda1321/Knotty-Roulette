@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import audioService from "../../services/audio";
 import Button from '../ui/Button';
 
 interface GameRulesProps {
@@ -77,19 +78,21 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
           </ScrollView>
 
           {/* Close Button */}
-          <Button
-            text="Got it!"
-            onPress={onClose}
-            backgroundColor={COLORS.YELLOW}
-            textColor={COLORS.TEXT_DARK}
-            fontSize={SIZES.SUBTITLE}
-            fontWeight="bold"
-            fontFamily={FONTS.PRIMARY}
-            // paddingVertical={SIZES.PADDING_MEDIUM}
-            style={styles.closeButton}
-              shadowIntensity={5}
-            shadowRadius={10}
-          />
+<Button
+  text="Got it!"
+  onPress={() => {
+    audioService.playHaptic('medium'); // Haptic feedback
+    onClose(); // Your existing logic
+  }}
+  backgroundColor={COLORS.YELLOW}
+  textColor={COLORS.TEXT_DARK}
+  fontSize={SIZES.SUBTITLE}
+  fontWeight="bold"
+  fontFamily={FONTS.PRIMARY}
+  style={styles.closeButton}
+  shadowIntensity={5}
+  shadowRadius={10}
+/>
         </View>
       </View>
     </Modal>

@@ -3,10 +3,17 @@ import * as Haptics from 'expo-haptics';
 
 class AudioService {
   private sounds: { [key: string]: Audio.Sound } = {};
-  private isMuted: boolean = false;
+
+  // Separate states for music, sounds, and vibration
+  private musicMuted: boolean = false;
+  private soundsMuted: boolean = false;
+  private vibrationEnabled: boolean = true;
+
   private isLoaded: boolean = false;
   private audioContext: AudioContext | null = null;
   private useWebAudio: boolean = false;
+
+  private backgroundMusicSound: Audio.Sound | null = null;
 
   async initialize() {
     try {
@@ -19,10 +26,23 @@ class AudioService {
         playThroughEarpieceAndroid: false,
       });
 
-      // Try to load sound files first
+      // Load background music separately
+      if (!this.backgroundMusicSound) {
+        this.backgroundMusicSound = new Audio.Sound();
+        try {
+          await this.backgroundMusicSound.loadAsync(require('../assets/background-music.mp3'));
+          await this.backgroundMusicSound.setIsLoopingAsync(true);
+          await this.backgroundMusicSound.setIsMutedAsync(this.musicMuted);
+          await this.backgroundMusicSound.playAsync();
+        } catch (e) {
+          console.warn('Error loading background music:', e);
+        }
+      }
+
+      // Load other sound files
       await this.loadSoundFiles();
-      
-      // If no sound files loaded, fallback to Web Audio API
+
+      // Fallback to Web Audio API if no sounds loaded
       if (Object.keys(this.sounds).length === 0) {
         this.useWebAudio = true;
         if (typeof window !== 'undefined' && window.AudioContext) {
@@ -40,14 +60,15 @@ class AudioService {
 
   private async loadSoundFiles() {
     try {
-      // Try to load sound files - these will fail gracefully if files don't exist
       const soundFiles = {
-        // wheelSpin: require('../assets/sounds/wheel-spin.mp3'),
-        // challengeComplete: require('../assets/sounds/challenge-complete.mp3'),
-        // bonusAchieved: require('../assets/sounds/bonus-achieved.mp3'),
-        // buttonPress: require('../assets/sounds/button-press.mp3'),
-        // gameOver: require('../assets/sounds/game-over.mp3'),
-        // passChallenge: require('../assets/sounds/pass-challenge.mp3'),
+        wheelSpin: require('../assets/sounds/roulette-Spin-sound.wav'),
+        challengeComplete: require('../assets/sounds/challenge-complete.wav'),
+        bonusAchieved: require('../assets/sounds/bonus-achieved.wav'),
+        buttonPress: require('../assets/sounds/button-press.wav'),
+        gameOver: require('../assets/sounds/bonus-achieved.wav'),
+        passChallenge: require('../assets/sounds/pass-challenge.wav'),
+        buttonClick: require('../assets/sounds/button-click.wav'),
+
       };
 
       for (const [key, soundFile] of Object.entries(soundFiles)) {
@@ -55,6 +76,7 @@ class AudioService {
           const { sound } = await Audio.Sound.createAsync(soundFile, {
             shouldPlay: false,
             volume: 0.7,
+            isMuted: this.soundsMuted,
           });
           this.sounds[key] = sound;
           console.log(`Loaded sound: ${key}`);
@@ -67,9 +89,8 @@ class AudioService {
     }
   }
 
-  // Create simple sound effects using Web Audio API (fallback)
   private createSimpleSound(frequency: number, duration: number, type: OscillatorType = 'sine'): void {
-    if (!this.audioContext || this.isMuted) return;
+    if (!this.audioContext || this.soundsMuted) return;
 
     try {
       const oscillator = this.audioContext.createOscillator();
@@ -92,10 +113,9 @@ class AudioService {
   }
 
   async playSound(soundName: string) {
-    if (this.isMuted || !this.isLoaded) return;
+    if (this.soundsMuted || !this.isLoaded) return;
 
     try {
-      // Try to play sound file first
       const sound = this.sounds[soundName];
       if (sound) {
         await sound.replayAsync();
@@ -103,7 +123,6 @@ class AudioService {
         return;
       }
 
-      // Fallback to Web Audio API if no sound file
       if (this.useWebAudio) {
         switch (soundName) {
           case 'wheelSpin':
@@ -121,6 +140,9 @@ class AudioService {
           case 'buttonPress':
             this.createSimpleSound(400, 0.1, 'square');
             break;
+          case 'buttonClick':
+          this.createSimpleSound(400, 0.1, 'square');
+          break;
           case 'gameOver':
             this.createSimpleSound(300, 0.5, 'sine');
             setTimeout(() => this.createSimpleSound(400, 0.5, 'sine'), 200);
@@ -142,7 +164,7 @@ class AudioService {
   }
 
   async playHaptic(type: 'light' | 'medium' | 'heavy' | 'success' | 'warning' | 'error') {
-    if (this.isMuted) return;
+    if (!this.vibrationEnabled) return;
 
     try {
       switch (type) {
@@ -170,17 +192,31 @@ class AudioService {
     }
   }
 
-  toggleMute() {
-    this.isMuted = !this.isMuted;
-    return this.isMuted;
+  // Toggle and get methods
+
+
+  toggleSoundsMute() {
+    this.soundsMuted = !this.soundsMuted;
+    // You can mute/unmute all sound instances here if needed
+    Object.values(this.sounds).forEach(sound => sound.setIsMutedAsync(this.soundsMuted));
+    return this.soundsMuted;
   }
 
-  setMuted(muted: boolean) {
-    this.isMuted = muted;
+  toggleVibration() {
+    this.vibrationEnabled = !this.vibrationEnabled;
+    return this.vibrationEnabled;
   }
 
-  isAudioMuted(): boolean {
-    return this.isMuted;
+  isMusicMuted() {
+    return this.musicMuted;
+  }
+
+  isSoundsMuted() {
+    return this.soundsMuted;
+  }
+
+  isVibrationEnabled() {
+    return this.vibrationEnabled;
   }
 
   async cleanup() {
@@ -190,7 +226,12 @@ class AudioService {
       }
       this.sounds = {};
       this.isLoaded = false;
-      
+
+      if (this.backgroundMusicSound) {
+        await this.backgroundMusicSound.unloadAsync();
+        this.backgroundMusicSound = null;
+      }
+
       if (this.audioContext) {
         await this.audioContext.close();
         this.audioContext = null;
@@ -201,7 +242,7 @@ class AudioService {
   }
 }
 
-// Create singleton instance
+// Singleton instance
 const audioService = new AudioService();
 
-export default audioService; 
+export default audioService;

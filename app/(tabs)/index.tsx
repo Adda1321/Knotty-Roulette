@@ -12,6 +12,7 @@ import { fetchChallenges } from '../../services/api';
 import audioService from '../../services/audio';
 import { Challenge, GameState, Player } from '../../types/game';
 
+
 export default function HomeScreen() {
   const [gameState, setGameState] = useState<GameState>('setup');
   const [players, setPlayers] = useState<Player[]>([]);
@@ -25,7 +26,9 @@ export default function HomeScreen() {
   useEffect(() => {
     loadChallenges();
   }, []);
-
+useEffect(() => {
+  audioService.initialize();
+}, []);
   const loadChallenges = async () => {
     setIsLoading(true);
     try {
@@ -86,7 +89,7 @@ export default function HomeScreen() {
             setPlayers(updatedPlayers);
             
             // Check for winner (first to 10 points)
-            if (updatedPlayers[playerIndex].points >= 10) {
+            if (updatedPlayers[playerIndex].points >= 3) {
               // Play game over sound and haptic
               audioService.playSound('gameOver');
               audioService.playHaptic('success');
@@ -107,6 +110,7 @@ export default function HomeScreen() {
       <CustomModal
         visible={showGameOverModal}
         onClose={() => {
+           audioService.playHaptic('medium');
           setShowGameOverModal(false);
           resetGame();
         }}

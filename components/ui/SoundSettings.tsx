@@ -1,14 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import audioService from '../../services/audio';
+import backgroundMusic from '../../services/backgroundMusic';
+
 import Button from './Button';
 
 interface SoundSettingsProps {
@@ -16,19 +18,38 @@ interface SoundSettingsProps {
 }
 
 export default function SoundSettings({ onPress }: SoundSettingsProps) {
-  const [isMuted, setIsMuted] = useState(false);
+const [isMusicMuted, setIsMusicMuted] = useState(false);
+const [isSoundsMuted, setIsSoundsMuted] = useState(false);
+const [isVibrationEnabled, setIsVibrationEnabled] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
 
-  useEffect(() => {
-    // Initialize audio service and get current mute state
-    audioService.initialize();
-    setIsMuted(audioService.isAudioMuted());
-  }, []);
+ useEffect(() => {
+  audioService.initialize();
 
-  const handleToggleMute = () => {
-    const newMutedState = audioService.toggleMute();
-    setIsMuted(newMutedState);
+  setIsMusicMuted(backgroundMusic.isMusicMuted());
+  setIsSoundsMuted(audioService.isSoundsMuted());
+  setIsVibrationEnabled(audioService.isVibrationEnabled());
+}, []);
+
+  const toggleMusicMute = async () => {
+    const newState = await backgroundMusic.toggleMute();
+    setIsMusicMuted(newState);
+    audioService.playHaptic('medium');
   };
+
+
+
+const toggleSoundsMute = () => {
+  const newState = audioService.toggleSoundsMute();
+  setIsSoundsMuted(newState);
+  audioService.playHaptic('medium');
+};
+
+const toggleVibration = () => {
+  const newState = audioService.toggleVibration();
+  setIsVibrationEnabled(newState);
+  audioService.playHaptic('medium');
+};
 
   const handleSettingsPress = () => {
     setShowSettings(true);
@@ -68,45 +89,85 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
             </View>
 
             <View style={styles.content}>
-              <View style={styles.settingRow}>
-                <View style={styles.settingInfo}>
-                  <Ionicons
-                    name={isMuted ? "volume-mute" : "volume-high"}
-                    size={24}
-                    color={COLORS.DARK_GREEN}
-                  />
-                  <Text style={styles.settingText}>
-                    {isMuted ? "Sound Effects Muted" : "Sound Effects Enabled"}
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  style={[styles.toggleButton, isMuted && styles.toggleButtonMuted]}
-                  onPress={() => {
-                    audioService.playHaptic('light');
-                    handleToggleMute();
-                  }}
-                >
-                  <Ionicons
-                    name={isMuted ? "volume-mute" : "volume-high"}
-                    size={24}
-                    color={COLORS.TEXT_PRIMARY}
-                  />
-                </TouchableOpacity>
-              </View>
+             <View style={styles.settingRow}>
+  <View style={styles.settingInfo}>
+    <Ionicons
+      name={isMusicMuted ? "musical-notes-outline" : "musical-notes"}
+      size={24}
+      color={COLORS.DARK_GREEN}
+    />
+    <Text style={styles.settingText}>
+      {isMusicMuted ? "Background Music Muted" : "Background Music Enabled"}
+    </Text>
+  </View>
+  <TouchableOpacity
+    style={[styles.toggleButton, isMusicMuted && styles.toggleButtonMuted]}
+    onPress={toggleMusicMute}
+  >
+    <Ionicons
+      name={isMusicMuted ? "volume-mute" : "volume-high"}
+      size={24}
+      color={COLORS.TEXT_PRIMARY}
+    />
+  </TouchableOpacity>
+</View>
 
-              <View style={styles.infoSection}>
-                <Text style={styles.infoTitle}>Sound Effects Include:</Text>
-                <Text style={styles.infoText}>• Wheel spinning</Text>
-                <Text style={styles.infoText}>• Challenge completion</Text>
-                <Text style={styles.infoText}>• Button presses</Text>
-                <Text style={styles.infoText}>• Haptic feedback</Text>
-              </View>
+<View style={styles.settingRow}>
+  <View style={styles.settingInfo}>
+    <Ionicons
+      name={isSoundsMuted ? "volume-mute" : "volume-high"}
+      size={24}
+      color={COLORS.DARK_GREEN}
+    />
+    <Text style={styles.settingText}>
+      {isSoundsMuted ? "Sound Effects Muted" : "Sound Effects Enabled"}
+    </Text>
+  </View>
+  <TouchableOpacity
+    style={[styles.toggleButton, isSoundsMuted && styles.toggleButtonMuted]}
+    onPress={toggleSoundsMute}
+  >
+    <Ionicons
+      name={isSoundsMuted ? "volume-mute" : "volume-high"}
+      size={24}
+      color={COLORS.TEXT_PRIMARY}
+    />
+  </TouchableOpacity>
+</View>
+
+<View style={styles.settingRow}>
+  <View style={styles.settingInfo}>
+    <Ionicons
+      name={isVibrationEnabled ? "phone-portrait" : "phone-portrait-outline"}
+      size={24}
+      color={COLORS.DARK_GREEN}
+    />
+    <Text style={styles.settingText}>
+      {isVibrationEnabled ? "Vibration Enabled" : "Vibration Disabled"}
+    </Text>
+  </View>
+  <TouchableOpacity
+    style={[styles.toggleButton, !isVibrationEnabled && styles.toggleButtonMuted]}
+    onPress={toggleVibration}
+  >
+    <Ionicons
+      name={isVibrationEnabled ? "notifications" : "notifications-off"}
+      size={24}
+      color={COLORS.TEXT_PRIMARY}
+    />
+  </TouchableOpacity>
+</View>
+
+
             </View>
 
             <View style={styles.buttonContainer}>
               <Button
                 text="Close"
-                onPress={closeSettings}
+                   onPress={() => {
+      audioService.playHaptic('medium');  // add haptic here too
+      closeSettings();
+    }}
                 backgroundColor={COLORS.DARK_GREEN}
                 textColor={COLORS.TEXT_PRIMARY}
                 fontSize={SIZES.BODY}

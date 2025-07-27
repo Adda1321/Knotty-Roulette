@@ -194,7 +194,10 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
             <View style={styles.startButtonContainer}>
               <Button
                 text="START GAME"
-                onPress={startGame}
+                            onPress={() => {
+      audioService.playHaptic('medium');  // add haptic here too
+      startGame();
+    }}
                 disabled={players.filter((p) => p.trim()).length < 2}
                 backgroundColor={
                   players.filter((p) => p.trim()).length < 2

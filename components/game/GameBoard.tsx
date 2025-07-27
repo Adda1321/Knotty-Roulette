@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
@@ -15,6 +15,7 @@ import {
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
+import backgroundMusicService from '../../services/backgroundMusic'; // Adjust path as needed
 import { Challenge, Player } from "../../types/game";
 import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
@@ -22,6 +23,7 @@ import SoundSettings from "../ui/SoundSettings";
 import ChallengeDisplay from "./ChallengeDisplay";
 import GameRules from "./GameRules";
 import Scoreboard from "./Scoreboard";
+
 
 interface GameBoardProps {
   players: Player[];
@@ -88,7 +90,8 @@ export default function GameBoard({
   const passChallenge = () => {
     // Play pass sound and haptic
     audioService.playSound('passChallenge');
-    audioService.playHaptic('warning');
+    audioService.playHaptic('medium');
+
     
     setCompletionData({ points: -1, action: 'pass' });
     setShowCompletionModal(true);
@@ -184,24 +187,43 @@ export default function GameBoard({
     Animated.timing(rotation, {
       toValue: 5,
       ...ANIMATION_CONFIGS.SPIN_WHEEL,
-    }).start(() => {
-      rotation.setValue(0);
-      handleSpinComplete();
-      setIsSpinning(false);
-    });
+    }).start(async () => {
+  rotation.setValue(0);
+  handleSpinComplete();
+  setIsSpinning(false);
+
+});
   };
 
   const currentPlayer = players[currentPlayerIndex];
+  useEffect(() => {
+    const setupBackgroundMusic = async () => {
+      await backgroundMusicService.initialize();
+      await backgroundMusicService.loadBackgroundMusic();
+      await backgroundMusicService.playBackgroundMusic();
+    };
 
+    setupBackgroundMusic();
+
+    // Clean up music when component unmounts
+    return () => {
+      backgroundMusicService.cleanup();
+    };
+  }, []);
   return (
     <SafeAreaView style={styles.container} edges={["left", "right"]}>
+      
       <View style={styles.content}>
         {/* Status Bar */}
         <View style={styles.statusBar}>
+          
           <View style={styles.leftButtons}>
             <Button
               text="📖 Rules"
-              onPress={() => setShowRules(true)}
+              onPress={() => {
+        audioService.playHaptic('medium');  // add haptic here
+        setShowRules(true);
+      }}
               backgroundColor={COLORS.YELLOW}
               textColor={COLORS.TEXT_DARK}
               shadowIntensity={5}
@@ -213,12 +235,19 @@ export default function GameBoard({
               fontSize={SIZES.CAPTION}
               fontWeight="600"
             />
-            <SoundSettings onPress={() => {}} />
+            <SoundSettings onPress={() => {
+        audioService.playHaptic('medium');  // add haptic here
+
+
+            }} />
           </View>
 
           <Button
             text="🔄 New Game"
-            onPress={onResetGame}
+               onPress={() => {
+      audioService.playHaptic('medium');  // add haptic here too
+      onResetGame();
+    }}
             backgroundColor={COLORS.YELLOW}
             textColor={COLORS.TEXT_DARK}
             shadowIntensity={5}
@@ -334,6 +363,7 @@ export default function GameBoard({
         <CustomModal
           visible={showCompletionModal}
           onClose={() => {
+             audioService.playHaptic('medium');
             setShowCompletionModal(false);
             completeChallenge(completionData?.points || 0);
           }}
@@ -345,6 +375,7 @@ export default function GameBoard({
           showSparkles={completionData?.action === 'complete' || completionData?.action === 'bonus'}
         />
       </View>
+      
     </SafeAreaView>
   );
 }

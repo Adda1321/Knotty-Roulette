@@ -8,12 +8,12 @@ class BackgroundMusicService {
 
   async initialize() {
     try {
-      // Set audio mode for background music
+      // Set audio mode for background music playback
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
-        staysActiveInBackground: true,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
+        staysActiveInBackground: true,   // Keep playing in background
+        playsInSilentModeIOS: true,       // Play in silent mode on iOS
+        shouldDuckAndroid: true,          // Lower volume of other audio on Android
         playThroughEarpieceAndroid: false,
       });
 
@@ -25,17 +25,22 @@ class BackgroundMusicService {
 
   async loadBackgroundMusic() {
     try {
-      // TODO: Add background music file
-      // const { sound } = await Audio.Sound.createAsync(
-      //   require('../assets/sounds/background-music.mp3'),
-      //   {
-      //     shouldPlay: false,
-      //     isLooping: true,
-      //     volume: this.volume,
-      //   }
-      // );
-      // this.backgroundMusic = sound;
-      console.log('Background music loaded (file not added yet)');
+      if (this.backgroundMusic) {
+        // Already loaded
+        return;
+      }
+      const { sound } = await Audio.Sound.createAsync(
+        require('../assets/sounds/background-music.wav'),
+        {
+          shouldPlay: true,
+          isLooping: true,
+          volume: this.isMuted ? 0 : this.volume,
+        }
+      );
+      this.backgroundMusic = sound;
+      this.isPlaying = true;
+
+      console.log('Background music loaded and playing');
     } catch (error) {
       console.error('Failed to load background music:', error);
     }
@@ -78,24 +83,45 @@ class BackgroundMusicService {
     }
   }
 
-  setVolume(volume: number) {
-    this.volume = Math.max(0, Math.min(1, volume));
-    if (this.backgroundMusic) {
-      this.backgroundMusic.setVolumeAsync(this.volume);
+  async setVolume(volume: number) {
+    this.volume = Math.min(Math.max(0, volume), 1); // Clamp between 0 and 1
+    if (this.backgroundMusic && !this.isMuted) {
+      await this.backgroundMusic.setVolumeAsync(this.volume);
     }
   }
 
-  toggleMute() {
+  async toggleMute(): Promise<boolean> {
     this.isMuted = !this.isMuted;
     if (this.backgroundMusic) {
-      this.backgroundMusic.setVolumeAsync(this.isMuted ? 0 : this.volume);
+      await this.backgroundMusic.setIsMutedAsync(this.isMuted);
+      if (this.isMuted) {
+        await this.backgroundMusic.pauseAsync();
+      } else {
+        await this.backgroundMusic.playAsync();
+      }
     }
     return this.isMuted;
   }
+    isMusicMuted(): boolean {
+    return this.isMuted;
+  }
+
 
   isMusicPlaying(): boolean {
     return this.isPlaying && !this.isMuted;
   }
+ async setMute(mute: boolean) {
+    this.isMuted = mute;
+    if (this.backgroundMusic) {
+      await this.backgroundMusic.setIsMutedAsync(this.isMuted);
+      if (this.isMuted) {
+        await this.backgroundMusic.pauseAsync();
+      } else {
+        await this.backgroundMusic.playAsync();
+      }
+    }
+  }
+
 
   async cleanup() {
     try {
@@ -104,13 +130,14 @@ class BackgroundMusicService {
         this.backgroundMusic = null;
       }
       this.isPlaying = false;
+      console.log('Background music service cleaned up');
     } catch (error) {
       console.error('Failed to cleanup background music service:', error);
     }
   }
 }
 
-// Create singleton instance
+// Singleton instance
 const backgroundMusicService = new BackgroundMusicService();
 
-export default backgroundMusicService; 
+export default backgroundMusicService;

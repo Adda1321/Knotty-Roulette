@@ -1,20 +1,21 @@
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
 import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
+import SoundSettings from "../ui/SoundSettings";
 
 interface PlayerSetupProps {
   onStartGame: (playerNames: string[]) => void;
@@ -28,6 +29,8 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   const scrollViewRef = useRef<ScrollView>(null);
 
   const addPlayer = () => {
+    audioService.playSound('buttonPress');
+    audioService.playHaptic("light");
     if (players.length < 8) {
       setPlayers([...players, ""]); // Add empty player field
       // Trigger scroll to bottom on next render
@@ -52,6 +55,9 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   };
 
   const startGame = () => {
+
+                  audioService.playHaptic("medium"); // add haptic here too
+                  audioService.playSound("buttonPress");
     const validPlayers = players.filter((name) => name.trim());
 
     if (validPlayers.length < 2) {
@@ -79,6 +85,14 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
           style={styles.keyboardView}
         >
           <View style={styles.header}>
+            <View style={styles.headerTop}>
+              <SoundSettings
+                onPress={() => {
+                  audioService.playSound("buttonPress");
+                  audioService.playHaptic("medium");
+                }}
+              />
+            </View>
             <Text style={styles.title}>KNOTTY ROULETTE</Text>
             <Text style={styles.subtitle}>Add Players to Begin</Text>
           </View>
@@ -110,6 +124,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                           <TouchableOpacity
                             style={styles.removeButton}
                             onPress={() => {
+                              audioService.playSound('buttonPress');
                               audioService.playHaptic("light");
                               removePlayer(index);
                             }}
@@ -159,6 +174,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                           <TouchableOpacity
                             style={styles.removeButton}
                             onPress={() => {
+                              audioService.playSound('buttonPress');
                               audioService.playHaptic("light");
                               removePlayer(index);
                             }}
@@ -247,6 +263,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: SIZES.PADDING_XLARGE,
   },
+  headerTop: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    alignItems: "center",
+    width: "100%",
+    paddingHorizontal: SIZES.PADDING_SMALL,
+    marginBottom: SIZES.PADDING_SMALL,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: "center",
+  },
   title: {
     fontSize: 40,
     fontFamily: FONTS.DOSIS_BOLD,
@@ -316,5 +344,8 @@ const styles = StyleSheet.create({
   },
   startButton: {
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
+  },
+  spacer: {
+    width: SIZES.PADDING_LARGE, // Adjust as needed for spacing
   },
 });

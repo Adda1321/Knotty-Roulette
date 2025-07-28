@@ -1,4 +1,5 @@
 import { Audio } from 'expo-av';
+import { AppState } from 'react-native';
 
 class BackgroundMusicService {
   private backgroundMusic: Audio.Sound | null = null;
@@ -11,15 +12,29 @@ class BackgroundMusicService {
       // Set audio mode for background music playback
       await Audio.setAudioModeAsync({
         allowsRecordingIOS: false,
-        staysActiveInBackground: true,   // Keep playing in background
-        playsInSilentModeIOS: true,       // Play in silent mode on iOS
-        shouldDuckAndroid: true,          // Lower volume of other audio on Android
+        staysActiveInBackground: false, // Changed to false to stop when backgrounded
+        playsInSilentModeIOS: true,
+        shouldDuckAndroid: true,
         playThroughEarpieceAndroid: false,
       });
+
+      // Set up app state listener for background/foreground
+      AppState.addEventListener('change', this.handleAppStateChange.bind(this));
 
       console.log('Background music service initialized');
     } catch (error) {
       console.error('Failed to initialize background music service:', error);
+    }
+  }
+
+  // Handle app state changes
+  private handleAppStateChange(nextAppState: string) {
+    if (nextAppState === 'active') {
+      // App came to foreground - resume music
+      this.playBackgroundMusic();
+    } else if (nextAppState === 'background' || nextAppState === 'inactive') {
+      // App went to background - pause music
+      this.pauseBackgroundMusic();
     }
   }
 
@@ -32,15 +47,13 @@ class BackgroundMusicService {
       const { sound } = await Audio.Sound.createAsync(
         require('../assets/sounds/background-music.wav'),
         {
-          shouldPlay: true,
+          shouldPlay: false, // Don't auto-play, we'll control it
           isLooping: true,
           volume: this.isMuted ? 0 : this.volume,
         }
       );
       this.backgroundMusic = sound;
-      this.isPlaying = true;
-
-      console.log('Background music loaded and playing');
+      console.log('Background music loaded');
     } catch (error) {
       console.error('Failed to load background music:', error);
     }
@@ -102,15 +115,16 @@ class BackgroundMusicService {
     }
     return this.isMuted;
   }
-    isMusicMuted(): boolean {
+
+  isMusicMuted(): boolean {
     return this.isMuted;
   }
-
 
   isMusicPlaying(): boolean {
     return this.isPlaying && !this.isMuted;
   }
- async setMute(mute: boolean) {
+
+  async setMute(mute: boolean) {
     this.isMuted = mute;
     if (this.backgroundMusic) {
       await this.backgroundMusic.setIsMutedAsync(this.isMuted);
@@ -121,7 +135,6 @@ class BackgroundMusicService {
       }
     }
   }
-
 
   async cleanup() {
     try {

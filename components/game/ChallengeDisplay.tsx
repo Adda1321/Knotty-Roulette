@@ -1,17 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Animated,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import {
-  ANIMATION_CONFIGS,
-  ANIMATION_VALUES,
+    ANIMATION_CONFIGS,
+    ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import { logVote } from "../../services/api";
@@ -23,7 +23,7 @@ import SparkleEffect from "../ui/SparkleEffect";
 interface ChallengeDisplayProps {
   challenge: Challenge;
   playerName: string;
-  onComplete: (points: number, action: 'complete' | 'pass' | 'bonus') => void;
+  onComplete: (points: number, action: "complete" | "pass" | "bonus") => void;
   onPass: () => void;
 }
 
@@ -65,6 +65,8 @@ export default function ChallengeDisplay({
   }, [cardOpacity, cardScale]);
 
   const handleVote = async (voteType: "upvote" | "downvote") => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium");
     if (hasVoted || isVoting) return;
 
     setIsVoting(true);
@@ -129,13 +131,18 @@ export default function ChallengeDisplay({
   };
 
   const handleComplete = () => {
-    console.log("Challenge completed");
-    onComplete(1, 'complete');
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium"); // add haptic here
+
+    onComplete(1, "complete");
   };
 
   const handleBonus = () => {
     // Bonus gives 2 points instead of 1
-    onComplete(2, 'bonus');
+
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium"); // add haptic here
+    onComplete(2, "bonus");
   };
 
   return (
@@ -189,7 +196,8 @@ export default function ChallengeDisplay({
                       styles.voteButtonDisabled,
                   ]}
                   onPress={() => {
-                    audioService.playHaptic('light');
+                    audioService.playSound("buttonPress");
+                    audioService.playHaptic("light");
                     handleVote("upvote");
                   }}
                   disabled={isVoting}
@@ -212,7 +220,8 @@ export default function ChallengeDisplay({
                       styles.voteButtonDisabled,
                   ]}
                   onPress={() => {
-                    audioService.playHaptic('light');
+                    audioService.playSound("buttonPress");
+                    audioService.playHaptic("light");
                     handleVote("downvote");
                   }}
                   disabled={isVoting}
@@ -239,6 +248,8 @@ export default function ChallengeDisplay({
                 textColor={COLORS.TEXT_PRIMARY}
                 fontSize={SIZES.BODY}
                 fontWeight="600"
+                shadowIntensity={5}
+                shadowRadius={10}
                 paddingHorizontal={SIZES.PADDING_MEDIUM}
                 paddingVertical={SIZES.PADDING_MEDIUM}
                 style={styles.actionButton}
@@ -261,11 +272,17 @@ export default function ChallengeDisplay({
 
             <Button
               text="Pass (-1 point)"
-              onPress={onPass}
+              onPress={() => {
+                audioService.playSound("passChallenge");
+                audioService.playHaptic("medium");
+                onPass();
+              }}
               backgroundColor={COLORS.OFFLINE}
               textColor={COLORS.TEXT_PRIMARY}
               fontSize={SIZES.BODY}
               fontWeight="600"
+              shadowIntensity={5}
+              shadowRadius={10}
               paddingHorizontal={SIZES.PADDING_MEDIUM}
               paddingVertical={SIZES.PADDING_MEDIUM}
               style={styles.actionButton}
@@ -279,6 +296,8 @@ export default function ChallengeDisplay({
                 textColor={COLORS.TEXT_PRIMARY}
                 fontSize={SIZES.BODY}
                 fontWeight="600"
+                shadowIntensity={5}
+                shadowRadius={10}
                 paddingHorizontal={SIZES.PADDING_MEDIUM}
                 paddingVertical={SIZES.PADDING_MEDIUM}
                 style={styles.actionButton}
@@ -365,7 +384,13 @@ const styles = StyleSheet.create({
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
     justifyContent: "center",
     alignItems: "center",
-    ...SIZES.SHADOW_SMALL,
+    // iOS shadow properties
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.4,
+    shadowRadius: 7.5,
+    // Android elevation
+    elevation: 7.5,
   },
   voteButtonDisabled: {
     opacity: 0.5,

@@ -1,14 +1,8 @@
-import React from 'react';
-import {
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { COLORS, FONTS, SIZES } from '../../constants/theme';
+import React from "react";
+import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
+import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
-import Button from '../ui/Button';
+import Button from "../ui/Button";
 
 interface GameRulesProps {
   visible: boolean;
@@ -27,7 +21,7 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
     },
     {
       number: 3,
-      text: "Tap \"Spin\" - The wheel decides your fate!",
+      text: 'Tap "Spin" - The wheel decides your fate!',
     },
     {
       number: 4,
@@ -37,7 +31,8 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
     {
       number: 5,
       text: "Earn points",
-      subtext: "• Complete the action = 1 point\n• If the action has a \"Bonus\" challenge, nail it for 2 points!\n• First player to 11 points wins!",
+      subtext:
+        '• Complete the action = 1 point\n• If the action has a "Bonus" challenge, nail it for 2 points!\n• First player to 11 points wins!',
     },
     {
       number: 6,
@@ -61,7 +56,10 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
           </View>
 
           {/* Rules Content */}
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
             {rules.map((rule, index) => (
               <View key={index} style={styles.ruleContainer}>
                 <View style={styles.ruleNumber}>
@@ -78,21 +76,20 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
           </ScrollView>
 
           {/* Close Button */}
-<Button
-  text="Got it!"
-  onPress={() => {
-    audioService.playHaptic('medium'); // Haptic feedback
-    onClose(); // Your existing logic
-  }}
-  backgroundColor={COLORS.YELLOW}
-  textColor={COLORS.TEXT_DARK}
-  fontSize={SIZES.SUBTITLE}
-  fontWeight="bold"
-  fontFamily={FONTS.PRIMARY}
-  style={styles.closeButton}
-  shadowIntensity={5}
-  shadowRadius={10}
-/>
+          <Button
+            text="Got it!"
+            onPress={() => {
+              audioService.playSound("buttonPress");
+              audioService.playHaptic("light");
+              onClose();
+            }}
+            backgroundColor={COLORS.YELLOW}
+            textColor={COLORS.TEXT_DARK}
+            fontSize={SIZES.SUBTITLE}
+            fontWeight="bold"
+            fontFamily={FONTS.PRIMARY}
+            style={styles.closeButton}
+          />
         </View>
       </View>
     </Modal>
@@ -102,63 +99,63 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   container: {
-    backgroundColor:COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     margin: SIZES.PADDING_MEDIUM,
-    maxHeight: '90%',
-    width: '90%',
+    maxHeight: "90%",
+    width: "90%",
     maxWidth: 400,
-    height:"100%",
+    height: "100%",
     ...SIZES.SHADOW_LARGE,
   },
   header: {
     backgroundColor: COLORS.DARK_GREEN,
     borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE,
     borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE,
-    alignItems: 'center',
+    alignItems: "center",
     padding: SIZES.PADDING_LARGE,
   },
   title: {
     fontSize: SIZES.TITLE,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: SIZES.PADDING_SMALL,
   },
   subtitle: {
     fontSize: SIZES.CAPTION,
     color: COLORS.TEXT_PRIMARY,
     fontFamily: FONTS.PRIMARY,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   content: {
     flex: 1,
-    backgroundColor:COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.CARD_BACKGROUND,
     padding: SIZES.PADDING_LARGE,
   },
   ruleContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: SIZES.PADDING_LARGE,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   ruleNumber: {
     width: 30,
     height: 30,
     borderRadius: 15,
     backgroundColor: COLORS.YELLOW,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: SIZES.PADDING_MEDIUM,
     ...SIZES.SHADOW_SMALL,
   },
   ruleNumberText: {
     fontSize: SIZES.CAPTION,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
   },
@@ -174,13 +171,13 @@ const styles = StyleSheet.create({
   },
   ruleSubtext: {
     fontSize: SIZES.CAPTION,
-    color: '#666',
+    color: "#666",
     fontFamily: FONTS.PRIMARY,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     lineHeight: 18,
   },
   closeButton: {
     margin: SIZES.PADDING_SMALL,
-    // marginBottom: SIZES.PADDING_LARGE,
+    marginBottom: SIZES.PADDING_SMALL,
   },
-}); 
+});

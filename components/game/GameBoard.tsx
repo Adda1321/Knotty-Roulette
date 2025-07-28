@@ -1,13 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
 
-import React, { useEffect, useRef, useState } from "react";
-import {
-  Animated,
-  Dimensions,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import React, { useRef, useState } from "react";
+import { Animated, Dimensions, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ANIMATION_CONFIGS,
@@ -15,7 +9,6 @@ import {
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
-import backgroundMusicService from '../../services/backgroundMusic'; // Adjust path as needed
 import { Challenge, Player } from "../../types/game";
 import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
@@ -23,7 +16,6 @@ import SoundSettings from "../ui/SoundSettings";
 import ChallengeDisplay from "./ChallengeDisplay";
 import GameRules from "./GameRules";
 import Scoreboard from "./Scoreboard";
-
 
 interface GameBoardProps {
   players: Player[];
@@ -54,7 +46,7 @@ export default function GameBoard({
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completionData, setCompletionData] = useState<{
     points: number;
-    action: 'complete' | 'pass' | 'bonus';
+    action: "complete" | "pass" | "bonus";
   } | null>(null);
   const rotation = useRef(new Animated.Value(0)).current;
   const spinButtonScale = useRef(new Animated.Value(1)).current;
@@ -89,25 +81,27 @@ export default function GameBoard({
 
   const passChallenge = () => {
     // Play pass sound and haptic
-    audioService.playSound('passChallenge');
-    audioService.playHaptic('medium');
+    audioService.playHaptic("medium");
+    audioService.playSound("buttonPress");
 
-    
-    setCompletionData({ points: -1, action: 'pass' });
+    setCompletionData({ points: -1, action: "pass" });
     setShowCompletionModal(true);
   };
 
-  const handleChallengeComplete = (points: number, action: 'complete' | 'pass' | 'bonus') => {
+  const handleChallengeComplete = (
+    points: number,
+    action: "complete" | "pass" | "bonus"
+  ) => {
     // Play appropriate sound and haptic based on action
-    if (action === 'complete') {
-      audioService.playSound('challengeComplete');
-      audioService.playHaptic('success');
-    } else if (action === 'bonus') {
-      audioService.playSound('bonusAchieved');
-      audioService.playHaptic('success');
-    } else if (action === 'pass') {
-      audioService.playSound('passChallenge');
-      audioService.playHaptic('warning');
+    if (action === "complete") {
+      audioService.playSound("challengeComplete");
+      audioService.playHaptic("success");
+    } else if (action === "bonus") {
+      audioService.playSound("bonusAchieved");
+      audioService.playHaptic("success");
+    } else if (action === "pass") {
+      audioService.playSound("passChallenge");
+      audioService.playHaptic("warning");
     }
 
     setCompletionData({ points, action });
@@ -115,41 +109,44 @@ export default function GameBoard({
   };
 
   const getCompletionModalTitle = () => {
-    if (!completionData) return '';
-    
+    if (!completionData) return "";
+
     switch (completionData.action) {
-      case 'complete':
-        return '🎉 Challenge Complete!';
-      case 'bonus':
-        return '🌟 Bonus Achieved!';
-      case 'pass':
-        return '😅 Challenge Passed';
+      case "complete":
+        return "🎉 Challenge Complete!";
+      case "bonus":
+        return "🌟 Bonus Achieved!";
+      case "pass":
+        return "😅 Challenge Passed";
       default:
-        return 'Challenge Result';
+        return "Challenge Result";
     }
   };
 
   const getCompletionModalMessage = () => {
-    if (!completionData) return '';
-    
+    if (!completionData) return "";
+
     switch (completionData.action) {
-      case 'complete':
+      case "complete":
         return `Amazing job! You've earned +${completionData.points} point! 🎯\n\nKeep up the fantastic work!`;
-      case 'bonus':
+      case "bonus":
         return `Incredible! You've earned +${completionData.points} points! 🌟\n\nYou're absolutely crushing it!`;
-      case 'pass':
-        return `No worries! Sometimes you gotta know when to fold 'em! 😄\n\nYou lost ${Math.abs(completionData.points)} point, but there's always next time! 💪`;
+      case "pass":
+        return `No worries! Sometimes you gotta know when to fold 'em! 😄\n\nYou lost ${Math.abs(
+          completionData.points
+        )} point, but there's always next time! 💪`;
       default:
-        return 'Challenge completed!';
+        return "Challenge completed!";
     }
   };
 
   const spinWheel = () => {
     if (isSpinning || challenges.length === 0) return;
+    audioService.playSound("buttonPress");
 
     // Play wheel spin sound and haptic
-    audioService.playSound('wheelSpin');
-    audioService.playHaptic('medium');
+    audioService.playSound("wheelSpin");
+    audioService.playHaptic("medium");
 
     setShowChallenge(false);
     setCurrentChallenge(null);
@@ -188,42 +185,26 @@ export default function GameBoard({
       toValue: 5,
       ...ANIMATION_CONFIGS.SPIN_WHEEL,
     }).start(async () => {
-  rotation.setValue(0);
-  handleSpinComplete();
-  setIsSpinning(false);
-
-});
+      rotation.setValue(0);
+      handleSpinComplete();
+      setIsSpinning(false);
+    });
   };
 
   const currentPlayer = players[currentPlayerIndex];
-  useEffect(() => {
-    const setupBackgroundMusic = async () => {
-      await backgroundMusicService.initialize();
-      await backgroundMusicService.loadBackgroundMusic();
-      await backgroundMusicService.playBackgroundMusic();
-    };
-
-    setupBackgroundMusic();
-
-    // Clean up music when component unmounts
-    return () => {
-      backgroundMusicService.cleanup();
-    };
-  }, []);
   return (
     <SafeAreaView style={styles.container} edges={["left", "right"]}>
-      
       <View style={styles.content}>
         {/* Status Bar */}
         <View style={styles.statusBar}>
-          
           <View style={styles.leftButtons}>
             <Button
               text="📖 Rules"
               onPress={() => {
-        audioService.playHaptic('medium');  // add haptic here
-        setShowRules(true);
-      }}
+                audioService.playSound("buttonPress");
+                audioService.playHaptic("medium"); // add haptic here
+                setShowRules(true);
+              }}
               backgroundColor={COLORS.YELLOW}
               textColor={COLORS.TEXT_DARK}
               shadowIntensity={5}
@@ -235,19 +216,22 @@ export default function GameBoard({
               fontSize={SIZES.CAPTION}
               fontWeight="600"
             />
-            <SoundSettings onPress={() => {
-        audioService.playHaptic('medium');  // add haptic here
+            <SoundSettings
+              onPress={() => {
+                audioService.playSound("buttonPress");
 
-
-            }} />
+                audioService.playHaptic("medium"); // add haptic here
+              }}
+            />
           </View>
 
           <Button
             text="🔄 New Game"
-               onPress={() => {
-      audioService.playHaptic('medium');  // add haptic here too
-      onResetGame();
-    }}
+            onPress={() => {
+              audioService.playSound("buttonPress");
+              audioService.playHaptic("medium"); // add haptic here too
+              onResetGame();
+            }}
             backgroundColor={COLORS.YELLOW}
             textColor={COLORS.TEXT_DARK}
             shadowIntensity={5}
@@ -357,13 +341,12 @@ export default function GameBoard({
         {/* Game Rules Modal */}
         <GameRules visible={showRules} onClose={() => setShowRules(false)} />
 
-
-
         {/* Challenge Completion Modal */}
         <CustomModal
           visible={showCompletionModal}
           onClose={() => {
-             audioService.playHaptic('medium');
+            audioService.playSound("buttonPress");
+            audioService.playHaptic("medium"); // add haptic here
             setShowCompletionModal(false);
             completeChallenge(completionData?.points || 0);
           }}
@@ -372,10 +355,12 @@ export default function GameBoard({
           showCloseButton={true}
           closeButtonText="Spin Again"
           showConfirmButton={false}
-          showSparkles={completionData?.action === 'complete' || completionData?.action === 'bonus'}
+          showSparkles={
+            completionData?.action === "complete" ||
+            completionData?.action === "bonus"
+          }
         />
       </View>
-      
     </SafeAreaView>
   );
 }

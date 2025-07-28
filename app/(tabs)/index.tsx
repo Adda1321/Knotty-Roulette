@@ -10,6 +10,7 @@ import Loader from '../../components/ui/Loader';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { fetchChallenges } from '../../services/api';
 import audioService from '../../services/audio';
+import backgroundMusic from '../../services/backgroundMusic';
 import { Challenge, GameState, Player } from '../../types/game';
 
 
@@ -26,9 +27,24 @@ export default function HomeScreen() {
   useEffect(() => {
     loadChallenges();
   }, []);
-useEffect(() => {
-  audioService.initialize();
-}, []);
+  useEffect(() => {
+    audioService.initialize();
+  }, []);
+  useEffect(() => {
+    // Initialize and start background music
+    const initializeBackgroundMusic = async () => {
+      try {
+        await backgroundMusic.initialize();
+        await backgroundMusic.loadBackgroundMusic();
+        await backgroundMusic.playBackgroundMusic();
+        console.log('🎵 Background music initialized in main app');
+      } catch (error) {
+        console.error('❌ Failed to initialize background music in main app:', error);
+      }
+    };
+
+    initializeBackgroundMusic();
+  }, []);
   const loadChallenges = async () => {
     setIsLoading(true);
     try {

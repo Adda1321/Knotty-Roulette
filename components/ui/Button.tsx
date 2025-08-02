@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import {
   Animated,
   StyleSheet,
@@ -63,56 +63,56 @@ export default function Button({
   const glareAnimation = useRef(new Animated.Value(-150)).current;
   const glareOpacity = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    if (showGlare) {
-      const startGlare = () => {
-        // Reset position and opacity
-        glareAnimation.setValue(-200);
-        glareOpacity.setValue(0);
+  // useEffect(() => {
+  //   if (showGlare) {
+  //     const startGlare = () => {
+  //       // Reset position and opacity
+  //       glareAnimation.setValue(-200);
+  //       glareOpacity.setValue(0);
 
-        // Create smooth entry, movement, and exit sequence
-        Animated.sequence([
-          // Fade in
-          Animated.timing(glareOpacity, {
-            toValue: 0.9,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          // Move across with smooth transition
-          Animated.parallel([
-            Animated.timing(glareAnimation, {
-              toValue: 250, // Increased to ensure it goes past the button edge
-              duration: glareDuration - 600, // Reserve time for fade in/out
-              useNativeDriver: true,
-            }),
-            Animated.timing(glareOpacity, {
-              toValue: 0.7,
-              duration: glareDuration - 600,
-              useNativeDriver: true,
-            }),
-          ]),
-          // Fade out
-          Animated.timing(glareOpacity, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          // Restart the animation after a delay
-          setTimeout(startGlare, glareDelay);
-        });
-      };
+  //       // Create smooth entry, movement, and exit sequence
+  //       Animated.sequence([
+  //         // Fade in
+  //         Animated.timing(glareOpacity, {
+  //           toValue: 0.9,
+  //           duration: 300,
+  //           useNativeDriver: true,
+  //         }),
+  //         // Move across with smooth transition
+  //         Animated.parallel([
+  //           Animated.timing(glareAnimation, {
+  //             toValue: 250, // Increased to ensure it goes past the button edge
+  //             duration: glareDuration - 600, // Reserve time for fade in/out
+  //             useNativeDriver: true,
+  //           }),
+  //           Animated.timing(glareOpacity, {
+  //             toValue: 0.7,
+  //             duration: glareDuration - 600,
+  //             useNativeDriver: true,
+  //           }),
+  //         ]),
+  //         // Fade out
+  //         Animated.timing(glareOpacity, {
+  //           toValue: 0,
+  //           duration: 300,
+  //           useNativeDriver: true,
+  //         }),
+  //       ]).start(() => {
+  //         // Restart the animation after a delay
+  //         setTimeout(startGlare, glareDelay);
+  //       });
+  //     };
 
-      startGlare();
-    } else {
-      // Fade out immediately when disabled
-      Animated.timing(glareOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    }
-  }, [showGlare, glareAnimation, glareOpacity, glareDuration, glareDelay]);
+  //     startGlare();
+  //   } else {
+  //     // Fade out immediately when disabled
+  //     Animated.timing(glareOpacity, {
+  //       toValue: 0,
+  //       duration: 200,
+  //       useNativeDriver: true,
+  //     }).start();
+  //   }
+  // }, [showGlare, glareAnimation, glareOpacity, glareDuration, glareDelay]);
 
   const handlePress = (event: any) => {
     // Play button press sound and haptic
@@ -136,15 +136,15 @@ export default function Button({
           // borderRadius: SIZES.BORDER_RADIUS_SMALL,
           // overflow: "hidden",
              // Apply custom shadow if specified
-          ...(shadowIntensity > 0 && {
-            // iOS shadow properties
-            shadowColor: '#000000',
-            shadowOffset: { width: 0, height: Math.min(shadowIntensity, 12) },
-            shadowOpacity: Math.min(shadowIntensity * 0.08, 0.8),
-            shadowRadius: Math.min(shadowRadius || shadowIntensity * 1.5, 20),
-            // Android elevation
-            elevation: 5 || Math.min(shadowIntensity * 1.5, 20),
-          }),
+          // ...(shadowIntensity > 0 && {
+          //   // iOS shadow properties
+          //   shadowColor: '#000000',
+          //   shadowOffset: { width: 0, height: Math.min(shadowIntensity, 12) },
+          //   shadowOpacity: Math.min(shadowIntensity * 0.08, 0.8),
+          //   shadowRadius: Math.min(shadowRadius || shadowIntensity * 1.5, 20),
+          //   // Android elevation
+          //   elevation:  Math.min(shadowIntensity * 1.5, 20),
+          // }),
         },
         style,
       ]}
@@ -163,7 +163,7 @@ export default function Button({
       )}
 
       {/* Glare */}
-      <Animated.View
+      {/* <Animated.View
         style={[
           styles.glare,
           {
@@ -178,7 +178,7 @@ export default function Button({
           end={{ x: 1, y: 0 }}
           style={styles.gradient}
         />
-      </Animated.View>
+      </Animated.View> */}
 
       {/* Text */}
       <Text
@@ -200,6 +200,7 @@ export default function Button({
 
 const styles = StyleSheet.create({
   button: {
+    // width: "100%",
     borderRadius: SIZES.BORDER_RADIUS_SMALL,
     alignItems: "center",
     justifyContent: "center",

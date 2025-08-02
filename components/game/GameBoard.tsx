@@ -2,7 +2,15 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Surface } from "react-native-paper";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Animated, Dimensions, StyleSheet, Text, View } from "react-native";
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ANIMATION_CONFIGS,
@@ -198,7 +206,8 @@ export default function GameBoard({
     Animated.loop(
       Animated.timing(waveAnim, {
         toValue: 1,
-        duration: 2000,
+        duration: 1000,
+        easing: Easing.linear,
         useNativeDriver: true,
       })
     ).start();
@@ -229,7 +238,12 @@ export default function GameBoard({
         ])
       ).start();
     };
-    if (!isSpinning) loopGlare();
+    if (!isSpinning) {
+      // Reset animation values before starting loop
+      shineAnim1.setValue(-100);
+      shineAnim2.setValue(-100);
+      loopGlare();
+    }
   }, [isSpinning]);
 
   const glareAnim = useRef(new Animated.Value(0)).current;
@@ -261,11 +275,10 @@ export default function GameBoard({
         <View style={styles.statusBar}>
           <View style={styles.leftButtons}>
             <Surface
-              elevation={5}
+              elevation={Platform.OS === "ios" ? 3 : 5}
               style={{
-                borderRadius: 10,
-                marginVertical: 4,
-                overflow: "hidden",
+                  borderRadius: 8,
+                  overflow: "hidden",
               }}
             >
               <View style={{ position: "relative", overflow: "hidden" }}>
@@ -274,12 +287,12 @@ export default function GameBoard({
                   pointerEvents="none"
                   style={[
                     styles.glareLayer1,
-                    {
-                      transform: [
-                        { translateX: shineAnim1 },
-                        { skewX: "-15deg" },
-                      ],
-                    },
+                   {
+                        transform: [
+                          { translateX: shineAnim1 },
+                          Platform.OS === "ios" ? { skewX: "-15deg" } : { rotate: "15deg" },
+                        ],
+                      },
                   ]}
                 />
 
@@ -294,7 +307,7 @@ export default function GameBoard({
                   textColor={COLORS.TEXT_DARK}
                   fontSize={SIZES.CAPTION}
                   fontWeight="600"
-                  style={{ borderRadius: 10 }}
+                  style={{ borderRadius: 8 }}
                 />
               </View>
             </Surface>
@@ -308,8 +321,8 @@ export default function GameBoard({
             />
           </View>
           <Surface
-            elevation={5}
-            style={{ borderRadius: 10, marginVertical: 4 }}
+            elevation={Platform.OS === "ios" ? 3 : 5}
+            style={{ borderRadius: 10 }}
           >
             <Button
               text="🔄 New Game"
@@ -321,8 +334,8 @@ export default function GameBoard({
               backgroundColor={COLORS.YELLOW}
               // backgroundGradient={[COLORS.DARK_GREEN, COLORS.YELLOW] as const}
               textColor={COLORS.TEXT_DARK}
-              shadowIntensity={5}
-              shadowRadius={10}
+              // shadowIntensity={5}
+              // shadowRadius={10}
               fontSize={SIZES.CAPTION}
               fontWeight="600"
             />
@@ -422,24 +435,24 @@ export default function GameBoard({
                 elevation={5}
                 style={{
                   borderRadius: 14,
-                  marginVertical: 4,
                   overflow: "hidden",
+                  marginVertical: 4,
                 }}
               >
-                <View style={{ overflow: "hidden" }}>
+                {/* <View style={{ overflow: "hidden" }}> */}
                   {/* Shine Layer 1 */}
-                  <Animated.View
+                   <Animated.View
                     pointerEvents="none"
                     style={[
                       styles.glareLayer1,
                       {
                         transform: [
                           { translateX: shineAnim1 },
-                          { skewX: "-15deg" },
+                          Platform.OS === "ios" ? { skewX: "-15deg" } : { rotate: "15deg" },
                         ],
                       },
                     ]}
-                  />
+                  /> 
                   <Button
                     text={isSpinning ? "Spinning..." : "Spin the Wheel"}
                     onPress={spinWheel}
@@ -459,7 +472,7 @@ export default function GameBoard({
                       isSpinning && styles.spinButtonDisabled,
                     ]}
                   />
-                </View>
+                {/* </View> */}
               </Surface>
             </Animated.View>
           </LinearGradient>
@@ -535,6 +548,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    maxHeight: "85%",
   },
   header: {
     alignItems: "center",
@@ -544,15 +558,17 @@ const styles = StyleSheet.create({
     fontSize: SIZES.EXTRALARGE,
     fontFamily: FONTS.DOSIS_BOLD,
     color: COLORS.YELLOW,
-    marginBottom: SIZES.PADDING_XLARGE,
+    marginTop: SIZES.PADDING_MEDIUM,
+
+    marginBottom: SIZES.PADDING_MEDIUM,
     textAlign: "center",
     ...SIZES.TEXT_SHADOW_MEDIUM,
   },
   currentPlayer: {
     fontSize: SIZES.SUBTITLE,
     color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.PRIMARY,
-    fontWeight: "800",
+    fontFamily: FONTS.DOSIS_BOLD,
+    // fontWeight: "800",
     marginBottom: SIZES.PADDING_SMALL,
     ...SIZES.TEXT_SHADOW_SMALL,
   },
@@ -615,11 +631,11 @@ const styles = StyleSheet.create({
   },
   glareLayer1: {
     position: "absolute",
-    top: 0,
+    top: -10,
     left: 0,
-    height: "100%",
-    width: 100,
-    backgroundColor: "rgba(255, 255, 255, 0.16)", // More transparent
+    height: 200,
+    width: 50, // Made thinner
+    backgroundColor: "rgba(255, 255, 255, 0.12)", // Slightly more transparent
     zIndex: 1,
   },
   // backgdglareLayer: {

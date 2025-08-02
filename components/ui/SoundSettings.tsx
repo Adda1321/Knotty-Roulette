@@ -1,10 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
 import backgroundMusic from "../../services/backgroundMusic";
 
+import { Surface } from "react-native-paper";
 import Button from "./Button";
 
 interface SoundSettingsProps {
@@ -40,34 +48,39 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
   const toggleVibration = () => {
     const newState = audioService.toggleVibration();
     setIsVibrationEnabled(newState);
-    audioService.playSound('buttonPress');
+    audioService.playSound("buttonPress");
     audioService.playHaptic("medium");
   };
 
   const handleSettingsPress = () => {
     setShowSettings(true);
-    audioService.playSound('buttonPress');
+    audioService.playSound("buttonPress");
     audioService.playHaptic("light");
   };
 
   const closeSettings = () => {
     setShowSettings(false);
-    audioService.playSound('buttonPress');
+    audioService.playSound("buttonPress");
 
     audioService.playHaptic("medium");
   };
 
   return (
     <>
-      <TouchableOpacity
-        style={styles.settingsButton}
-        onPress={() => {
-          audioService.playHaptic("light");
-          handleSettingsPress();
-        }}
+      <Surface
+        elevation={Platform.OS === "ios" ? 3 : 5}
+        style={{ borderRadius: 10 }}
       >
-        <Ionicons name="settings" size={20} color={COLORS.TEXT_DARK} />
-      </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={() => {
+            audioService.playHaptic("light");
+            handleSettingsPress();
+          }}
+        >
+          <Ionicons name="settings" size={20} color={COLORS.TEXT_DARK} />
+        </TouchableOpacity>
+      </Surface>
 
       {/* Settings Modal */}
       <Modal
@@ -177,24 +190,31 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
             </View>
 
             <View style={styles.buttonContainer}>
-              <Button
-                text="Close"
-                onPress={() => {
-                  audioService.playHaptic("medium"); // add haptic here too
-                  audioService.playSound("buttonPress");
-
-                  closeSettings();
+              <Surface
+                elevation={Platform.OS === "ios" ? 3 : 5}
+                style={{
+                  borderRadius: 10,
                 }}
-                backgroundColor={COLORS.YELLOW}
-                textColor={COLORS.TEXT_PRIMARY}
-                fontSize={SIZES.BODY}
-                shadowIntensity={5}
-                shadowRadius={10}
-                fontWeight="600"
-                paddingHorizontal={SIZES.PADDING_LARGE}
-                paddingVertical={SIZES.PADDING_MEDIUM}
-                style={styles.closeButton}
-              />
+              >
+                <Button
+                  text="Close"
+                  onPress={() => {
+                    audioService.playHaptic("medium"); // add haptic here too
+                    audioService.playSound("buttonPress");
+
+                    closeSettings();
+                  }}
+                  backgroundColor={COLORS.YELLOW}
+                  textColor={COLORS.TEXT_DARK}
+                  fontSize={SIZES.BODY}
+                  shadowIntensity={5}
+                  fontFamily={FONTS.DOSIS_BOLD}
+                  shadowRadius={10}
+                  paddingHorizontal={SIZES.PADDING_LARGE}
+                  paddingVertical={SIZES.PADDING_MEDIUM}
+                  style={styles.closeButton}
+                />
+              </Surface>
             </View>
           </View>
         </View>
@@ -210,13 +230,6 @@ const styles = StyleSheet.create({
     padding: SIZES.PADDING_SMALL,
     justifyContent: "center",
     alignItems: "center",
-    // iOS shadow properties
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.4,
-    shadowRadius: 7.5,
-    // Android elevation
-    elevation: 7.5,
   },
   overlay: {
     flex: 1,

@@ -1,9 +1,10 @@
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
 import { Surface } from "react-native-paper";
-import { Animated, Easing } from "react-native";
 
 import {
+  Animated,
+  Easing,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -13,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
@@ -153,20 +155,22 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
 
                       {/* Add Player button after each field when under max */}
                       {index === players.length - 1 && players.length < 8 && (
-                        <Button
-                          text="+ Add Player"
-                          onPress={addPlayer}
-                          backgroundColor={COLORS.YELLOW}
-                          textColor={COLORS.TEXT_DARK}
-                          fontSize={SIZES.CAPTION}
-                          fontFamily={FONTS.PRIMARY}
-                          fontWeight="600"
-                          paddingHorizontal={SIZES.PADDING_SMALL}
-                          paddingVertical={SIZES.PADDING_SMALL}
-                          style={styles.addPlayerButton}
-                          shadowIntensity={8}
-                          shadowRadius={12}
-                        />
+                        <Surface elevation={5} style={{ borderRadius: 10 }}>
+                          <Button
+                            text="+ Add Player"
+                            onPress={addPlayer}
+                            backgroundColor={COLORS.YELLOW}
+                            textColor={COLORS.TEXT_DARK}
+                            fontSize={SIZES.CAPTION}
+                            fontFamily={FONTS.PRIMARY}
+                            fontWeight="600"
+                            paddingHorizontal={SIZES.PADDING_SMALL}
+                            paddingVertical={SIZES.PADDING_SMALL}
+                            style={styles.addPlayerButton}
+                            shadowIntensity={8}
+                            shadowRadius={12}
+                          />
+                        </Surface>
                       )}
                     </View>
                   ))}
@@ -203,20 +207,22 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
 
                       {/* Add Player button after each field when under max */}
                       {index === players.length - 1 && players.length < 8 && (
-                        <Button
-                          text="+ Add Player"
-                          onPress={addPlayer}
-                          backgroundColor={COLORS.YELLOW}
-                          textColor={COLORS.TEXT_DARK}
-                          fontSize={SIZES.CAPTION}
-                          fontFamily={FONTS.PRIMARY}
-                          fontWeight="600"
-                          paddingHorizontal={SIZES.PADDING_SMALL}
-                          paddingVertical={SIZES.PADDING_SMALL}
-                          style={styles.addPlayerButton}
-                          shadowIntensity={8}
-                          shadowRadius={12}
-                        />
+                        <Surface elevation={5} style={{ borderRadius: 8 }}>
+                          <Button
+                            text="+ Add Player"
+                            onPress={addPlayer}
+                            backgroundColor={COLORS.YELLOW}
+                            textColor={COLORS.TEXT_DARK}
+                            fontSize={SIZES.CAPTION}
+                            fontFamily={FONTS.PRIMARY}
+                            fontWeight="600"
+                            paddingHorizontal={SIZES.PADDING_SMALL}
+                            paddingVertical={SIZES.PADDING_SMALL}
+                            style={styles.addPlayerButton}
+                            shadowIntensity={8}
+                            shadowRadius={12}
+                          />
+                        </Surface>
                       )}
                     </View>
                   ))}
@@ -226,10 +232,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
 
             <View style={styles.startButtonContainer}>
               <Animated.View style={{ transform: [{ translateY }] }}>
-                <Surface
-                  elevation={5}
-                  style={{ borderRadius: 10, marginVertical: 4 }}
-                >
+                <Surface elevation={5} style={{ borderRadius: 8 }}>
                   <Button
                     text="START GAME"
                     onPress={() => {

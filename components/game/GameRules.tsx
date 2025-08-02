@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Modal, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
 import Button from "../ui/Button";
@@ -74,22 +74,22 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
               </View>
             ))}
           </ScrollView>
-
-          {/* Close Button */}
-          <Button
-            text="Got it!"
-            onPress={() => {
-              audioService.playSound("buttonPress");
-              audioService.playHaptic("light");
-              onClose();
-            }}
-            backgroundColor={COLORS.YELLOW}
-            textColor={COLORS.TEXT_DARK}
-            fontSize={SIZES.SUBTITLE}
-            fontWeight="bold"
-            fontFamily={FONTS.PRIMARY}
-            style={styles.closeButton}
-          />
+        
+            {/* Close Button */}
+            <Button
+              text="Got it!"
+              onPress={() => {
+                audioService.playSound("buttonPress");
+                audioService.playHaptic("light");
+                onClose();
+              }}
+              backgroundColor={COLORS.YELLOW}
+              textColor={COLORS.TEXT_DARK}
+              fontSize={SIZES.SUBTITLE}
+              // fontWeight="bold"
+              fontFamily={FONTS.DOSIS_BOLD}
+              style={styles.closeButton}
+            />
         </View>
       </View>
     </Modal>
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     margin: SIZES.PADDING_MEDIUM,
-    maxHeight: "90%",
+    maxHeight: Platform.OS === "ios" ? "80%" : "90%",
     width: "90%",
     maxWidth: 400,
     height: "100%",
@@ -178,6 +178,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     margin: SIZES.PADDING_SMALL,
-    marginBottom: SIZES.PADDING_SMALL,
+    marginBottom: 14,
   },
 });

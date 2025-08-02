@@ -1,14 +1,17 @@
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
+import { Surface } from "react-native-paper";
+import { Animated, Easing } from "react-native";
+
 import {
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
@@ -29,7 +32,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   const scrollViewRef = useRef<ScrollView>(null);
 
   const addPlayer = () => {
-    audioService.playSound('buttonPress');
+    audioService.playSound("buttonPress");
     audioService.playHaptic("light");
     if (players.length < 8) {
       setPlayers([...players, ""]); // Add empty player field
@@ -53,11 +56,25 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
     newPlayers[index] = name;
     setPlayers(newPlayers);
   };
+  const waveAnim = useRef(new Animated.Value(0)).current;
 
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(waveAnim, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+  const translateY = waveAnim.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [0, -6, 0, 6, 0],
+  });
   const startGame = () => {
-
-                  audioService.playHaptic("medium"); // add haptic here too
-                  audioService.playSound("buttonPress");
+    audioService.playHaptic("medium"); // add haptic here too
+    audioService.playSound("buttonPress");
     const validPlayers = players.filter((name) => name.trim());
 
     if (validPlayers.length < 2) {
@@ -124,7 +141,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                           <TouchableOpacity
                             style={styles.removeButton}
                             onPress={() => {
-                              audioService.playSound('buttonPress');
+                              audioService.playSound("buttonPress");
                               audioService.playHaptic("light");
                               removePlayer(index);
                             }}
@@ -174,7 +191,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                           <TouchableOpacity
                             style={styles.removeButton}
                             onPress={() => {
-                              audioService.playSound('buttonPress');
+                              audioService.playSound("buttonPress");
                               audioService.playHaptic("light");
                               removePlayer(index);
                             }}
@@ -208,26 +225,36 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
             </View>
 
             <View style={styles.startButtonContainer}>
-              <Button
-                text="START GAME"
-                            onPress={() => {
-      audioService.playHaptic('medium');  // add haptic here too
-      startGame();
-    }}
-                disabled={players.filter((p) => p.trim()).length < 2}
-                backgroundColor={
-                  players.filter((p) => p.trim()).length < 2
-                    ? "#bfa204"
-                    : COLORS.YELLOW
-                }
-                textColor={COLORS.TEXT_DARK}
-                fontSize={SIZES.SUBTITLE}
-                fontFamily={FONTS.DOSIS_BOLD}
-                paddingHorizontal={SIZES.PADDING_LARGE}
-                paddingVertical={15}
-                shadowIntensity={10}
-                shadowRadius={15}
-              />
+              <Animated.View style={{ transform: [{ translateY }] }}>
+                <Surface
+                  elevation={5}
+                  style={{ borderRadius: 10, marginVertical: 4 }}
+                >
+                  <Button
+                    text="START GAME"
+                    onPress={() => {
+                      audioService.playHaptic("medium"); // add haptic here too
+                      startGame();
+                    }}
+                    disabled={players.filter((p) => p.trim()).length < 2}
+                    backgroundColor={
+                      players.filter((p) => p.trim()).length < 2
+                        ? "#bfa204"
+                        : COLORS.YELLOW
+                    }
+                    textColor={COLORS.TEXT_DARK}
+                    backgroundGradient={
+                      [COLORS.DARK_GREEN, COLORS.YELLOW] as const
+                    }
+                    fontSize={SIZES.SUBTITLE}
+                    fontFamily={FONTS.DOSIS_BOLD}
+                    paddingHorizontal={SIZES.PADDING_LARGE}
+                    paddingVertical={15}
+                    shadowIntensity={10}
+                    shadowRadius={15}
+                  />
+                </Surface>
+              </Animated.View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>

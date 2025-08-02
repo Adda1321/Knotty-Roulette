@@ -1,6 +1,7 @@
 import { LinearGradient } from "expo-linear-gradient";
+import { Surface } from "react-native-paper";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Animated, Dimensions, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -11,6 +12,7 @@ import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
 import { Challenge, Player } from "../../types/game";
 import Button from "../ui/Button";
+
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
 import ChallengeDisplay from "./ChallengeDisplay";
@@ -190,7 +192,67 @@ export default function GameBoard({
       setIsSpinning(false);
     });
   };
+  const waveAnim = useRef(new Animated.Value(0)).current;
 
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(waveAnim, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  const translateY = waveAnim.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1],
+    outputRange: [0, -5, 0, 5, 0],
+  });
+  const shineAnim1 = useRef(new Animated.Value(-100)).current;
+  const shineAnim2 = useRef(new Animated.Value(-100)).current;
+
+  useEffect(() => {
+    const loopGlare = () => {
+      Animated.loop(
+        Animated.parallel([
+          Animated.timing(shineAnim1, {
+            toValue: 200,
+            duration: 2500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shineAnim2, {
+            toValue: 100,
+            duration: 2500,
+            delay: 150,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    };
+    if (!isSpinning) loopGlare();
+  }, [isSpinning]);
+
+  const glareAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(glareAnim, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: true,
+          delay: 80,
+        }),
+        Animated.timing(glareAnim, {
+          toValue: 0,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
   const currentPlayer = players[currentPlayerIndex];
   return (
     <SafeAreaView style={styles.container} edges={["left", "right"]}>
@@ -198,24 +260,45 @@ export default function GameBoard({
         {/* Status Bar */}
         <View style={styles.statusBar}>
           <View style={styles.leftButtons}>
-            <Button
-              text="📖 Rules"
-              onPress={() => {
-                audioService.playSound("buttonPress");
-                audioService.playHaptic("medium"); // add haptic here
-                setShowRules(true);
+            <Surface
+              elevation={5}
+              style={{
+                borderRadius: 10,
+                marginVertical: 4,
+                overflow: "hidden",
               }}
-              backgroundColor={COLORS.YELLOW}
-              textColor={COLORS.TEXT_DARK}
-              shadowIntensity={5}
-              shadowRadius={10}
-              showGlare={true}
-              glareColor="rgba(255, 255, 255, 0.47)"
-              glareDuration={3500}
-              glareDelay={80}
-              fontSize={SIZES.CAPTION}
-              fontWeight="600"
-            />
+            >
+              <View style={{ position: "relative", overflow: "hidden" }}>
+                {/* Shine Layer 1 */}
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.glareLayer1,
+                    {
+                      transform: [
+                        { translateX: shineAnim1 },
+                        { skewX: "-15deg" },
+                      ],
+                    },
+                  ]}
+                />
+
+                <Button
+                  text="📖 Rules"
+                  onPress={() => {
+                    audioService.playSound("buttonPress");
+                    audioService.playHaptic("medium");
+                    setShowRules(true);
+                  }}
+                  backgroundColor={COLORS.YELLOW}
+                  textColor={COLORS.TEXT_DARK}
+                  fontSize={SIZES.CAPTION}
+                  fontWeight="600"
+                  style={{ borderRadius: 10 }}
+                />
+              </View>
+            </Surface>
+
             <SoundSettings
               onPress={() => {
                 audioService.playSound("buttonPress");
@@ -224,21 +307,26 @@ export default function GameBoard({
               }}
             />
           </View>
-
-          <Button
-            text="🔄 New Game"
-            onPress={() => {
-              audioService.playSound("buttonPress");
-              audioService.playHaptic("medium"); // add haptic here too
-              onResetGame();
-            }}
-            backgroundColor={COLORS.YELLOW}
-            textColor={COLORS.TEXT_DARK}
-            shadowIntensity={5}
-            shadowRadius={10}
-            fontSize={SIZES.CAPTION}
-            fontWeight="600"
-          />
+          <Surface
+            elevation={5}
+            style={{ borderRadius: 10, marginVertical: 4 }}
+          >
+            <Button
+              text="🔄 New Game"
+              onPress={() => {
+                audioService.playSound("buttonPress");
+                audioService.playHaptic("medium"); // add haptic here too
+                onResetGame();
+              }}
+              backgroundColor={COLORS.YELLOW}
+              // backgroundGradient={[COLORS.DARK_GREEN, COLORS.YELLOW] as const}
+              textColor={COLORS.TEXT_DARK}
+              shadowIntensity={5}
+              shadowRadius={10}
+              fontSize={SIZES.CAPTION}
+              fontWeight="600"
+            />
+          </Surface>
         </View>
 
         {/* Main Content - Centered */}
@@ -250,11 +338,45 @@ export default function GameBoard({
 
           {/* Game Area */}
           <LinearGradient
+            // colors={["#84BB78","#84BB78"]}
             colors={["#def6e2", "#84BB78"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.gameArea}
           >
+            {/* Diagonal Glare Overlay
+  <Animated.View style={[
+    styles.glareOverlay,
+    {
+      opacity: glareAnim.interpolate({
+        inputRange: [0, 1],
+        outputRange: [0.7, 0.10]
+      })
+    }
+  ]}>
+    <LinearGradient
+      colors={['rgba(255, 255, 255, 0.8)', 'rgba(255, 255, 255, 0)']}
+      start={{ x: 1, y: 0 }} // Top right
+      end={{ x: 0, y: 1 }}   // Bottom left
+      style={StyleSheet.absoluteFill}
+    />
+  </Animated.View> */}
+            {/* Shine Layer 1 */}
+            {/* <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.backgdglareLayer,
+              {
+                transform: [
+                  { translateX: shineAnim1 },
+                  { skewX: "-15deg" },
+                ],
+              },
+            ]}
+          /> */}
+
+            {/* Rest of your content */}
+
             {/* Spinning Wheel */}
             <View style={styles.wheelContainer}>
               <View style={styles.header}>
@@ -294,30 +416,51 @@ export default function GameBoard({
             </View>
 
             {/* Spin Button */}
-            <Animated.View style={{ transform: [{ scale: spinButtonScale }] }}>
-              <Button
-                key={`spin-button-${showCompletionModal}`} // Force re-render when modal state changes
-                text={isSpinning ? "Spinning..." : "Spin the Wheel"}
-                onPress={spinWheel}
-                disabled={isSpinning}
-                backgroundColor={COLORS.YELLOW}
-                textColor={COLORS.TEXT_DARK}
-                fontSize={SIZES.BODY}
-                // fontWeight="bold"
-                fontFamily={FONTS.DOSIS_BOLD}
-                showGlare={!isSpinning}
-                glareColor="rgba(255, 255, 255, 0.7)"
-                glareDuration={3000}
-                glareDelay={30}
-                shadowIntensity={5}
-                shadowRadius={10}
-                paddingHorizontal={SIZES.PADDING_LARGE}
-                paddingVertical={SIZES.PADDING_SMALL}
-                style={[
-                  styles.spinButton,
-                  isSpinning && styles.spinButtonDisabled,
-                ]}
-              />
+
+            <Animated.View style={{ transform: [{ translateY }] }}>
+              <Surface
+                elevation={5}
+                style={{
+                  borderRadius: 14,
+                  marginVertical: 4,
+                  overflow: "hidden",
+                }}
+              >
+                <View style={{ overflow: "hidden" }}>
+                  {/* Shine Layer 1 */}
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      styles.glareLayer1,
+                      {
+                        transform: [
+                          { translateX: shineAnim1 },
+                          { skewX: "-15deg" },
+                        ],
+                      },
+                    ]}
+                  />
+                  <Button
+                    text={isSpinning ? "Spinning..." : "Spin the Wheel"}
+                    onPress={spinWheel}
+                    disabled={isSpinning}
+                    backgroundGradient={
+                      [COLORS.DARK_GREEN, COLORS.YELLOW] as const
+                    }
+                    textColor={COLORS.TEXT_DARK}
+                    fontSize={SIZES.BODY}
+                    fontFamily={FONTS.DOSIS_BOLD}
+                    shadowIntensity={5}
+                    // shadowRadius={12}
+                    paddingHorizontal={SIZES.PADDING_LARGE}
+                    paddingVertical={SIZES.PADDING_MEDIUM}
+                    style={[
+                      styles.spinButton,
+                      isSpinning && styles.spinButtonDisabled,
+                    ]}
+                  />
+                </View>
+              </Surface>
             </Animated.View>
           </LinearGradient>
 
@@ -420,6 +563,9 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
   gameArea: {
+    flex: 1,
+    position: "relative",
+    overflow: "hidden",
     backgroundColor: COLORS.LIGHT_GREEN,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_MEDIUM,
@@ -428,6 +574,14 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.PADDING_SMALL,
     width: "100%",
     maxWidth: 400,
+  },
+  glareOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: "hidden",
   },
   wheelContainer: {
     marginBottom: SIZES.PADDING_SMALL,
@@ -458,5 +612,32 @@ const styles = StyleSheet.create({
   },
   spinButtonDisabled: {
     opacity: 0.6,
+  },
+  glareLayer1: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    height: "100%",
+    width: 100,
+    backgroundColor: "rgba(255, 255, 255, 0.16)", // More transparent
+    zIndex: 1,
+  },
+  // backgdglareLayer: {
+  //   position: "absolute",
+  //   top: 0,
+  //   left: 0,
+  //   height: "100%",
+  //   width: 600,
+  //   backgroundColor: "rgba(255, 255, 255, 0.1)", // More transparent
+  //   zIndex: 1,
+  // },
+  glareLayer2: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    height: "100%",
+    width: 30,
+    backgroundColor: "rgba(255, 255, 255, 0.05)", // More transparent
+    zIndex: 1,
   },
 });

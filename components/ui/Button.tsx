@@ -1,17 +1,36 @@
-import { LinearGradient } from 'expo-linear-gradient';
-import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, TouchableOpacityProps } from 'react-native';
-import { COLORS, FONTS, SIZES } from '../../constants/theme';
-import audioService from '../../services/audio';
+import { LinearGradient } from "expo-linear-gradient";
+
+import React, { useEffect, useRef } from "react";
+import {
+  Animated,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableOpacityProps,
+} from "react-native";
+import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import audioService from "../../services/audio";
 
 interface ButtonProps extends TouchableOpacityProps {
   backgroundColor?: string;
+  backgroundGradient?: [string, string, ...string[]];
   text: string;
   paddingHorizontal?: number;
   paddingVertical?: number;
   textColor?: string;
   fontSize?: number;
-  fontWeight?: 'normal' | 'bold' | '100' | '200' | '300' | '400' | '500' | '600' | '700' | '800' | '900';
+  fontWeight?:
+    | "normal"
+    | "bold"
+    | "100"
+    | "200"
+    | "300"
+    | "400"
+    | "500"
+    | "600"
+    | "700"
+    | "800"
+    | "900";
   fontFamily?: string;
   showGlare?: boolean;
   glareColor?: string;
@@ -23,20 +42,21 @@ interface ButtonProps extends TouchableOpacityProps {
 
 export default function Button({
   backgroundColor = COLORS.YELLOW, // Default to theme yellow color
+  backgroundGradient,
   text, // Required text content
   paddingHorizontal = SIZES.PADDING_MEDIUM, // Default horizontal padding from theme
   paddingVertical = SIZES.PADDING_SMALL, // Default vertical padding from theme
   textColor = COLORS.TEXT_PRIMARY, // Default text color from theme
   fontSize = SIZES.CAPTION, // Default font size from theme
-  fontWeight = '600', // Default semi-bold font weight
+  fontWeight = "600", // Default semi-bold font weight
   fontFamily = FONTS.PRIMARY, // Default font family from theme
   showGlare = false, // Glare effect disabled by default
-  glareColor = 'rgba(255, 255, 255, 0.6)', // Semi-transparent white glare
+  glareColor = "rgba(255, 255, 255, 0.6)", // Semi-transparent white glare
   glareDuration = 2000, // 2 seconds for complete glare cycle
   glareDelay = 1000, // 1 second delay between glare cycles
   shadowIntensity = 0, // No shadow by default
   shadowRadius = 0, // No shadow blur by default
- 
+
   style, // Additional custom styles
   ...props // All other TouchableOpacity props
 }: ButtonProps) {
@@ -49,7 +69,7 @@ export default function Button({
         // Reset position and opacity
         glareAnimation.setValue(-200);
         glareOpacity.setValue(0);
-        
+
         // Create smooth entry, movement, and exit sequence
         Animated.sequence([
           // Fade in
@@ -82,7 +102,7 @@ export default function Button({
           setTimeout(startGlare, glareDelay);
         });
       };
-      
+
       startGlare();
     } else {
       // Fade out immediately when disabled
@@ -96,9 +116,9 @@ export default function Button({
 
   const handlePress = (event: any) => {
     // Play button press sound and haptic
-    audioService.playSound('buttonPress');
-    audioService.playHaptic('light');
-    
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("light");
+
     // Call the original onPress if provided
     if (props.onPress) {
       props.onPress(event);
@@ -113,7 +133,9 @@ export default function Button({
           backgroundColor,
           paddingHorizontal,
           paddingVertical,
-          // Apply custom shadow if specified
+          // borderRadius: SIZES.BORDER_RADIUS_SMALL,
+          // overflow: "hidden",
+             // Apply custom shadow if specified
           ...(shadowIntensity > 0 && {
             // iOS shadow properties
             shadowColor: '#000000',
@@ -121,7 +143,7 @@ export default function Button({
             shadowOpacity: Math.min(shadowIntensity * 0.08, 0.8),
             shadowRadius: Math.min(shadowRadius || shadowIntensity * 1.5, 20),
             // Android elevation
-            elevation: Math.min(shadowIntensity * 1.5, 20),
+            elevation: 5 || Math.min(shadowIntensity * 1.5, 20),
           }),
         },
         style,
@@ -129,27 +151,36 @@ export default function Button({
       onPress={handlePress}
       {...props}
     >
-      {/* Glare Effect */}
+      {backgroundGradient ? (
+        <LinearGradient
+          colors={backgroundGradient}
+          style={StyleSheet.absoluteFill}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        />
+      ) : (
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor }]} />
+      )}
+
+      {/* Glare */}
       <Animated.View
         style={[
           styles.glare,
           {
             opacity: glareOpacity,
-            transform: [
-              { translateX: glareAnimation },
-              { rotate: '45deg' },
-            ],
+            transform: [{ translateX: glareAnimation }, { rotate: "45deg" }],
           },
         ]}
       >
         <LinearGradient
-          colors={['transparent', glareColor, glareColor, 'transparent']}
+          colors={["transparent", glareColor, glareColor, "transparent"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.gradient}
         />
       </Animated.View>
-      
+
+      {/* Text */}
       <Text
         style={[
           styles.buttonText,
@@ -170,15 +201,15 @@ export default function Button({
 const styles = StyleSheet.create({
   button: {
     borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden', // Important for glare effect
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden", // Important for glare effect
   },
   buttonText: {
-    textAlign: 'center',
+    textAlign: "center",
   },
   glare: {
-    position: 'absolute',
+    position: "absolute",
     top: -30,
     left: -30,
     right: -30,
@@ -188,8 +219,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   gradient: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderRadius: 12,
   },
-}); 
+});

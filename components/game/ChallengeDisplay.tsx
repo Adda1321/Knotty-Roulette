@@ -1,17 +1,17 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Animated,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Animated,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import Toast from "react-native-toast-message";
 import {
-    ANIMATION_CONFIGS,
-    ANIMATION_VALUES,
+  ANIMATION_CONFIGS,
+  ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import { logVote } from "../../services/api";
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     // iOS shadow properties
-    shadowColor: '#000000',
+    shadowColor: "#000000",
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.4,
     shadowRadius: 7.5,

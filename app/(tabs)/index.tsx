@@ -105,7 +105,7 @@ export default function HomeScreen() {
             setPlayers(updatedPlayers);
             
             // Check for winner (first to 10 points)
-            if (updatedPlayers[playerIndex].points >= 3) {
+            if (updatedPlayers[playerIndex].points >= 10) {
               // Play game over sound and haptic
               audioService.playSound('gameOver');
               audioService.playHaptic('success');

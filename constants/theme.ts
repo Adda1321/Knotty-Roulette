@@ -1,42 +1,42 @@
 export const COLORS = {
   // Primary Colors
-  DARK_GREEN: '#6bc26e',
-  LIGHT_GREEN: '#def6e2',
-  YELLOW: '#e5c200',
-  
+  DARK_GREEN: "#6bc26e",
+  LIGHT_GREEN: "#def6e2",
+  YELLOW: "#e5c200",
+
   // Background Colors
-  BACKGROUND_DARK: '#1a1a1a',
-  BACKGROUND_LIGHT: '#ffffff',
-  
+  BACKGROUND_DARK: "#1a1a1a",
+  BACKGROUND_LIGHT: "#ffffff",
+
   // Text Colors
-  TEXT_PRIMARY: '#ffffff',
-  TEXT_SECONDARY: '#cccccc',
-  TEXT_DARK: '#333333',
-  
+  TEXT_PRIMARY: "#ffffff",
+  TEXT_SECONDARY: "#cccccc",
+  TEXT_DARK: "#333333",
+
   // Status Colors
-  ONLINE: '#6bc26e',
-  OFFLINE: '#ff6b6b',
-  
+  ONLINE: "#6bc26e",
+  OFFLINE: "#ff6b6b",
+
   // Card Colors
-  CARD_BACKGROUND: '#ffffff',
-  CARD_BORDER: '#e0e0e0',
-  
+  CARD_BACKGROUND: "#ffffff",
+  CARD_BORDER: "#e0e0e0",
+
   // Button Colors
-  BUTTON_PRIMARY: '#6bc26e',
-  BUTTON_SECONDARY: '#e5c200',
-  BUTTON_DISABLED: '#666666',
-  
+  BUTTON_PRIMARY: "#6bc26e",
+  BUTTON_SECONDARY: "#e5c200",
+  BUTTON_DISABLED: "#666666",
+
   // Shadow Colors
-  SHADOW: 'rgba(0, 0, 0, 0.1)',
-  SHADOW_DARK: 'rgba(0, 0, 0, 0.3)',
+  SHADOW: "rgba(0, 0, 0, 0.1)",
+  SHADOW_DARK: "#000000",
 };
 
 export const FONTS = {
-  PRIMARY: 'Dosis-Regular',
-  DOSIS: 'Dosis-Regular',
-  SECONDARY: 'SpaceMono',
-  DOSIS_BOLD: 'Dosis-Bold',
-  FUN: 'FontdinerSwanky',
+  PRIMARY: "Dosis-Regular",
+  DOSIS: "Dosis-Regular",
+  SECONDARY: "SpaceMono",
+  DOSIS_BOLD: "Dosis-Bold",
+  FUN: "FontdinerSwanky",
 };
 
 export const SIZES = {
@@ -47,18 +47,18 @@ export const SIZES = {
   BODY: 16,
   CAPTION: 14,
   SMALL: 12,
-  
+
   // Spacing
   PADDING_SMALL: 8,
   PADDING_MEDIUM: 16,
   PADDING_LARGE: 24,
   PADDING_XLARGE: 32,
-  
+
   // Border Radius
   BORDER_RADIUS_SMALL: 8,
   BORDER_RADIUS_MEDIUM: 12,
   BORDER_RADIUS_LARGE: 16,
-  
+
   // Shadows
   SHADOW_SMALL: {
     shadowColor: COLORS.SHADOW,
@@ -68,16 +68,16 @@ export const SIZES = {
     elevation: 4,
   },
   SHADOW_MEDIUM: {
-    shadowColor: COLORS.SHADOW,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.4,
     shadowRadius: 12,
-    elevation: 8,
+    elevation: 60,
   },
   SHADOW_LARGE: {
     shadowColor: COLORS.SHADOW_DARK,
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.1,
     shadowRadius: 20,
     elevation: 15,
   },
@@ -88,21 +88,21 @@ export const SIZES = {
     shadowRadius: 16,
     elevation: 12,
   },
-  
+
   // Text Shadows
   TEXT_SHADOW_SMALL: {
-    textShadowColor: 'rgba(42, 42, 42, 0.4)',
+    textShadowColor: "rgba(42, 42, 42, 0.4)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 4,
   },
   TEXT_SHADOW_MEDIUM: {
-    textShadowColor: 'rgba(42, 42, 42, 0.5)',
+    textShadowColor: "rgba(42, 42, 42, 0.5)",
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 4,
   },
   TEXT_SHADOW_LARGE: {
-    textShadowColor: 'rgba(0, 0, 0, 0.9)',
+    textShadowColor: "rgba(0, 0, 0, 0.9)",
     textShadowOffset: { width: 3, height: 3 },
     textShadowRadius: 6,
   },
-}; 
+};

@@ -16,7 +16,8 @@
         "foregroundImage": "./assets/images/knotty-roulette.png",
         "backgroundColor": "#00cc00"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.adil_mustafa.knottyroulette"
     },
     "web": {
       "bundler": "metro",
@@ -38,6 +39,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "395318b6-852c-4887-9320-7b7b4740d182"
+      }
+    },
+    "owner": "adil_mustafa"
   }
 }

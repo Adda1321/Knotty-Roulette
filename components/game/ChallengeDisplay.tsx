@@ -25,14 +25,12 @@ interface ChallengeDisplayProps {
   challenge: Challenge;
   playerName: string;
   onComplete: (points: number, action: "complete" | "pass" | "bonus") => void;
-  onPass: () => void;
 }
 
 export default function ChallengeDisplay({
   challenge,
   playerName,
   onComplete,
-  onPass,
 }: ChallengeDisplayProps) {
   const [hasVoted, setHasVoted] = useState(false);
   const [isVoting, setIsVoting] = useState(false);
@@ -146,6 +144,12 @@ export default function ChallengeDisplay({
     onComplete(2, "bonus");
   };
 
+
+  const handleOnPass = () => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium"); // add haptic here
+    onComplete(-1, "pass");
+  };
   return (
     <View style={styles.container}>
       <ScrollView
@@ -310,11 +314,7 @@ export default function ChallengeDisplay({
             >
               <Button
                 text="Pass (-1 point)"
-                onPress={() => {
-                  audioService.playSound("passChallenge");
-                  audioService.playHaptic("medium");
-                  onPass();
-                }}
+                onPress={handleOnPass}
                 backgroundColor={COLORS.OFFLINE}
                 textColor={COLORS.TEXT_PRIMARY}
                 fontSize={SIZES.BODY}

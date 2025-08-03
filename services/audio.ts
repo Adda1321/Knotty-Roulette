@@ -9,8 +9,6 @@ class AudioService {
   private vibrationEnabled: boolean = true;
 
   private isLoaded: boolean = false;
-  private audioContext: AudioContext | null = null;
-  private useWebAudio: boolean = false;
 
   async initialize() {
     try {
@@ -23,17 +21,8 @@ class AudioService {
         playThroughEarpieceAndroid: false,
       });
 
-      // Load other sound files
+      // Load sound files
       await this.loadSoundFiles();
-
-      // Fallback to Web Audio API if no sounds loaded
-      if (Object.keys(this.sounds).length === 0) {
-        this.useWebAudio = true;
-        if (typeof window !== 'undefined' && window.AudioContext) {
-          this.audioContext = new AudioContext();
-        }
-        console.log('Using Web Audio API fallback for sounds');
-      }
 
       this.isLoaded = true;
       console.log('Audio service initialized successfully');
@@ -73,68 +62,8 @@ class AudioService {
       }
 
       console.log(`Sound loading complete: ${loadedCount}/${Object.keys(soundFiles).length} sounds loaded`);
-      
-      if (loadedCount === 0) {
-        this.useWebAudio = true;
-        if (typeof window !== 'undefined' && window.AudioContext) {
-          this.audioContext = new AudioContext();
-          console.log('✅ Web Audio API initialized as fallback');
-        }
-        console.log('⚠️ No sound files loaded, using Web Audio API fallback');
-      } else if (loadedCount < Object.keys(soundFiles).length) {
-        // Some sounds loaded, but not all - set up Web Audio as backup
-        this.useWebAudio = true;
-        if (typeof window !== 'undefined' && window.AudioContext) {
-          this.audioContext = new AudioContext();
-          console.log('✅ Web Audio API initialized as backup for missing sounds');
-        }
-      }
     } catch (error) {
-      console.error('❌ Error in loadSoundFiles:', error);
-      this.useWebAudio = true;
-      if (typeof window !== 'undefined' && window.AudioContext) {
-        this.audioContext = new AudioContext();
-      }
-    }
-  }
-
-  private createSimpleSound(frequency: number, duration: number, type: OscillatorType = 'sine'): void {
-    if (this.soundsMuted) return;
-
-    try {
-      // Create audio context if not available
-      if (!this.audioContext) {
-        if (typeof window !== 'undefined' && window.AudioContext) {
-          this.audioContext = new AudioContext();
-        } else {
-          console.log('⚠️ Web Audio API not available');
-          return;
-        }
-      }
-
-      // Resume audio context if suspended (required on some browsers)
-      if (this.audioContext.state === 'suspended') {
-        this.audioContext.resume();
-      }
-
-      const oscillator = this.audioContext.createOscillator();
-      const gainNode = this.audioContext.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(this.audioContext.destination);
-
-      oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-      oscillator.type = type;
-
-      gainNode.gain.setValueAtTime(0.3, this.audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
-
-      oscillator.start(this.audioContext.currentTime);
-      oscillator.stop(this.audioContext.currentTime + duration);
-      
-      console.log(`🎵 Web Audio sound created: ${frequency}Hz for ${duration}s`);
-    } catch (error) {
-      console.error('❌ Failed to create simple sound:', error);
+      console.error('Failed to load sound files:', error);
     }
   }
 
@@ -144,61 +73,71 @@ class AudioService {
     try {
       // Ensure audio service is initialized
       if (!this.isLoaded) {
+        console.log(`🎵 Initializing audio service for sound: ${soundName}`);
         await this.initialize();
+        // Small delay to ensure audio context is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       const sound = this.sounds[soundName];
       if (sound) {
         try {
-          await sound.replayAsync();
+          // Reset the sound to beginning and play
+          await sound.setStatusAsync({ positionMillis: 0 });
+          await sound.playAsync();
           console.log(`✅ Playing sound file: ${soundName}`);
           return;
         } catch (soundError) {
-          console.log(`⚠️ Sound file error, falling back to Web Audio: ${soundName}`, soundError);
-          // Fall through to Web Audio fallback
+          console.log(`⚠️ Sound file error for: ${soundName}`, soundError);
+          // Try to recreate the sound
+          await this.recreateSound(soundName);
         }
-      }
-
-      // Fallback to Web Audio API if sound file not found or failed
-      console.log(`🎵 Using Web Audio fallback for: ${soundName}`);
-      switch (soundName) {
-        case 'wheelSpin':
-          this.createSimpleSound(200, 0.5, 'sawtooth');
-          break;
-        case 'challengeComplete':
-          this.createSimpleSound(800, 0.3, 'sine');
-          setTimeout(() => this.createSimpleSound(1000, 0.3, 'sine'), 100);
-          break;
-        case 'bonusAchieved':
-          this.createSimpleSound(600, 0.2, 'sine');
-          setTimeout(() => this.createSimpleSound(800, 0.2, 'sine'), 100);
-          setTimeout(() => this.createSimpleSound(1000, 0.2, 'sine'), 200);
-          break;
-        case 'buttonPress':
-        case 'buttonClick':
-          this.createSimpleSound(400, 0.1, 'square');
-          break;
-        case 'gameOver':
-          this.createSimpleSound(300, 0.5, 'sine');
-          setTimeout(() => this.createSimpleSound(400, 0.5, 'sine'), 200);
-          setTimeout(() => this.createSimpleSound(500, 0.5, 'sine'), 400);
-          break;
-        case 'passChallenge':
-          this.createSimpleSound(200, 0.3, 'sine');
-          break;
-        default:
-          // Default button press sound for any unknown sound
-          this.createSimpleSound(400, 0.1, 'square');
-          break;
+      } else {
+        console.log(`⚠️ Sound not found: ${soundName}`);
+        // Try to create the sound
+        await this.recreateSound(soundName);
       }
     } catch (error) {
       console.error(`❌ Failed to play sound ${soundName}:`, error);
-      // Final fallback - try to create a simple sound
-      try {
-        this.createSimpleSound(400, 0.1, 'square');
-      } catch (fallbackError) {
-        console.error('❌ Web Audio fallback also failed:', fallbackError);
+    }
+  }
+
+  private async recreateSound(soundName: string) {
+    try {
+      const soundFiles = {
+        wheelSpin: require('../assets/sounds/roulette-Spin-sound.wav'),
+        challengeComplete: require('../assets/sounds/challenge-complete.wav'),
+        bonusAchieved: require('../assets/sounds/bonus-achieved.wav'),
+        buttonPress: require('../assets/sounds/button-press.wav'),
+        gameOver: require('../assets/sounds/bonus-achieved.wav'),
+        passChallenge: require('../assets/sounds/pass-challenge.wav'),
+        buttonClick: require('../assets/sounds/button-click.wav'),
+      };
+      
+      if (soundFiles[soundName as keyof typeof soundFiles]) {
+        // Unload the old sound if it exists
+        if (this.sounds[soundName]) {
+          try {
+            await this.sounds[soundName].unloadAsync();
+          } catch (unloadError) {
+            console.log(`⚠️ Failed to unload old sound: ${soundName}`, unloadError);
+          }
+        }
+        
+        // Create new sound
+        const { sound: newSound } = await Audio.Sound.createAsync(
+          soundFiles[soundName as keyof typeof soundFiles],
+          {
+            shouldPlay: true,
+            volume: 0.7,
+            isMuted: this.soundsMuted,
+          }
+        );
+        this.sounds[soundName] = newSound;
+        console.log(`✅ Recreated and played sound: ${soundName}`);
       }
+    } catch (recreateError) {
+      console.log(`❌ Failed to recreate sound: ${soundName}`, recreateError);
     }
   }
 
@@ -260,11 +199,6 @@ class AudioService {
       }
       this.sounds = {};
       this.isLoaded = false;
-
-      if (this.audioContext) {
-        await this.audioContext.close();
-        this.audioContext = null;
-      }
     } catch (error) {
       console.error('Failed to cleanup audio service:', error);
     }

@@ -1,7 +1,7 @@
 import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -9,6 +9,8 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
+import audioService from "../services/audio";
+import backgroundMusic from "../services/backgroundMusic";
 
 // Font loading configuration
 const fontConfig = {
@@ -17,6 +19,26 @@ const fontConfig = {
   FontdinerSwanky: require("../assets/fonts/FontdinerSwanky-Regular.ttf"),
   SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
 };
+
+// Initialize audio services immediately when app starts
+const initializeAudioServices = async () => {
+  try {
+    // Initialize audio service first
+    await audioService.initialize();
+    console.log("🎵 Audio service initialized immediately");
+
+    // Initialize background music
+    await backgroundMusic.initialize();
+    await backgroundMusic.loadBackgroundMusic();
+    await backgroundMusic.playBackgroundMusic();
+    console.log("🎵 Background music initialized immediately");
+  } catch (error) {
+    console.error("❌ Failed to initialize audio services immediately:", error);
+  }
+};
+
+// Start audio initialization immediately
+initializeAudioServices();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

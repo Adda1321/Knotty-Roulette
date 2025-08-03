@@ -3,18 +3,18 @@ import { Surface } from "react-native-paper";
 
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  Easing,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
+    Animated,
+    Dimensions,
+    Easing,
+    Platform,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  ANIMATION_CONFIGS,
-  ANIMATION_VALUES,
+    ANIMATION_CONFIGS,
+    ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import adService from "../../services/adService";
@@ -89,15 +89,6 @@ export default function GameBoard({
     setShowChallenge(false);
     setIsSpinning(false); // Ensure spinning state is reset
     onPlayerTurnComplete(currentPlayerIndex, points);
-  };
-
-  const passChallenge = () => {
-    // Play pass sound and haptic
-    audioService.playHaptic("medium");
-    audioService.playSound("buttonPress");
-
-    setCompletionData({ points: -1, action: "pass" });
-    setShowCompletionModal(true);
   };
 
   const handleChallengeComplete = (
@@ -277,7 +268,7 @@ export default function GameBoard({
     <SafeAreaView style={styles.container} edges={["left", "right"]}>
       {/* Development: User Tier Toggle */}
       <UserTierToggle />
-      
+
       <View style={styles.content}>
         {/* Status Bar */}
         <View style={styles.statusBar}>
@@ -285,8 +276,8 @@ export default function GameBoard({
             <Surface
               elevation={Platform.OS === "ios" ? 3 : 5}
               style={{
-                  borderRadius: 8,
-                  overflow: "hidden",
+                borderRadius: 8,
+                overflow: "hidden",
               }}
             >
               <View style={{ position: "relative", overflow: "hidden" }}>
@@ -295,12 +286,14 @@ export default function GameBoard({
                   pointerEvents="none"
                   style={[
                     styles.glareLayer1,
-                   {
-                        transform: [
-                          { translateX: shineAnim1 },
-                          Platform.OS === "ios" ? { skewX: "-15deg" } : { rotate: "15deg" },
-                        ],
-                      },
+                    {
+                      transform: [
+                        { translateX: shineAnim1 },
+                        Platform.OS === "ios"
+                          ? { skewX: "-15deg" }
+                          : { rotate: "15deg" },
+                      ],
+                    },
                   ]}
                 />
 
@@ -448,38 +441,40 @@ export default function GameBoard({
                 }}
               >
                 {/* <View style={{ overflow: "hidden" }}> */}
-                  {/* Shine Layer 1 */}
-                   <Animated.View
-                    pointerEvents="none"
-                    style={[
-                      styles.glareLayer1,
-                      {
-                        transform: [
-                          { translateX: shineAnim1 },
-                          Platform.OS === "ios" ? { skewX: "-15deg" } : { rotate: "15deg" },
-                        ],
-                      },
-                    ]}
-                  /> 
-                  <Button
-                    text={isSpinning ? "Spinning..." : "Spin the Wheel"}
-                    onPress={spinWheel}
-                    disabled={isSpinning}
-                    backgroundGradient={
-                      [COLORS.DARK_GREEN, COLORS.YELLOW] as const
-                    }
-                    textColor={COLORS.TEXT_DARK}
-                    fontSize={SIZES.BODY}
-                    fontFamily={FONTS.DOSIS_BOLD}
-                    shadowIntensity={5}
-                    // shadowRadius={12}
-                    paddingHorizontal={SIZES.PADDING_LARGE}
-                    paddingVertical={SIZES.PADDING_MEDIUM}
-                    style={[
-                      styles.spinButton,
-                      isSpinning && styles.spinButtonDisabled,
-                    ]}
-                  />
+                {/* Shine Layer 1 */}
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.glareLayer1,
+                    {
+                      transform: [
+                        { translateX: shineAnim1 },
+                        Platform.OS === "ios"
+                          ? { skewX: "-15deg" }
+                          : { rotate: "15deg" },
+                      ],
+                    },
+                  ]}
+                />
+                <Button
+                  text={isSpinning ? "Spinning..." : "Spin the Wheel"}
+                  onPress={spinWheel}
+                  disabled={isSpinning}
+                  backgroundGradient={
+                    [COLORS.DARK_GREEN, COLORS.YELLOW] as const
+                  }
+                  textColor={COLORS.TEXT_DARK}
+                  fontSize={SIZES.BODY}
+                  fontFamily={FONTS.DOSIS_BOLD}
+                  shadowIntensity={5}
+                  // shadowRadius={12}
+                  paddingHorizontal={SIZES.PADDING_LARGE}
+                  paddingVertical={SIZES.PADDING_MEDIUM}
+                  style={[
+                    styles.spinButton,
+                    isSpinning && styles.spinButtonDisabled,
+                  ]}
+                />
                 {/* </View> */}
               </Surface>
             </Animated.View>
@@ -497,7 +492,6 @@ export default function GameBoard({
               challenge={currentChallenge}
               playerName={currentPlayer.name}
               onComplete={handleChallengeComplete}
-              onPass={passChallenge}
             />
           )}
         </View>
@@ -665,4 +659,3 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 });
- 

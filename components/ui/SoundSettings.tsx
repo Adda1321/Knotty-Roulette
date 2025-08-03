@@ -36,12 +36,14 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
   const toggleMusicMute = async () => {
     const newState = await backgroundMusic.toggleMute();
     setIsMusicMuted(newState);
+    audioService.playSound("buttonPress");
     audioService.playHaptic("medium");
   };
 
   const toggleSoundsMute = () => {
     const newState = audioService.toggleSoundsMute();
     setIsSoundsMuted(newState);
+    audioService.playSound("buttonPress");
     audioService.playHaptic("medium");
   };
 
@@ -55,13 +57,12 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
   const handleSettingsPress = () => {
     setShowSettings(true);
     audioService.playSound("buttonPress");
-    audioService.playHaptic("light");
+    audioService.playHaptic("medium");
   };
 
   const closeSettings = () => {
     setShowSettings(false);
     audioService.playSound("buttonPress");
-
     audioService.playHaptic("medium");
   };
 

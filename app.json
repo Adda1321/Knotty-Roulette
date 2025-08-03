@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "knotty-roulette",
+    "name": "Knotty Roulette",
     "slug": "knotty-roulette",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -81,8 +81,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-99766268389553495710120462",
-          "iosAppId": "ca-app-pub-99766268389553497843166076",
+                    "androidAppId": "ca-app-pub-7316809859766211~2051954785",
+                              "iosAppId": "ca-app-pub-7316809859766211~5986178987",
           "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
         }
       ]
@@ -94,7 +94,8 @@
       "router": {},
       "eas": {
         "projectId": "395318b6-852c-4887-9320-7b7b4740d182"
-      }
+      },
+      "useExpoGo": false
     },
     "owner": "adil_mustafa"
   }

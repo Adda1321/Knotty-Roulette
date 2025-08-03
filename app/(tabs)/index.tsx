@@ -11,7 +11,6 @@ import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import adService from "../../services/adService";
 import { fetchChallenges } from "../../services/api";
 import audioService from "../../services/audio";
-import backgroundMusic from "../../services/backgroundMusic";
 import userService from "../../services/userService";
 import { Challenge, GameState, Player } from "../../types/game";
 
@@ -27,27 +26,6 @@ export default function HomeScreen() {
 
   useEffect(() => {
     initializeServices();
-  }, []);
-  useEffect(() => {
-    audioService.initialize();
-  }, []);
-  useEffect(() => {
-    // Initialize and start background music
-    const initializeBackgroundMusic = async () => {
-      try {
-        await backgroundMusic.initialize();
-        await backgroundMusic.loadBackgroundMusic();
-        await backgroundMusic.playBackgroundMusic();
-        console.log("🎵 Background music initialized in main app");
-      } catch (error) {
-        console.error(
-          "❌ Failed to initialize background music in main app:",
-          error
-        );
-      }
-    };
-
-    initializeBackgroundMusic();
   }, []);
   const initializeServices = async () => {
     try {
@@ -129,12 +107,12 @@ export default function HomeScreen() {
             setPlayers(updatedPlayers);
 
             // Check for winner (first to 10 points)
-            if (updatedPlayers[playerIndex].points >= 10) {
-              // Play game over sound and haptic
-              audioService.playSound("gameOver");
-              audioService.playHaptic("success");
+                          if (updatedPlayers[playerIndex].points >= 10) {
+                // Play game over sound and haptic
+                audioService.playSound("gameOver");
+                audioService.playHaptic("success");
 
-              setGameState("gameOver");
+                setGameState("gameOver");
               setWinner(updatedPlayers[playerIndex]);
               setShowGameOverModal(true);
             } else {
@@ -148,12 +126,12 @@ export default function HomeScreen() {
 
       {/* Game Over Modal */}
       <CustomModal
-        visible={showGameOverModal}
-        onClose={() => {
-          audioService.playHaptic("medium");
-          setShowGameOverModal(false);
-          resetGame();
-        }}
+                  visible={showGameOverModal}
+          onClose={() => {
+            audioService.playHaptic("medium");
+            setShowGameOverModal(false);
+            resetGame();
+          }}
         title="Game Over!"
         message={
           winner ? `${winner.name} wins with ${winner.points} points!` : ""

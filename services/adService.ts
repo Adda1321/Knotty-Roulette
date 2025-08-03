@@ -8,9 +8,9 @@ const AD_CONFIG = {
   INTERSTITIAL_ID: __DEV__ 
     ? TestIds.INTERSTITIAL // Google's official test interstitial ID (works for both platforms)
     : Platform.select({
-        android: 'ca-app-pub-7316809859766211/7028949296', // Your Android Unit ID
-        ios: 'ca-app-pub-7316809859766211/1448168179', // Your iOS Unit ID
-        default: 'ca-app-pub-7316809859766211/7028949296', // Fallback to Android
+        android: 'ca-app-pub-9976626838955349/2586969967', // Your Android Unit ID
+        ios: 'ca-app-pub-9976626838955349/8529561786', // Your iOS Unit ID
+        default: 'ca-app-pub-9976626838955349/2586969967', // Fallback to Android
       }),
 };
 

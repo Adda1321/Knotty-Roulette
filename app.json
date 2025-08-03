@@ -64,7 +64,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png"
+      "favicon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png"
     },
     "plugins": [
       "expo-router",

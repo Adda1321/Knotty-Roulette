@@ -59,7 +59,7 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ],
-      "package": "com.adilmustafa.knottyroulette"
+       "package": "com.adil_mustafa.knottyroulette"
     },
     "web": {
       "bundler": "metro",

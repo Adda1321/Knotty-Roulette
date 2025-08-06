@@ -147,6 +147,11 @@ expo build:android
 expo build:ios
 ```
 
+For Development:
+```bash
+eas build --platform android --profile development
+
+```
 ### Store Submission
 
 1. Follow Expo's deployment guide for app store submission

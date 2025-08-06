@@ -1,16 +1,31 @@
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { AdEventType, InterstitialAd, TestIds } from 'react-native-google-mobile-ads';
 import userService from './userService';
+
+// Conditionally import AdMob only when not in Expo Go
+let AdEventType: any, InterstitialAd: any, TestIds: any;
+
+try {
+  // Only import AdMob if we're not in Expo Go
+  if (Constants.expoConfig?.extra?.useExpoGo !== true && Constants.expoConfig !== undefined) {
+    const admob = require('react-native-google-mobile-ads');
+    AdEventType = admob.AdEventType;
+    InterstitialAd = admob.InterstitialAd;
+    TestIds = admob.TestIds;
+  }
+} catch (error) {
+  console.log('🚫 AdMob: Not available in this environment');
+}
 
 // AdMob Configuration
 const AD_CONFIG = {
   // Test IDs for development - these are Google's official test IDs (work for both platforms)
   INTERSTITIAL_ID: __DEV__ 
-    ? TestIds.INTERSTITIAL // Google's official test interstitial ID (works for both platforms)
+    ? TestIds?.INTERSTITIAL // Google's official test interstitial ID (works for both platforms)
     : Platform.select({
-        android: 'ca-app-pub-7316809859766211/7028949296', // Your Android Unit ID
-        ios: 'ca-app-pub-7316809859766211/1448168179', // Your iOS Unit ID
-        default: 'ca-app-pub-7316809859766211/7028949296', // Fallback to Android
+        android: 'ca-app-pub-9976626838955349/2586969967', // Your Android Unit ID
+        ios: 'ca-app-pub-9976626838955349/8529561786', // Your iOS Unit ID
+        default: 'ca-app-pub-9976626838955349/2586969967', // Fallback to Android
       }),
 };
 
@@ -19,32 +34,51 @@ class AdService {
   private readonly SPINS_BEFORE_AD = 3;
   private isAdLoading = false;
   private isAdReady = false;
-  private interstitialAd: InterstitialAd | null = null;
+  private interstitialAd: any = null;
 
   /**
    * Initialize the ad service
    */
   async initialize(): Promise<void> {
-    if (userService.isFree()) {
-      console.log('🎯 AdMob: Initializing for free user');
-      console.log(`📱 Platform: ${Platform.OS}`);
-      console.log(`🎯 Ad Unit ID: ${AD_CONFIG.INTERSTITIAL_ID}`);
-      await this.loadInterstitialAd();
-    } else {
-      console.log('👑 AdMob: No ads for premium user');
-    }
+    // if (userService.isFree()) {
+    //   console.log('🎯 AdMob: Initializing for free user');
+    //   console.log(`📱 Platform: ${Platform.OS}`);
+    //   console.log(`🎯 Ad Unit ID: ${AD_CONFIG.INTERSTITIAL_ID}`);
+    //   await this.loadInterstitialAd();
+    // } else {
+    //   console.log('👑 AdMob: No ads for premium user');
+    // }
 
-    // Listen for user tier changes
-    userService.onTierChange(() => {
-      this.onUserTierChange();
-    });
+    // // Listen for user tier changes
+    // userService.onTierChange(() => {
+    //   this.onUserTierChange();
+    // });
+    try {
+      // Skip if AdMob is not available
+      if (!InterstitialAd) {
+        console.log('🚫 AdMob: Not available in this environment');
+        return;
+      }
+
+      // Only initialize ads for free users
+      if (userService.isFree()) {
+        console.log('🎯 AdMob: Initializing for free user');
+        console.log(`📱 Platform: ${Platform.OS}`);
+        console.log(`🎯 Ad Unit ID: ${AD_CONFIG.INTERSTITIAL_ID}`);
+        await this.loadInterstitialAd();
+      } else {
+        console.log('👑 AdMob: No ads for premium user');
+      }
+    } catch (error) {
+      console.warn('Failed to initialize ad service:', error);
+    }
   }
 
   /**
    * Load interstitial ad
    */
   private async loadInterstitialAd(): Promise<void> {
-    if (this.isAdLoading || this.isAdReady) {
+    if (!InterstitialAd || this.isAdLoading || this.isAdReady) {
       return;
     }
 
@@ -65,7 +99,7 @@ class AdService {
         this.isAdLoading = false;
       });
 
-      this.interstitialAd.addAdEventListener(AdEventType.ERROR, (error) => {
+      this.interstitialAd.addAdEventListener(AdEventType.ERROR, (error: any) => {
         console.error('❌ AdMob: Interstitial ad error:', error);
         this.isAdReady = false;
         this.isAdLoading = false;
@@ -92,6 +126,11 @@ class AdService {
    * Track spin and show ad if needed
    */
   async trackSpin(): Promise<void> {
+    // Skip if AdMob is not available
+    if (!InterstitialAd) {
+      return;
+    }
+
     // Don't show ads for premium users
     if (userService.isPremium()) {
       return;
@@ -111,7 +150,7 @@ class AdService {
    * Show interstitial ad
    */
   private async showInterstitialAd(): Promise<void> {
-    if (!this.isAdReady || !this.interstitialAd) {
+    if (!InterstitialAd || !this.isAdReady || !this.interstitialAd) {
       console.log('🎯 AdMob: Ad not ready, loading new ad...');
       await this.loadInterstitialAd();
       return;
@@ -157,13 +196,18 @@ class AdService {
    * Check if user should see ads
    */
   shouldShowAds(): boolean {
-    return userService.isFree();
+    return InterstitialAd && userService.isFree();
   }
 
   /**
    * Update ad service when user tier changes
    */
   async onUserTierChange(): Promise<void> {
+    if (!InterstitialAd) {
+      console.log('🚫 AdMob: Not available in this environment');
+      return;
+    }
+
     if (userService.isPremium()) {
       // Premium user - clean up ads
       this.isAdReady = false;

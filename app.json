@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "knotty-roulette",
+    "name": "Knotty Roulette",
     "slug": "knotty-roulette",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -50,22 +50,22 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png",
+        "foregroundImage": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png",
         "backgroundColor": "#00cc00"
       },
-      "icon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png",
+      "icon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png",
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "com.android.vending.BILLING"
       ],
-      "package": "com.adilmustafa.knottyroulette"
+       "package": "com.adil_mustafa.knottyroulette"
     },
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png"
+      "favicon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png"
     },
     "plugins": [
       "expo-router",
@@ -82,8 +82,8 @@
       [
         "react-native-google-mobile-ads",
         {
-          "androidAppId": "ca-app-pub-7316809859766211~2051954785",
-          "iosAppId": "ca-app-pub-7316809859766211~5986178987",
+                    "androidAppId": "ca-app-pub-7316809859766211~2051954785",
+                              "iosAppId": "ca-app-pub-7316809859766211~5986178987",
           "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
         }
       ]
@@ -95,7 +95,8 @@
       "router": {},
       "eas": {
         "projectId": "395318b6-852c-4887-9320-7b7b4740d182"
-      }
+      },
+      "useExpoGo": false
     },
     "owner": "adil_mustafa"
   }

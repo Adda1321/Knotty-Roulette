@@ -72,9 +72,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: SIZES.BODY,
-    fontWeight: 'bold',
     color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.PRIMARY,
+    fontFamily: FONTS.DOSIS_BOLD,
     textAlign: 'center',
     marginBottom: SIZES.PADDING_SMALL,
   },

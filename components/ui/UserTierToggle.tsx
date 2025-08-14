@@ -1,9 +1,7 @@
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { COLORS, SIZES } from '../../constants/theme';
+import { StyleSheet } from 'react-native';
 import adService from '../../services/adService';
 import userService from '../../services/userService';
-import Button from './Button';
 
 interface UserTierToggleProps {
   onTierChange?: () => void;
@@ -31,19 +29,20 @@ export default function UserTierToggle({ onTierChange }: UserTierToggleProps) {
   const buttonText = userService.isPremium() ? 'Switch to Free' : 'Switch to Premium';
 
   return (
-    <View style={styles.container}>
-      <Button
-        text={buttonText}
-        onPress={handleToggleTier}
-        backgroundColor={userService.isPremium() ? COLORS.DARK_GREEN : COLORS.YELLOW}
-        textColor={userService.isPremium() ? COLORS.TEXT_PRIMARY : COLORS.TEXT_DARK}
-        fontSize={SIZES.SMALL}
-        paddingHorizontal={SIZES.PADDING_SMALL}
-        paddingVertical={8}
-        shadowIntensity={3}
-        shadowRadius={6}
-      />
-    </View>
+    <></>
+    // <View style={styles.container}>
+    //   <Button
+    //     text={buttonText}
+    //     onPress={handleToggleTier}
+    //     backgroundColor={userService.isPremium() ? COLORS.DARK_GREEN : COLORS.YELLOW}
+    //     textColor={userService.isPremium() ? COLORS.TEXT_PRIMARY : COLORS.TEXT_DARK}
+    //     fontSize={SIZES.SMALL}
+    //     paddingHorizontal={SIZES.PADDING_SMALL}
+    //     paddingVertical={8}
+    //     shadowIntensity={3}
+    //     shadowRadius={6}
+    //   />
+    // </View>
   );
 }
 

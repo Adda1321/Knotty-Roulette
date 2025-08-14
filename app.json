@@ -73,7 +73,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/knotty-roulette.png",
-          "imageWidth": 300,
+          "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#6bc26e"
         }
@@ -96,7 +96,8 @@
       "eas": {
         "projectId": "395318b6-852c-4887-9320-7b7b4740d182"
       },
-      "useExpoGo": false
+      "useExpoGo": false,
+      "useTestAds": true
     },
     "owner": "adil_mustafa"
   }

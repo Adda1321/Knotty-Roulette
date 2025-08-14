@@ -16,11 +16,11 @@ try {
 } catch (error) {
   console.log('🚫 AdMob: Not available in this environment');
 }
-
+console.log("TEST===>>",Constants.expoConfig?.extra?.useTestAds === true)
 // AdMob Configuration
 const AD_CONFIG = {
-  // Test IDs for development - these are Google's official test IDs (work for both platforms)
-  INTERSTITIAL_ID: __DEV__ 
+  // Test IDs for development and preview - these are Google's official test IDs (work for both platforms)
+  INTERSTITIAL_ID: (__DEV__ || Constants.expoConfig?.extra?.useTestAds === true)
     ? TestIds?.INTERSTITIAL // Google's official test interstitial ID (works for both platforms)
     : Platform.select({
         android: 'ca-app-pub-9976626838955349/2586969967', // Your Android Unit ID

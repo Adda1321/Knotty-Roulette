@@ -30,6 +30,9 @@ class PurchaseService {
         this.handlePurchaseResult(result);
       });
 
+      // Check for any pending purchases that need acknowledgment
+      await this.handlePendingPurchases();
+
       this.isInitialized = true;
       console.log('✅ Purchase service initialized');
       
@@ -50,15 +53,31 @@ class PurchaseService {
         const purchases = result.results;
         for (const purchase of purchases) {
           if (purchase.acknowledged) {
-            console.log('✅ Purchase acknowledged:', purchase.productId);
+            console.log('✅ Purchase already acknowledged:', purchase.productId);
             
             // Update user tier to premium
             await userService.setPremium('lifetime');
             
-            // Update ad service
-            // Note: adService will be updated via userService change
+            // AdService will be automatically notified via tier change listener
+            console.log('✅ Purchase completed - user upgraded to premium');
           } else {
-            console.log('❌ Purchase not acknowledged:', purchase.productId);
+            console.log('🔄 New purchase received, acknowledging...', purchase.productId);
+            
+            try {
+              // CRITICAL: Acknowledge the purchase to Google Play
+              // This prevents automatic refunds after 3 days
+              await InAppPurchases.finishTransactionAsync(purchase, true);
+              console.log('✅ Purchase acknowledged successfully');
+              
+              // Update user tier to premium
+              await userService.setPremium('lifetime');
+              
+              // AdService will be automatically notified via tier change listener
+              console.log('✅ Purchase completed - user upgraded to premium');
+            } catch (acknowledgmentError) {
+              console.error('❌ Failed to acknowledge purchase:', acknowledgmentError);
+              // Don't update user tier if acknowledgment fails
+            }
           }
         }
       } else {
@@ -66,6 +85,39 @@ class PurchaseService {
       }
     } catch (error) {
       console.error('❌ Error handling purchase result:', error);
+    }
+  }
+
+  /**
+   * Handle any pending purchases that might have been interrupted
+   */
+  private async handlePendingPurchases(): Promise<void> {
+    try {
+      console.log('🔍 Checking for pending purchases...');
+      
+      const result = await InAppPurchases.getPurchaseHistoryAsync();
+      
+      if (result.responseCode === InAppPurchases.IAPResponseCode.OK && result.results) {
+        const pendingPurchases = result.results.filter(purchase => !purchase.acknowledged);
+        
+        if (pendingPurchases.length > 0) {
+          console.log(`🔄 Found ${pendingPurchases.length} pending purchase(s), processing...`);
+          
+          for (const purchase of pendingPurchases) {
+            if (purchase.productId === PRODUCT_IDS.PREMIUM_PACK) {
+              console.log('🔄 Processing pending premium purchase...');
+              await this.handlePurchaseResult({
+                responseCode: InAppPurchases.IAPResponseCode.OK,
+                results: [purchase]
+              });
+            }
+          }
+        } else {
+          console.log('✅ No pending purchases found');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error checking pending purchases:', error);
     }
   }
 
@@ -91,8 +143,8 @@ class PurchaseService {
           console.log('🧪 Returning mock product for development testing');
           return [{
             productId: PRODUCT_IDS.PREMIUM_PACK,
-            title: 'Premium Pack (Test)',
-            description: 'Test premium pack for development',
+            title: 'Premium Pack - Ad Free Gaming',
+            description: 'Remove all ads and unlock premium features for the ultimate gaming experience',
             price: '$4.99',
             priceAmountMicros: 4990000,
             priceCurrencyCode: 'USD',

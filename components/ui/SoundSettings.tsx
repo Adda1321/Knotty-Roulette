@@ -2,17 +2,18 @@ import userService from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { Surface } from "react-native-paper";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
 import backgroundMusic from "../../services/backgroundMusic";
+import purchaseService from "../../services/purchaseService";
 import Button from "./Button";
 import PremiumUpgradeModal from './PremiumUpgradeModal';
 
@@ -26,14 +27,42 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
   const [isVibrationEnabled, setIsVibrationEnabled] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [productDetails, setProductDetails] = useState<{
+    title: string;
+    price: string;
+    description: string;
+  } | null>(null);
 
   useEffect(() => {
     audioService.initialize();
+    fetchProductDetails();
 
     setIsMusicMuted(backgroundMusic.isMusicMuted());
     setIsSoundsMuted(audioService.isSoundsMuted());
     setIsVibrationEnabled(audioService.isVibrationEnabled());
   }, []);
+
+  const fetchProductDetails = async () => {
+    try {
+      const products = await purchaseService.getProducts();
+      if (products.length > 0) {
+        const product = products[0];
+        setProductDetails({
+          title: product.title,
+          price: product.price,
+          description: product.description,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch product details:', error);
+      // Fallback to default values
+      setProductDetails({
+        title: 'Premium Pack',
+        price: '$4.99',
+        description: 'Remove ads and unlock premium features',
+      });
+    }
+  };
 
   const toggleMusicMute = async () => {
     const newState = await backgroundMusic.toggleMute();
@@ -146,7 +175,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                         color={COLORS.YELLOW}
                       />
                       <Text style={[styles.settingText, styles.premiumText]}>
-                        Upgrade to Premium
+                        {productDetails?.title || 'Upgrade to Premium'}
                       </Text>
                     </View>
                     <TouchableOpacity
@@ -156,11 +185,13 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                         setShowPremiumModal(true);
                       }}
                     >
-                      <Text style={styles.upgradeButtonText}>$4.99</Text>
+                      <Text style={styles.upgradeButtonText}>
+                        {productDetails?.price || '$4.99'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   <Text style={styles.premiumSubtext}>
-                    Remove ads and unlock premium features
+                    {productDetails?.description || 'Remove ads and unlock premium features'}
                   </Text>
                 </View>
               )}

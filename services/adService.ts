@@ -16,7 +16,6 @@ try {
 } catch (error) {
   console.log('🚫 AdMob: Not available in this environment');
 }
-console.log("TEST===>>",Constants.expoConfig?.extra?.useTestAds === true)
 // AdMob Configuration
 const AD_CONFIG = {
   // Test IDs for development and preview - these are Google's official test IDs (work for both platforms)
@@ -40,19 +39,6 @@ class AdService {
    * Initialize the ad service
    */
   async initialize(): Promise<void> {
-    // if (userService.isFree()) {
-    //   console.log('🎯 AdMob: Initializing for free user');
-    //   console.log(`📱 Platform: ${Platform.OS}`);
-    //   console.log(`🎯 Ad Unit ID: ${AD_CONFIG.INTERSTITIAL_ID}`);
-    //   await this.loadInterstitialAd();
-    // } else {
-    //   console.log('👑 AdMob: No ads for premium user');
-    // }
-
-    // // Listen for user tier changes
-    // userService.onTierChange(() => {
-    //   this.onUserTierChange();
-    // });
     try {
       // Skip if AdMob is not available
       if (!InterstitialAd) {
@@ -69,6 +55,11 @@ class AdService {
       } else {
         console.log('👑 AdMob: No ads for premium user');
       }
+
+      // Listen for user tier changes
+      userService.onTierChange(() => {
+        this.onUserTierChange();
+      });
     } catch (error) {
       console.warn('Failed to initialize ad service:', error);
     }

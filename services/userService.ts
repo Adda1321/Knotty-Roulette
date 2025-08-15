@@ -37,6 +37,18 @@ class UserService {
     return !this.isPremium();
   }
 
+  /**
+   * Check if user can be downgraded from premium to free
+   * One-time purchases (lifetime) cannot be downgraded
+   */
+  canDowngrade(): boolean {
+    if (this.userTier.tier !== 'premium') {
+      return true; // Already free, can't downgrade further
+    }
+    // Only allow downgrade for subscription-based tiers, not lifetime purchases
+    return this.userTier.subscriptionType !== 'lifetime';
+  }
+
   async updateUserTier(tier: UserTier): Promise<void> {
     this.userTier = tier;
     await AsyncStorage.setItem('userTier', JSON.stringify(tier));
@@ -66,6 +78,10 @@ class UserService {
   }
 
   async setFree(): Promise<void> {
+    if (!this.canDowngrade()) {
+      console.warn('⚠️ Cannot downgrade lifetime premium purchase');
+      throw new Error('Cannot downgrade from lifetime premium purchase');
+    }
     await this.updateUserTier({ tier: 'free' });
   }
 

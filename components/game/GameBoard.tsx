@@ -3,18 +3,18 @@ import { Surface } from "react-native-paper";
 
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  Easing,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
+    Animated,
+    Dimensions,
+    Easing,
+    Platform,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  ANIMATION_CONFIGS,
-  ANIMATION_VALUES,
+    ANIMATION_CONFIGS,
+    ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import adService from "../../services/adService";
@@ -24,7 +24,6 @@ import Button from "../ui/Button";
 
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
-import UserTierToggle from "../ui/UserTierToggle";
 import ChallengeDisplay from "./ChallengeDisplay";
 import GameRules from "./GameRules";
 import Scoreboard from "./Scoreboard";
@@ -154,9 +153,6 @@ export default function GameBoard({
     // Track spin for ad display (every 3 spins for free users)
     await adService.trackSpin();
 
-    // Track spin for ad display (every 3 spins for free users)
-    await adService.trackSpin();
-
     setShowChallenge(false);
     setCurrentChallenge(null);
     setIsSpinning(true);
@@ -270,7 +266,6 @@ export default function GameBoard({
   return (
     <SafeAreaView style={styles.container} edges={["left", "right"]}>
       {/* Development: User Tier Toggle */}
-      <UserTierToggle />
       <View style={styles.content}>
         {/* Status Bar */}
         <View style={styles.statusBar}>

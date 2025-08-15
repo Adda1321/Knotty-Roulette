@@ -3,18 +3,19 @@ import { Surface } from "react-native-paper";
 
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Easing,
-    Platform,
-    StyleSheet,
-    Text,
-    View,
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    ANIMATION_CONFIGS,
-    ANIMATION_VALUES,
+  ANIMATION_CONFIGS,
+  ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import adService from "../../services/adService";
@@ -306,7 +307,7 @@ export default function GameBoard({
                   }}
                   backgroundColor={COLORS.YELLOW}
                   textColor={COLORS.TEXT_DARK}
-                  fontSize={SIZES.CAPTION}
+                  fontSize={SIZES.SUBTITLE}
                   fontWeight="600"
                   style={{ borderRadius: 8 }}
                 />
@@ -337,7 +338,7 @@ export default function GameBoard({
               textColor={COLORS.TEXT_DARK}
               // shadowIntensity={5}
               // shadowRadius={10}
-              fontSize={SIZES.CAPTION}
+              fontSize={SIZES.SUBTITLE}
               fontWeight="600"
             />
           </Surface>
@@ -347,13 +348,20 @@ export default function GameBoard({
         <View style={styles.mainContent}>
           {/* Header */}
           <View style={styles.header}>
+            <View style={styles.mascotContainer}>
+              <Image
+                source={require("../../assets/images/Knotty-Mascot.png")}
+                style={styles.mascotImage}
+                resizeMode="contain"
+              />
+            </View>
             <Text style={styles.title}>KNOTTY ROULETTE</Text>
           </View>
 
           {/* Game Area */}
           <LinearGradient
-            // colors={["#84BB78","#84BB78"]}
-            colors={["#def6e2", "#84BB78"]}
+            // colors={["#3e8e2cff","#328021ff"]}
+            colors={["#d4f6daff", "#286a19ff"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.gameArea}
@@ -464,7 +472,7 @@ export default function GameBoard({
                     [COLORS.DARK_GREEN, COLORS.YELLOW] as const
                   }
                   textColor={COLORS.TEXT_DARK}
-                  fontSize={SIZES.BODY}
+                  fontSize={SIZES.SUBTITLE}
                   fontFamily={FONTS.DOSIS_BOLD}
                   shadowIntensity={5}
                   // shadowRadius={12}
@@ -526,7 +534,7 @@ export default function GameBoard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.DARK_GREEN,
+    backgroundColor: "#116b20ff",
     paddingVertical: SIZES.PADDING_SMALL,
   },
   content: {
@@ -539,7 +547,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: SIZES.PADDING_LARGE,
     paddingVertical: SIZES.PADDING_SMALL,
-    backgroundColor: COLORS.DARK_GREEN,
+    backgroundColor: "#116b20ff",
   },
   leftButtons: {
     flexDirection: "row",
@@ -549,7 +557,7 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "flex-start",
     maxHeight: "85%",
   },
   header: {
@@ -560,11 +568,12 @@ const styles = StyleSheet.create({
     fontSize: SIZES.EXTRALARGE,
     fontFamily: FONTS.DOSIS_BOLD,
     color: COLORS.YELLOW,
-    marginTop: SIZES.PADDING_MEDIUM,
-
     marginBottom: SIZES.PADDING_MEDIUM,
-    textAlign: "center",
     ...SIZES.TEXT_SHADOW_MEDIUM,
+    marginTop: -120,
+    marginLeft: 15,
+    textAlign: "left",
+    alignSelf: "flex-start", // forces it to align left inside its container
   },
   currentPlayer: {
     fontSize: SIZES.SUBTITLE,
@@ -575,9 +584,9 @@ const styles = StyleSheet.create({
     ...SIZES.TEXT_SHADOW_SMALL,
   },
   passInstruction: {
-    fontSize: SIZES.CAPTION,
+    fontSize: SIZES.SUBTITLE,
     color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.PRIMARY,
+    // fontFamily: FONTS.PRIMARY,
     fontStyle: "italic",
   },
   gameArea: {
@@ -592,6 +601,7 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.PADDING_SMALL,
     width: "100%",
     maxWidth: 400,
+    zIndex: -1,
   },
   glareOverlay: {
     position: "absolute",
@@ -657,5 +667,17 @@ const styles = StyleSheet.create({
     width: 30,
     backgroundColor: "rgba(255, 255, 255, 0.05)", // More transparent
     zIndex: 1,
+  },
+  mascotContainer: {
+    alignSelf: "flex-end",
+    top: 2, // This will right-align the container
+    marginRight: Platform.OS === "ios" ? -135 : -55,
+  },
+
+  mascotImage: {
+    width: 150,
+    height: 150,
+    zIndex: 1,
+    transform: [{ rotate: "5deg" }],
   },
 });

@@ -104,6 +104,7 @@ export default function GameBoard({
       audioService.playSound("bonusAchieved");
       audioService.playHaptic("success");
     } else if (action === "pass") {
+      console.log("Sound PALYEDD passChallenge");
       audioService.playSound("passChallenge");
       audioService.playHaptic("warning");
     }
@@ -307,8 +308,8 @@ export default function GameBoard({
                   }}
                   backgroundColor={COLORS.YELLOW}
                   textColor={COLORS.TEXT_DARK}
-                  fontSize={SIZES.SUBTITLE}
-                  fontWeight="600"
+                  fontSize={SIZES.CAPTION}
+                  fontFamily={FONTS.DOSIS_BOLD}
                   style={{ borderRadius: 8 }}
                 />
               </View>
@@ -338,8 +339,9 @@ export default function GameBoard({
               textColor={COLORS.TEXT_DARK}
               // shadowIntensity={5}
               // shadowRadius={10}
-              fontSize={SIZES.SUBTITLE}
-              fontWeight="600"
+              fontSize={SIZES.CAPTION}
+              fontFamily={FONTS.DOSIS_BOLD}
+              // fontWeight="600"
             />
           </Surface>
         </View>
@@ -347,7 +349,8 @@ export default function GameBoard({
         {/* Main Content - Centered */}
         <View style={styles.mainContent}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={styles.headerContainer}>
+            <Text style={styles.title}>KNOTTY ROULETTE</Text>
             <View style={styles.mascotContainer}>
               <Image
                 source={require("../../assets/images/Knotty-Mascot.png")}
@@ -355,48 +358,15 @@ export default function GameBoard({
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.title}>KNOTTY ROULETTE</Text>
           </View>
 
           {/* Game Area */}
           <LinearGradient
-            // colors={["#3e8e2cff","#328021ff"]}
             colors={["#d4f6daff", "#286a19ff"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.gameArea}
           >
-            {/* Diagonal Glare Overlay
-  <Animated.View style={[
-    styles.glareOverlay,
-    {
-      opacity: glareAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0.7, 0.10]
-      })
-    }
-  ]}>
-    <LinearGradient
-      colors={['rgba(255, 255, 255, 0.8)', 'rgba(255, 255, 255, 0)']}
-      start={{ x: 1, y: 0 }} // Top right
-      end={{ x: 0, y: 1 }}   // Bottom left
-      style={StyleSheet.absoluteFill}
-    />
-  </Animated.View> */}
-            {/* Shine Layer 1 */}
-            {/* <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.backgdglareLayer,
-              {
-                transform: [
-                  { translateX: shineAnim1 },
-                  { skewX: "-15deg" },
-                ],
-              },
-            ]}
-          /> */}
-
             {/* Rest of your content */}
 
             {/* Spinning Wheel */}
@@ -493,16 +463,15 @@ export default function GameBoard({
             players={players}
             currentPlayerIndex={currentPlayerIndex}
           />
-
-          {/* Challenge Display - Moved outside game area */}
-          {showChallenge && currentChallenge && (
-            <ChallengeDisplay
-              challenge={currentChallenge}
-              playerName={currentPlayer.name}
-              onComplete={handleChallengeComplete}
-            />
-          )}
         </View>
+        {/* Challenge Display - Moved outside game area */}
+        {showChallenge && currentChallenge && (
+          <ChallengeDisplay
+            challenge={currentChallenge}
+            playerName={currentPlayer.name}
+            onComplete={handleChallengeComplete}
+          />
+        )}
 
         {/* Game Rules Modal */}
         <GameRules visible={showRules} onClose={() => setShowRules(false)} />
@@ -558,22 +527,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "flex-start",
-    maxHeight: "85%",
+    maxHeight: "88%",
   },
   header: {
     alignItems: "center",
+    marginTop: 5,
     marginBottom: SIZES.PADDING_SMALL,
   },
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    marginTop:20
+  },
   title: {
-    fontSize: SIZES.EXTRALARGE,
+    fontSize:
+      Platform.OS === "android"
+        ? Math.min(SIZES.EXTRALARGE, width * 0.07)
+        : Math.min(SIZES.EXTRALARGE * 1.0, width),
     fontFamily: FONTS.DOSIS_BOLD,
     color: COLORS.YELLOW,
     marginBottom: SIZES.PADDING_MEDIUM,
     ...SIZES.TEXT_SHADOW_MEDIUM,
-    marginTop: -120,
-    marginLeft: 15,
     textAlign: "left",
-    alignSelf: "flex-start", // forces it to align left inside its container
+    marginLeft: 5,
+    flex: 1,
+    flexShrink: 1,
   },
   currentPlayer: {
     fontSize: SIZES.SUBTITLE,
@@ -593,12 +573,12 @@ const styles = StyleSheet.create({
     flex: 1,
     position: "relative",
     overflow: "hidden",
-    backgroundColor: COLORS.LIGHT_GREEN,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_MEDIUM,
-    ...SIZES.SHADOW_SMALL,
+    // ...SIZES.SHADOW_SMALL,
     alignItems: "center",
-    marginBottom: SIZES.PADDING_SMALL,
+    // marginBottom: SIZES.PADDING_SMALL,
+    marginTop: -45,
     width: "100%",
     maxWidth: 400,
     zIndex: -1,
@@ -670,13 +650,14 @@ const styles = StyleSheet.create({
   },
   mascotContainer: {
     alignSelf: "flex-end",
-    top: 2, // This will right-align the container
-    marginRight: Platform.OS === "ios" ? -135 : -55,
+    marginRight: -10,
+    flexShrink: 0,
+    minWidth: 100,
   },
 
   mascotImage: {
-    width: 150,
-    height: 150,
+    width: 130,
+    height: 130,
     zIndex: 1,
     transform: [{ rotate: "5deg" }],
   },

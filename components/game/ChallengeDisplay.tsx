@@ -2,13 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Image,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Image,
 } from "react-native";
 import { Surface } from "react-native-paper";
 import Toast from "react-native-toast-message";
@@ -159,31 +159,18 @@ export default function ChallengeDisplay({
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <Animated.View
-          style={[
-            styles.challengeCard,
-      
-          ]}
-        >
-          <View
-            style={{
-              height: 90, // Fixed height
-              width: "100%",
-              backgroundColor: COLORS.DARK_GREEN,
-              borderTopRightRadius: 22, // Rounded top-right corner
-              borderTopLeftRadius: 22, // Rounded top-left corner
-            }}
-          >
-            <View style={styles.playerContainer}>
+        <Animated.View style={[styles.challengeCard]}>
+          <View style={styles.playerContainer}>
+            <View>
               <Text style={styles.playerName}>{playerName},</Text>
               <Text style={styles.turnText}>YOUR TURN</Text>
-              <View style={styles.mascotContainer}>
-                <Image
-                  source={require("../../assets/images/Knotty Mascot 2.png")}
-                  style={styles.mascotImage}
-                  resizeMode="contain"
-                />
-              </View>
+            </View>
+            <View style={styles.mascotContainer}>
+              <Image
+                source={require("../../assets/images/Knotty Mascot 2.png")}
+                style={styles.mascotImage}
+                resizeMode="contain"
+              />
             </View>
           </View>
           {/* SparkleEffect positioned absolutely to not block interactions */}
@@ -297,7 +284,7 @@ export default function ChallengeDisplay({
                 <Surface
                   elevation={3}
                   style={{
-                    borderRadius: 10,
+                    borderRadius: 11,
                     borderWidth: 3, // Add border width
                     borderColor: "#18752A", // Dark green border color
                     overflow: "hidden", // Ensures border radius clips content
@@ -309,37 +296,23 @@ export default function ChallengeDisplay({
                     <Button
                       text="COMPLETE CHALLENGE +1" // Uppercase to match image
                       onPress={handleComplete}
-                      backgroundColor={COLORS.DARK_GREEN}
+                      backgroundColor="#3A983D"
                       textColor={COLORS.YELLOW}
                       fontSize={SIZES.SUBTITLE}
                       fontFamily={FONTS.DOSIS_BOLD}
-                      fontWeight="800" // Bolder to match image
+                      // fontWeight="800" // Bolder to match image
                       // shadowIntensity={5}
                       // shadowRadius={10}
                       paddingHorizontal={SIZES.PADDING_MEDIUM}
                       paddingVertical={SIZES.PADDING_MEDIUM}
                       style={[styles.actionButton]}
-                      onPressIn={() => {
-                        Animated.timing(buttonScale, {
-                          toValue: ANIMATION_VALUES.SCALE_SMALL,
-                          duration: 100,
-                          useNativeDriver: true,
-                        }).start();
-                      }}
-                      onPressOut={() => {
-                        Animated.timing(buttonScale, {
-                          toValue: ANIMATION_VALUES.SCALE_NORMAL,
-                          duration: 100,
-                          useNativeDriver: true,
-                        }).start();
-                      }}
                     />
                   </Animated.View>
                 </Surface>
                 <Surface
                   elevation={3}
                   style={{
-                    borderRadius: 10,
+                    borderRadius: 11,
                     borderWidth: 3, // Add border width
                     borderColor: "#DC4016", // Dark green border color
                     overflow: "hidden", // Ensures border radius clips content
@@ -348,11 +321,11 @@ export default function ChallengeDisplay({
                   <Button
                     text="Pass (-1 point)"
                     onPress={handleOnPass}
-                    backgroundColor={COLORS.OFFLINE}
+                    backgroundColor="#EE562B"
                     textColor={COLORS.YELLOW}
                     fontSize={SIZES.SUBTITLE}
                     fontFamily={FONTS.DOSIS_BOLD}
-                    fontWeight="800"
+                    // fontWeight="800"
                     // shadowIntensity={5}
                     // shadowRadius={10}
                     paddingHorizontal={SIZES.PADDING_MEDIUM}
@@ -375,9 +348,10 @@ export default function ChallengeDisplay({
                       text="Bonus +2"
                       onPress={handleBonus}
                       backgroundColor={COLORS.YELLOW}
-                      textColor={COLORS.TEXT_PRIMARY}
+                      textColor={COLORS.TEXT_DARK}
+                      fontFamily={FONTS.DOSIS_BOLD}
                       fontSize={SIZES.SUBTITLE}
-                      fontWeight="600"
+                      // fontWeight="600"
                       shadowIntensity={5}
                       shadowRadius={10}
                       paddingHorizontal={SIZES.PADDING_MEDIUM}
@@ -398,12 +372,14 @@ export default function ChallengeDisplay({
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    // backgroundColor: "#FDD790",
+    top: -65, // push beyond top
+    left: -10, // push beyond left
+    right: -10, // push beyond right
+    bottom: -35, // push beyond bottom
+    // backgroundColor: COLORS.BACKGROUND_DARK,
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
+    zIndex: 9999,
   },
   scrollView: {
     flex: 1,
@@ -417,26 +393,32 @@ const styles = StyleSheet.create({
   },
   challengeCard: {
     borderColor: "#2B7B33",
-    backgroundColor: "#f3dbabff",
-    borderRadius: 24,
+    backgroundColor: COLORS.FIELDS,
+    borderRadius: SIZES.BORDER_RADIUS_LARGE,
     borderWidth: 3,
-    // padding: 28,
     maxWidth: 450,
     width: "100%",
+    padding: 0,
     alignItems: "center",
-    ...SIZES.SHADOW_CARD,
+    overflow: "hidden", // Ensure content doesn't overflow borders
+    // ...SIZES.SHADOW_CARD,
   },
   playerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE - 3, // Account for border width
+    borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE - 3, // Account for border width
     backgroundColor: COLORS.DARK_GREEN,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 5,
+    paddingLeft: 20,
     width: "100%",
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    marginTop: -3, // Pull up to cover the border gap
+    marginLeft: -3, // Pull left to cover the border gap
+    marginRight: -3, // Pull right to cover the border gap
   },
   playerName: {
     fontSize: SIZES.EXTRALARGE,
-    fontWeight: "bold",
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
@@ -447,7 +429,6 @@ const styles = StyleSheet.create({
   },
   turnText: {
     fontSize: SIZES.EXTRALARGE,
-    fontWeight: "800",
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
@@ -457,6 +438,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 0, // Sharp border
     marginTop: -4, // Brings lines closer
     includeFontPadding: false,
+    elevation: 5,
   },
   challengeTextContainer: {
     backgroundColor: "#F4C614",
@@ -529,20 +511,18 @@ const styles = StyleSheet.create({
   },
   sparkleContainer: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
+    top: 10,
     bottom: 0,
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: -1, // Ensure it's behind other content
+    left: 0,
+    width: "6%", // only cover left 6% of container
+    zIndex: 1,
   },
   mascotContainer: {
-    position: "absolute",
+    // position: "absolute",
     alignSelf: "flex-end",
-    top: -30, // This will right-align the container
-    right: 10,
-    marginRight: Platform.OS === "ios" ? -15 : -55,
+    // top: -30, // This will right-align the container
+    // right: 10,
+    marginRight: Platform.OS === "ios" ? -10 : -10,
   },
 
   mascotImage: {
@@ -550,5 +530,6 @@ const styles = StyleSheet.create({
     height: 120,
     zIndex: 1,
     transform: [{ rotate: "5deg" }],
+    // backgroundColor:"red"
   },
 });

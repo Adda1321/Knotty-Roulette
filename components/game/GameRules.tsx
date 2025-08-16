@@ -111,7 +111,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   container: {
-    backgroundColor: COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.FIELDS,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     margin: SIZES.PADDING_MEDIUM,
     maxHeight: Platform.OS === "ios" ? "80%" : "90%",
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     padding: SIZES.PADDING_LARGE,
   },
   title: {
-    fontSize: SIZES.TITLE,
+    fontSize: 30,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    backgroundColor: COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.FIELDS,
     padding: SIZES.PADDING_LARGE,
   },
   ruleContainer: {

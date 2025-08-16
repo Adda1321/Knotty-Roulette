@@ -172,8 +172,8 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                               onPress={addPlayer}
                               backgroundColor={COLORS.YELLOW}
                               textColor={COLORS.TEXT_DARK}
-                              fontSize={SIZES.CAPTION}
-                              fontFamily={FONTS.PRIMARY}
+                              fontSize={SIZES.BODY}
+                              fontFamily={FONTS.DOSIS_MEDIUM}
                               fontWeight="800"
                               paddingHorizontal={SIZES.PADDING_SMALL}
                               paddingVertical={SIZES.PADDING_SMALL}
@@ -251,8 +251,8 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                           style={{ flexDirection: "row", alignItems: "center" }}
                         >
                           <Image
-                            source={require("../../assets/images/start game arrow.png")}
-                            style={{ width: 20, height: 20, marginRight: 8 }}
+                            source={require("../../assets/images/play-button-arrowhead.png")}
+                            style={{ width: 14, height: 14, marginRight: 8 }}
                           />
                           <Text
                             style={{
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
-    backgroundColor: "#F1E9BE",
+    backgroundColor: COLORS.FIELDS,
     borderRadius: SIZES.BORDER_RADIUS_SMALL,
     paddingHorizontal: 15,
     paddingVertical: 5,
@@ -410,13 +410,15 @@ const styles = StyleSheet.create({
   mascotContainer: {
     alignSelf: "flex-end",
     marginRight: Platform.OS === "ios" ? 20 : 0,
+    
   },
-
+  
   mascotImage: {
     width: 150,
     height: 150,
     zIndex: 1,
     transform: [{ rotate: "5deg" }],
+    marginBottom: Platform.OS === "ios" ? 0 : -5,
   },
   doubleBorderOuter: {
     borderWidth: 2,

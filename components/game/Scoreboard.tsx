@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#8fd89cff",
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_SMALL,
-    margin: SIZES.PADDING_SMALL,
+    marginTop: SIZES.PADDING_MEDIUM,
     maxHeight: 150,
     paddingVertical: SIZES.PADDING_MEDIUM,
     width: "100%",
@@ -106,7 +106,6 @@ const styles = StyleSheet.create({
     width: SIZES.PADDING_SMALL,
   },
   playerCard: {
-    backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_SMALL,
     padding: SIZES.PADDING_SMALL,
     minWidth: 80,
@@ -114,7 +113,9 @@ const styles = StyleSheet.create({
     height: 60,
     alignItems: "center",
     justifyContent: "center",
-    ...SIZES.SHADOW_SMALL,
+    ...SIZES.SHADOW_SMALL,  
+    backgroundColor:COLORS.FIELDS,
+
   },
   currentPlayerCard: {
     backgroundColor: COLORS.DARK_GREEN,

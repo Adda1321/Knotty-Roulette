@@ -151,7 +151,10 @@ For Development:
 ```bash
 eas build --platform android --profile development
 
+eas build --profile preview --platform android
+
 ```
+
 ### Store Submission
 
 1. Follow Expo's deployment guide for app store submission

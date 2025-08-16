@@ -50,10 +50,10 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/AppIcons/android/foreground.png",
-        "backgroundColor": "#00cc00"
+        "foregroundImage": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/167.png",
+        "backgroundColor": "red"
       },
-      "icon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png",
+      "icon": "./assets/images/favicon.png",
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.RECORD_AUDIO",
@@ -82,8 +82,8 @@
       [
         "react-native-google-mobile-ads",
         {
-                    "androidAppId": "ca-app-pub-7316809859766211~2051954785",
-                              "iosAppId": "ca-app-pub-7316809859766211~5986178987",
+          "androidAppId": "ca-app-pub-7316809859766211~2051954785",
+          "iosAppId": "ca-app-pub-7316809859766211~5986178987",
           "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
         }
       ]

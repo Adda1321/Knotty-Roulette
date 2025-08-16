@@ -170,27 +170,6 @@ class AdService {
   }
 
   /**
-   * Get current spin count
-   */
-  getSpinCount(): number {
-    return this.spinCount;
-  }
-
-  /**
-   * Get spins remaining before next ad
-   */
-  getSpinsRemaining(): number {
-    return Math.max(0, this.SPINS_BEFORE_AD - this.spinCount);
-  }
-
-  /**
-   * Check if user should see ads
-   */
-  shouldShowAds(): boolean {
-    return InterstitialAd && userService.isFree();
-  }
-
-  /**
    * Update ad service when user tier changes
    */
   async onUserTierChange(): Promise<void> {

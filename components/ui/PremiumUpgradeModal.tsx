@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { COLORS, FONTS, SIZES } from '../../constants/theme';
-import audioService from '../../services/audio';
-import purchaseService from '../../services/purchaseService';
-import Button from './Button';
-import CustomModal from './CustomModal';
+import React, { useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import audioService from "../../services/audio";
+import purchaseService from "../../services/purchaseService";
+import Button from "./Button";
+import CustomModal from "./CustomModal";
 
 interface PremiumUpgradeModalProps {
   visible: boolean;
@@ -23,30 +23,30 @@ export default function PremiumUpgradeModal({
   const handlePurchase = async () => {
     try {
       setIsLoading(true);
-      audioService.playHaptic('light');
-      
+      audioService.playHaptic("light");
+
       const success = await purchaseService.purchasePremiumPack();
-      
+
       if (success) {
         Alert.alert(
-          'Purchase Initiated',
-          'Your purchase is being processed. You will be upgraded to premium once the transaction completes.',
-          [{ text: 'OK', onPress: onClose }]
+          "Purchase Initiated",
+          "Your purchase is being processed. You will be upgraded to premium once the transaction completes.",
+          [{ text: "OK", onPress: onClose }]
         );
         onPurchaseSuccess?.();
       } else {
         Alert.alert(
-          'Purchase Failed',
-          'Unable to process your purchase. Please try again.',
-          [{ text: 'OK' }]
+          "Purchase Failed",
+          "Unable to process your purchase. Please try again.",
+          [{ text: "OK" }]
         );
       }
     } catch (error) {
-      console.error('Purchase error:', error);
+      console.error("Purchase error:", error);
       Alert.alert(
-        'Purchase Error',
-        'An error occurred during purchase. Please try again.',
-        [{ text: 'OK' }]
+        "Purchase Error",
+        "An error occurred during purchase. Please try again.",
+        [{ text: "OK" }]
       );
     } finally {
       setIsLoading(false);
@@ -56,30 +56,30 @@ export default function PremiumUpgradeModal({
   const handleRestore = async () => {
     try {
       setIsRestoring(true);
-      audioService.playHaptic('light');
-      
+      audioService.playHaptic("light");
+
       const restored = await purchaseService.restorePurchases();
-      
+
       if (restored) {
         Alert.alert(
-          'Purchase Restored',
-          'Your premium purchase has been restored successfully!',
-          [{ text: 'OK', onPress: onClose }]
+          "Purchase Restored",
+          "Your premium purchase has been restored successfully!",
+          [{ text: "OK", onPress: onClose }]
         );
         onPurchaseSuccess?.();
       } else {
         Alert.alert(
-          'No Purchases Found',
-          'No previous premium purchases were found to restore.',
-          [{ text: 'OK' }]
+          "No Purchases Found",
+          "No previous premium purchases were found to restore.",
+          [{ text: "OK" }]
         );
       }
     } catch (error) {
-      console.error('Restore error:', error);
+      console.error("Restore error:", error);
       Alert.alert(
-        'Restore Error',
-        'An error occurred while restoring purchases.',
-        [{ text: 'OK' }]
+        "Restore Error",
+        "An error occurred while restoring purchases.",
+        [{ text: "OK" }]
       );
     } finally {
       setIsRestoring(false);
@@ -99,22 +99,22 @@ export default function PremiumUpgradeModal({
         {/* Premium Benefits */}
         <View style={styles.benefitsContainer}>
           <Text style={styles.benefitsTitle}>🎯 Premium Benefits</Text>
-          
+
           <View style={styles.benefitItem}>
             <Text style={styles.benefitIcon}>🚫</Text>
             <Text style={styles.benefitText}>No Advertisements</Text>
           </View>
-          
+
           <View style={styles.benefitItem}>
             <Text style={styles.benefitIcon}>⚡</Text>
             <Text style={styles.benefitText}>Unlimited Spins</Text>
           </View>
-          
+
           <View style={styles.benefitItem}>
             <Text style={styles.benefitIcon}>🎨</Text>
             <Text style={styles.benefitText}>Premium Themes</Text>
           </View>
-          
+
           <View style={styles.benefitItem}>
             <Text style={styles.benefitIcon}>🏆</Text>
             <Text style={styles.benefitText}>Exclusive Challenges</Text>
@@ -154,19 +154,25 @@ export default function PremiumUpgradeModal({
           onPress={handleRestore}
           disabled={isRestoring}
           backgroundColor="transparent"
-          textColor={COLORS.YELLOW}
+          textColor={COLORS.TEXT_SECONDARY}
           fontSize={SIZES.SMALL}
-          fontWeight="500"
+          fontWeight="400"
           fontFamily={FONTS.DOSIS}
-          paddingHorizontal={SIZES.PADDING_MEDIUM}
-          paddingVertical={10}
+          paddingHorizontal={SIZES.PADDING_SMALL}
+          paddingVertical={8}
           style={styles.restoreButton}
         />
 
         {/* Terms */}
         <Text style={styles.termsText}>
-          Purchase will be charged to your App Store account. 
-          Premium access is permanent and includes all future updates.
+          Purchase will be charged to your App Store account. Premium access is
+          permanent and includes all future updates.
+        </Text>
+
+        {/* Small restore note */}
+        <Text style={styles.restoreNote}>
+          Premium status is automatically restored on app startup. Use "Restore
+          Purchases" only if you're experiencing issues.
         </Text>
       </ScrollView>
     </CustomModal>
@@ -179,18 +185,18 @@ const styles = StyleSheet.create({
   },
   benefitsContainer: {
     marginBottom: 20,
+    color: "black",
   },
   benefitsTitle: {
     fontSize: SIZES.SUBTITLE,
     fontFamily: FONTS.DOSIS_BOLD,
-    color: COLORS.TEXT_PRIMARY,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 15,
     ...SIZES.TEXT_SHADOW_SMALL,
   },
   benefitItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 12,
     paddingHorizontal: 10,
   },
@@ -201,11 +207,11 @@ const styles = StyleSheet.create({
   benefitText: {
     fontSize: SIZES.BODY,
     fontFamily: FONTS.DOSIS,
-    color: COLORS.TEXT_PRIMARY,
+    color: COLORS.BACKGROUND_DARK,
     flex: 1,
   },
   priceContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: 25,
   },
   price: {
@@ -225,16 +231,25 @@ const styles = StyleSheet.create({
   },
   restoreButton: {
     borderWidth: 1,
-    borderColor: COLORS.YELLOW,
-    borderRadius: 8,
+    borderColor: COLORS.TEXT_SECONDARY,
+    borderRadius: 6,
     marginBottom: 15,
+    opacity: 0.8,
   },
   termsText: {
     fontSize: SIZES.SMALL,
     fontFamily: FONTS.DOSIS,
     color: COLORS.TEXT_SECONDARY,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 18,
     paddingHorizontal: 10,
   },
-}); 
+  restoreNote: {
+    fontSize: SIZES.SMALL,
+    fontFamily: FONTS.DOSIS,
+    color: COLORS.TEXT_SECONDARY,
+    textAlign: "center",
+    marginTop: 10,
+    paddingHorizontal: 10,
+  },
+});

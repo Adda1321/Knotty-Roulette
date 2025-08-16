@@ -39,7 +39,7 @@ class AudioService {
         bonusAchieved: require('../assets/sounds/bonus-achieved.wav'),
         buttonPress: require('../assets/sounds/button-press.wav'),
         gameOver: require('../assets/sounds/bonus-achieved.wav'),
-        passChallenge: require('../assets/sounds/pass-challenge.wav'),
+        passChallenge: require('../assets/sounds/passed_challenge_upd.wav'),
         buttonClick: require('../assets/sounds/button-click.wav'),
       };
 
@@ -110,7 +110,7 @@ class AudioService {
         bonusAchieved: require('../assets/sounds/bonus-achieved.wav'),
         buttonPress: require('../assets/sounds/button-press.wav'),
         gameOver: require('../assets/sounds/bonus-achieved.wav'),
-        passChallenge: require('../assets/sounds/pass-challenge.wav'),
+        passChallenge: require('../assets/sounds/passed_challenge_upd.wav'),
         buttonClick: require('../assets/sounds/button-click.wav'),
       };
       

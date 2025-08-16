@@ -400,6 +400,7 @@ export default function GameBoard({
                           }),
                         },
                       ],
+                      opacity: 0.8, // Make the image less bright
                     },
                   ]}
                   resizeMode="contain"
@@ -544,7 +545,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize:
       Platform.OS === "android"
-        ? Math.min(SIZES.EXTRALARGE, width * 0.07)
+        ? Math.min(SIZES.EXTRALARGE, width * 0.072)
         : Math.min(SIZES.EXTRALARGE * 1.0, width),
     fontFamily: FONTS.DOSIS_BOLD,
     color: COLORS.YELLOW,
@@ -564,7 +565,7 @@ const styles = StyleSheet.create({
     ...SIZES.TEXT_SHADOW_SMALL,
   },
   passInstruction: {
-    fontSize: SIZES.SUBTITLE,
+    fontSize: SIZES.BODY,
     color: COLORS.TEXT_DARK,
     // fontFamily: FONTS.PRIMARY,
     fontStyle: "italic",

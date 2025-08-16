@@ -12,8 +12,6 @@ export default function Scoreboard({
   players,
   currentPlayerIndex,
 }: ScoreboardProps) {
-  console.log("Scoreboard received players:", players);
-  console.log("Scoreboard players length:", players.length);
 
   // Sort players by score (highest first)
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
@@ -76,7 +74,7 @@ export default function Scoreboard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#8fd89cff",
+    backgroundColor: "#5aad5d", // Darker shade of 6bc26e - more sophisticated
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_SMALL,
     marginTop: SIZES.PADDING_MEDIUM,
@@ -84,7 +82,6 @@ const styles = StyleSheet.create({
     paddingVertical: SIZES.PADDING_MEDIUM,
     width: "100%",
     ...SIZES.SHADOW_SMALL,
-    marginLeft: -2,
   },
   title: {
     fontSize: SIZES.SUBTITLE,

@@ -35,8 +35,10 @@ interface GameBoardProps {
   challenges: Challenge[];
   currentPlayerIndex: number;
   isOnline: boolean;
+  isNewGame: boolean;
   onPlayerTurnComplete: (playerIndex: number, points: number) => void;
   onResetGame: () => void;
+  onRulesShown: () => void;
 }
 
 const { width } = Dimensions.get("window");
@@ -46,8 +48,10 @@ export default function GameBoard({
   challenges,
   currentPlayerIndex,
   isOnline,
+  isNewGame,
   onPlayerTurnComplete,
   onResetGame,
+  onRulesShown,
 }: GameBoardProps) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(
@@ -64,6 +68,28 @@ export default function GameBoard({
   const rotation = useRef(new Animated.Value(0)).current;
   const spinButtonScale = useRef(new Animated.Value(1)).current;
   const wheelScale = useRef(new Animated.Value(1)).current;
+
+  // Auto-show rules for new games
+  useEffect(() => {
+    if (isNewGame) {
+      setShowRules(true);
+    }
+  }, [isNewGame]);
+
+  // Handle rules close for new games
+  const handleRulesClose = () => {
+    setShowRules(false);
+    if (isNewGame) {
+      onRulesShown(); // Notify parent that rules have been shown
+    }
+  };
+
+  // Handle manual rules opening (not from new game)
+  const handleManualRulesOpen = () => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium");
+    setShowRules(true);
+  };
 
   const getNonRepeatingChallenge = (): Challenge => {
     const available = challenges.filter(
@@ -301,11 +327,7 @@ export default function GameBoard({
 
                 <Button
                   text="📖 Rules"
-                  onPress={() => {
-                    audioService.playSound("buttonPress");
-                    audioService.playHaptic("medium");
-                    setShowRules(true);
-                  }}
+                  onPress={handleManualRulesOpen}
                   backgroundColor={COLORS.YELLOW}
                   textColor={COLORS.TEXT_DARK}
                   fontSize={SIZES.CAPTION}
@@ -475,7 +497,7 @@ export default function GameBoard({
         )}
 
         {/* Game Rules Modal */}
-        <GameRules visible={showRules} onClose={() => setShowRules(false)} />
+        <GameRules visible={showRules} onClose={handleRulesClose} />
 
         {/* Challenge Completion Modal */}
         <CustomModal
@@ -489,7 +511,7 @@ export default function GameBoard({
           title={getCompletionModalTitle()}
           message={getCompletionModalMessage()}
           showCloseButton={true}
-          closeButtonText="Spin Again"
+          closeButtonText={`${players[(currentPlayerIndex + 1) % players.length]?.name}'s Turn To Spin`}
           showConfirmButton={false}
           showSparkles={
             completionData?.action === "complete" ||
@@ -561,7 +583,8 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     // fontWeight: "800",
-    marginBottom: SIZES.PADDING_SMALL,
+    // marginBottom: SIZES.PADDING_SMALL,
+    paddingTop:5,
     ...SIZES.TEXT_SHADOW_SMALL,
   },
   passInstruction: {
@@ -575,10 +598,10 @@ const styles = StyleSheet.create({
     position: "relative",
     overflow: "hidden",
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
-    padding: SIZES.PADDING_MEDIUM,
+    // padding: SIZES.PADDING_MEDIUM,
     // ...SIZES.SHADOW_SMALL,
     alignItems: "center",
-    // marginBottom: SIZES.PADDING_SMALL,
+    // marginBottom: 50,
     marginTop: -45,
     width: "100%",
     maxWidth: 400,
@@ -604,7 +627,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 20,
     // Make container circular to match wheel shape
-    borderRadius: width * 0.25 + 8, // Half of wheel width + padding
+    borderRadius: width * 0.3 + 8, // Half of wheel width + padding (updated for larger wheel)
     // Add padding to ensure shadow is visible
     padding: 12,
     // Ensure shadow is visible on all sides
@@ -613,8 +636,8 @@ const styles = StyleSheet.create({
     // backgroundColor: 'transparent',
   },
   wheel: {
-    width: width * 0.5,
-    height: 200,
+    width: width * 0.6, // Increased from 0.5 to 0.6 (20% larger)
+    height: 240, // Increased from 200 to 240 (20% larger)
   },
   spinButton: {
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
@@ -626,7 +649,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -10,
     left: 0,
-    height: 200,
+    height: 240, // Updated to match new wheel height
     width: 50, // Made thinner
     backgroundColor: "rgba(255, 255, 255, 0.12)", // Slightly more transparent
     zIndex: 1,

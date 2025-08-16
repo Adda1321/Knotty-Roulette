@@ -428,7 +428,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false, // Tighter text layout
   },
   turnText: {
-    fontSize: SIZES.EXTRALARGE,
+    fontSize: SIZES.TITLE + 4,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",

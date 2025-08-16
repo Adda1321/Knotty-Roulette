@@ -77,9 +77,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#5aad5d", // Darker shade of 6bc26e - more sophisticated
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_SMALL,
-    marginTop: SIZES.PADDING_MEDIUM,
+    marginTop: 14,
     maxHeight: 150,
-    paddingVertical: SIZES.PADDING_MEDIUM,
+    paddingVertical: 12,
     width: "100%",
     ...SIZES.SHADOW_SMALL,
   },

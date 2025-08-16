@@ -72,8 +72,8 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/knotty-roulette.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
+          "imageWidth": 150,
+          "resizeMode": "scale-down",
           "backgroundColor": "#6bc26e"
         }
       ],

@@ -23,6 +23,7 @@ export default function HomeScreen() {
   const [isOnline, setIsOnline] = useState(true);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [winner, setWinner] = useState<Player | null>(null);
+  const [isNewGame, setIsNewGame] = useState(false);
 
   useEffect(() => {
     initializeServices();
@@ -70,6 +71,7 @@ export default function HomeScreen() {
     setPlayers(newPlayers);
     setCurrentPlayerIndex(0);
     setGameState("playing");
+    setIsNewGame(true); // Set flag for new game
 
     // Reset ad service spin counter for new game
     adService.resetSpinCounter();
@@ -79,6 +81,7 @@ export default function HomeScreen() {
     setGameState("setup");
     setPlayers([]);
     setCurrentPlayerIndex(0);
+    setIsNewGame(false); // Reset flag when game is reset
   };
 
   if (isLoading) {
@@ -101,18 +104,19 @@ export default function HomeScreen() {
           challenges={challenges}
           currentPlayerIndex={currentPlayerIndex}
           isOnline={isOnline}
+          isNewGame={isNewGame}
           onPlayerTurnComplete={(playerIndex, points) => {
             const updatedPlayers = [...players];
             updatedPlayers[playerIndex].points += points;
             setPlayers(updatedPlayers);
 
             // Check for winner (first to 10 points)
-                          if (updatedPlayers[playerIndex].points >= 10) {
-                // Play game over sound and haptic
-                audioService.playSound("gameOver");
-                audioService.playHaptic("success");
+            if (updatedPlayers[playerIndex].points >= 10) {
+              // Play game over sound and haptic
+              audioService.playSound("gameOver");
+              audioService.playHaptic("success");
 
-                setGameState("gameOver");
+              setGameState("gameOver");
               setWinner(updatedPlayers[playerIndex]);
               setShowGameOverModal(true);
             } else {
@@ -121,6 +125,7 @@ export default function HomeScreen() {
             }
           }}
           onResetGame={resetGame}
+          onRulesShown={() => setIsNewGame(false)} // Reset flag when rules are shown
         />
       )}
 

@@ -353,7 +353,7 @@ export default function GameBoard({
             <Text style={styles.title}>KNOTTY ROULETTE</Text>
             <View style={styles.mascotContainer}>
               <Image
-                source={require("../../assets/images/Knotty-Mascot.png")}
+                source={require("../../assets/images/KnottyMascotComplete.png")}
                 style={styles.mascotImage}
                 resizeMode="contain"
               />
@@ -631,15 +631,6 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.12)", // Slightly more transparent
     zIndex: 1,
   },
-  // backgdglareLayer: {
-  //   position: "absolute",
-  //   top: 0,
-  //   left: 0,
-  //   height: "100%",
-  //   width: 600,
-  //   backgroundColor: "rgba(255, 255, 255, 0.1)", // More transparent
-  //   zIndex: 1,
-  // },
   glareLayer2: {
     position: "absolute",
     top: 0,

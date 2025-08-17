@@ -1,121 +1,111 @@
 import Constants from "expo-constants";
 import userService from "./userService";
 
-// Conditionally import InAppPurchases only when not in Expo Go
-let InAppPurchases: any;
+// Simple check: Are we in production?
+const isProduction = () => Constants.expoConfig?.extra?.eas?.buildProfile === 'production';
 
-try {
-  // Only import InAppPurchases if we're not in Expo Go
-  if (
-    Constants.expoConfig?.extra?.useExpoGo !== true &&
-    Constants.expoConfig !== undefined
-  ) {
-    InAppPurchases = require("expo-in-app-purchases");
-  }
-} catch (error) {
-  console.log("🚫 InAppPurchases: Not available in this environment");
-}
+// Helper: Should we show mock data?
+const shouldShowMockData = () => !isProduction();
 
-// Product IDs - these will be configured in App Store/Play Store
+// Product IDs
 const PRODUCT_IDS = {
-  PREMIUM_PACK: "knotty_roulette_premium_pack", // $4.99 premium pack
+  PREMIUM_PACK: "knotty_roulette_premium_pack",
 };
 
-// Development testing configuration
-const DEV_CONFIG = {
-  ENABLE_TEST_PURCHASE: __DEV__, // Enable test purchase in development
-  TEST_PURCHASE_DELAY: 2000, // Simulate purchase delay
+// Mock IAP for development/preview builds
+class MockIAPService {
+  async connectAsync() {}
+  async disconnectAsync() {}
+  setPurchaseListener() {}
+  async getProductsAsync() { return { responseCode: 'OK', results: [] }; }
+  async getPurchaseHistoryAsync() { return { responseCode: 'OK', results: [] }; }
+  async purchaseItemAsync() { return true; }
+  async finishTransactionAsync() { return true; }
+  
+  get IAPResponseCode() {
+    return { OK: 'OK' };
+  }
+}
+
+// Real IAP for production builds
+let IAP: any = null;
+
+if (isProduction()) {
+  // Only try to import in production
+  try {
+    IAP = require("expo-iap");
+  } catch (error) {
+    console.log("🚫 IAP: Failed to load in production");
+  }
+}
+
+// Use mock service for non-production builds
+const getIAPService = () => {
+  if (isProduction() && IAP) {
+    return IAP;
+  }
+  return new MockIAPService();
 };
 
 class PurchaseService {
   private isInitialized = false;
 
   /**
+   * Check if IAP is available
+   */
+  async isIAPAvailable(): Promise<boolean> {
+    if (!isProduction()) return false;
+    return IAP !== null;
+  }
+
+  /**
    * Initialize the purchase service
    */
   async initialize(): Promise<void> {
-    try {
-      if (this.isInitialized) return;
+    if (this.isInitialized || !isProduction()) {
+      this.isInitialized = true;
+      return;
+    }
 
-      // Skip initialization if InAppPurchases is not available (Expo Go)
-      if (!InAppPurchases) {
-        console.log("🚫 InAppPurchases not available, skipping initialization");
+    try {
+      if (!IAP) {
         this.isInitialized = true;
         return;
       }
 
-      // Connect to the store
-      await InAppPurchases.connectAsync();
-
-      // Set up purchase listener
-      InAppPurchases.setPurchaseListener((result: any) => {
-        this.handlePurchaseResult(result);
-      });
-
-      // Check for any pending purchases that need acknowledgment
+      const iapService = getIAPService();
+      await iapService.connectAsync();
+      iapService.setPurchaseListener((result: any) => this.handlePurchaseResult(result));
       await this.handlePendingPurchases();
-
-      // Automatically restore premium status if user was previously premium
       await this.autoRestorePremiumStatus();
-
       this.isInitialized = true;
-      console.log("✅ Purchase service initialized");
-
-      if (__DEV__) {
-        console.log("🧪 Development mode: Test purchases enabled");
-      }
     } catch (error) {
-      console.error("❌ Failed to initialize purchase service:", error);
+      console.error("❌ IAP: Failed to initialize");
+      this.isInitialized = true;
     }
   }
 
   /**
    * Automatically restore premium status if user was previously premium
-   * This ensures users don't lose premium access due to app reinstalls or device changes
    */
   private async autoRestorePremiumStatus(): Promise<void> {
     try {
-      // Skip if InAppPurchases is not available
-      if (!InAppPurchases) {
-        console.log("🚫 InAppPurchases not available, skipping auto-restore");
-        return;
-      }
+      if (userService.isPremium()) return;
 
-      // Only attempt restore if user is currently showing as free
-      if (userService.isPremium()) {
-        console.log("✅ User is already premium, no restoration needed");
-        return;
-      }
+      if (!IAP) return;
 
-      console.log("🔍 Auto-restoring premium status...");
-
-      // Check purchase history to see if user has ever purchased premium
-      const result = await InAppPurchases.getPurchaseHistoryAsync();
-
-      if (
-        result.responseCode === InAppPurchases.IAPResponseCode.OK &&
-        result.results
-      ) {
-        // Check if user has premium purchase in their history
+      const iapService = getIAPService();
+      const result = await iapService.getPurchaseHistoryAsync();
+      if (result.responseCode === iapService.IAPResponseCode.OK && result.results) {
         const hasPremium = result.results.some(
           (purchase: any) => purchase.productId === PRODUCT_IDS.PREMIUM_PACK
         );
-
         if (hasPremium) {
-          console.log(
-            "✅ Premium purchase found in history, restoring access..."
-          );
           await userService.setPremium("lifetime");
-          console.log("✅ Premium status automatically restored");
-        } else {
-          console.log("ℹ️ No premium purchase found in history");
         }
-      } else {
-        console.log("⚠️ Could not retrieve purchase history for auto-restore");
       }
     } catch (error) {
       console.error("❌ Auto-restore failed:", error);
-      // Don't throw error - this is a background operation that shouldn't break app initialization
     }
   }
 
@@ -124,51 +114,23 @@ class PurchaseService {
    */
   private async handlePurchaseResult(result: any): Promise<void> {
     try {
-      if (
-        result.responseCode === InAppPurchases?.IAPResponseCode?.OK &&
-        result.results
-      ) {
+      if (!IAP) return;
+
+      const iapService = getIAPService();
+      if (result.responseCode === iapService.IAPResponseCode.OK && result.results) {
         const purchases = result.results;
         for (const purchase of purchases) {
           if (purchase.acknowledged) {
-            console.log(
-              "✅ Purchase already acknowledged:",
-              purchase.productId
-            );
-
-            // Update user tier to premium
             await userService.setPremium("lifetime");
-
-            // AdService will be automatically notified via tier change listener
-            console.log("✅ Purchase completed - user upgraded to premium");
           } else {
-            console.log(
-              "🔄 New purchase received, acknowledging...",
-              purchase.productId
-            );
-
             try {
-              // CRITICAL: Acknowledge the purchase to Google Play
-              // This prevents automatic refunds after 3 days
-              await InAppPurchases.finishTransactionAsync(purchase, true);
-              console.log("✅ Purchase acknowledged successfully");
-
-              // Update user tier to premium
+              await iapService.finishTransactionAsync(purchase, true);
               await userService.setPremium("lifetime");
-
-              // AdService will be automatically notified via tier change listener
-              console.log("✅ Purchase completed - user upgraded to premium");
             } catch (acknowledgmentError) {
-              console.error(
-                "❌ Failed to acknowledge purchase:",
-                acknowledgmentError
-              );
-              // Don't update user tier if acknowledgment fails
+              console.error("❌ Failed to acknowledge purchase:", acknowledgmentError);
             }
           }
         }
-      } else {
-        console.log("⚠️ Purchase result:", result.responseCode);
       }
     } catch (error) {
       console.error("❌ Error handling purchase result:", error);
@@ -180,42 +142,22 @@ class PurchaseService {
    */
   private async handlePendingPurchases(): Promise<void> {
     try {
-      // Skip if InAppPurchases is not available
-      if (!InAppPurchases) {
-        console.log(
-          "🚫 InAppPurchases not available, skipping pending purchases check"
-        );
-        return;
-      }
+      if (!IAP) return;
 
-      console.log("🔍 Checking for pending purchases...");
-
-      const result = await InAppPurchases.getPurchaseHistoryAsync();
-
-      if (
-        result.responseCode === InAppPurchases.IAPResponseCode.OK &&
-        result.results
-      ) {
+      const iapService = getIAPService();
+      const result = await iapService.getPurchaseHistoryAsync();
+      if (result.responseCode === iapService.IAPResponseCode.OK && result.results) {
         const pendingPurchases = result.results.filter(
           (purchase: any) => !purchase.acknowledged
         );
 
-        if (pendingPurchases.length > 0) {
-          console.log(
-            `🔄 Found ${pendingPurchases.length} pending purchase(s), processing...`
-          );
-
-          for (const purchase of pendingPurchases) {
-            if (purchase.productId === PRODUCT_IDS.PREMIUM_PACK) {
-              console.log("🔄 Processing pending premium purchase...");
-              await this.handlePurchaseResult({
-                responseCode: InAppPurchases.IAPResponseCode.OK,
-                results: [purchase],
-              });
-            }
+        for (const purchase of pendingPurchases) {
+          if (purchase.productId === PRODUCT_IDS.PREMIUM_PACK) {
+            await this.handlePurchaseResult({
+              responseCode: iapService.IAPResponseCode.OK,
+              results: [purchase],
+            });
           }
-        } else {
-          console.log("✅ No pending purchases found");
         }
       }
     } catch (error) {
@@ -227,67 +169,28 @@ class PurchaseService {
    * Get available products
    */
   async getProducts(): Promise<any[]> {
+    await this.initialize();
+
+    if (!isProduction()) {
+      return [{
+        productId: PRODUCT_IDS.PREMIUM_PACK,
+        title: "Premium Pack - Ad Free Gaming",
+        description: "Remove all ads and unlock premium features",
+        price: "$4.99",
+        priceAmountMicros: 4990000,
+        priceCurrencyCode: "USD",
+      }];
+    }
+
     try {
-      await this.initialize();
+      if (!IAP) return [];
 
-      // Skip if InAppPurchases is not available
-      if (!InAppPurchases) {
-        console.log(
-          "🚫 InAppPurchases not available, returning mock products for development"
-        );
-
-        // Return mock product for development testing
-        if (__DEV__ && DEV_CONFIG.ENABLE_TEST_PURCHASE) {
-          console.log("🧪 Returning mock product for development testing");
-          return [
-            {
-              productId: PRODUCT_IDS.PREMIUM_PACK,
-              title: "Premium Pack - Ad Free Gaming",
-              description:
-                "Remove all ads and unlock premium features for the ultimate gaming experience",
-              price: "$4.99",
-              priceAmountMicros: 4990000,
-              priceCurrencyCode: "USD",
-            },
-          ];
-        }
-
-        return [];
-      }
-
-      const result = await InAppPurchases.getProductsAsync([
-        PRODUCT_IDS.PREMIUM_PACK,
-      ]);
-
-      if (
-        result.responseCode === InAppPurchases.IAPResponseCode.OK &&
-        result.results
-      ) {
-        console.log("📦 Available products:", result.results);
-        return result.results;
-      } else {
-        console.log("❌ Failed to get products:", result.responseCode);
-
-        // Return mock product for development testing
-        if (__DEV__ && DEV_CONFIG.ENABLE_TEST_PURCHASE) {
-          console.log("🧪 Returning mock product for development testing");
-          return [
-            {
-              productId: PRODUCT_IDS.PREMIUM_PACK,
-              title: "Premium Pack - Ad Free Gaming",
-              description:
-                "Remove all ads and unlock premium features for the ultimate gaming experience",
-              price: "$4.99",
-              priceAmountMicros: 4990000,
-              priceCurrencyCode: "USD",
-            },
-          ];
-        }
-
-        return [];
-      }
+      const iapService = getIAPService();
+      const result = await iapService.getProductsAsync([PRODUCT_IDS.PREMIUM_PACK]);
+      return (result.responseCode === iapService.IAPResponseCode.OK && result.results) 
+        ? result.results 
+        : [];
     } catch (error) {
-      console.error("❌ Failed to get products:", error);
       return [];
     }
   }
@@ -296,58 +199,21 @@ class PurchaseService {
    * Purchase premium pack
    */
   async purchasePremiumPack(): Promise<boolean> {
+    await this.initialize();
+
+    if (shouldShowMockData()) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      await userService.setPremium("lifetime");
+      return true;
+    }
+
     try {
-      await this.initialize();
+      if (!IAP) return false;
 
-      console.log("🛒 Starting premium pack purchase...");
-
-      // Development testing: simulate purchase
-      if (__DEV__ && DEV_CONFIG.ENABLE_TEST_PURCHASE) {
-        console.log("🧪 Development mode: Simulating purchase...");
-
-        // Simulate purchase delay
-        await new Promise((resolve) =>
-          setTimeout(resolve, DEV_CONFIG.TEST_PURCHASE_DELAY)
-        );
-
-        // Simulate successful purchase
-        await userService.setPremium("lifetime");
-        console.log("✅ Development purchase completed");
-
-        return true;
-      }
-
-      // Skip if InAppPurchases is not available
-      if (!InAppPurchases) {
-        console.log("🚫 InAppPurchases not available, purchase not possible");
-        return false;
-      }
-
-      // Real purchase flow - will fail if product not configured
-      try {
-        await InAppPurchases.purchaseItemAsync(PRODUCT_IDS.PREMIUM_PACK);
-        return true;
-      } catch (purchaseError) {
-        console.log(
-          "⚠️ Purchase failed (product not configured):",
-          purchaseError
-        );
-
-        // In development, show helpful message
-        if (__DEV__) {
-          console.log("💡 To test real purchases:");
-          console.log("1. Upload APK to Play Console");
-          console.log(
-            "2. Create in-app product with ID:",
-            PRODUCT_IDS.PREMIUM_PACK
-          );
-          console.log("3. Set up license testing");
-        }
-
-        return false;
-      }
+      const iapService = getIAPService();
+      await iapService.purchaseItemAsync(PRODUCT_IDS.PREMIUM_PACK);
+      return true;
     } catch (error) {
-      console.error("❌ Purchase failed:", error);
       return false;
     }
   }
@@ -356,61 +222,29 @@ class PurchaseService {
    * Restore purchases
    */
   async restorePurchases(): Promise<boolean> {
+    await this.initialize();
+
+    if (shouldShowMockData()) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return userService.isPremium();
+    }
+
     try {
-      await this.initialize();
+      if (!IAP) return false;
 
-      console.log("🔄 Restoring purchases...");
-
-      // Development testing: simulate restoration
-      if (__DEV__ && DEV_CONFIG.ENABLE_TEST_PURCHASE) {
-        console.log("🧪 Development mode: Simulating purchase restoration...");
-
-        // Simulate restoration delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        // Check if user is already premium (simulate restoration)
-        if (userService.isPremium()) {
-          console.log("✅ Development restoration: User already premium");
-          return true;
-        } else {
-          console.log("❌ Development restoration: No premium found");
-          return false;
-        }
-      }
-
-      // Skip if InAppPurchases is not available
-      if (!InAppPurchases) {
-        console.log(
-          "🚫 InAppPurchases not available, restoration not possible"
-        );
-        return false;
-      }
-
-      const result = await InAppPurchases.getPurchaseHistoryAsync();
-
-      if (
-        result.responseCode === InAppPurchases.IAPResponseCode.OK &&
-        result.results
-      ) {
-        // Check if user has premium purchase
+      const iapService = getIAPService();
+      const result = await iapService.getPurchaseHistoryAsync();
+      if (result.responseCode === iapService.IAPResponseCode.OK && result.results) {
         const hasPremium = result.results.some(
           (purchase: any) => purchase.productId === PRODUCT_IDS.PREMIUM_PACK
         );
-
         if (hasPremium) {
-          console.log("✅ Premium purchase found in history");
           await userService.setPremium("lifetime");
           return true;
-        } else {
-          console.log("❌ No premium purchase found");
-          return false;
         }
-      } else {
-        console.log("❌ Failed to get purchase history:", result.responseCode);
-        return false;
       }
+      return false;
     } catch (error) {
-      console.error("❌ Restore failed:", error);
       return false;
     }
   }
@@ -458,10 +292,12 @@ class PurchaseService {
    */
   async cleanup(): Promise<void> {
     try {
-      if (this.isInitialized && InAppPurchases) {
-        await InAppPurchases.disconnectAsync();
+      if (this.isInitialized) {
+        if (IAP) {
+          const iapService = getIAPService();
+          await iapService.disconnectAsync();
+        }
         this.isInitialized = false;
-        console.log("🧹 Purchase service cleaned up");
       }
     } catch (error) {
       console.error("❌ Error cleaning up purchase service:", error);

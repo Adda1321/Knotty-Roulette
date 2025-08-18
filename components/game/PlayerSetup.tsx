@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
 import { Surface } from "react-native-paper";
@@ -32,6 +33,10 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
     useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Add this for debugging
+  const buildProfile = Constants.expoConfig?.extra?.eas?.buildProfile;
+  const isDev = __DEV__;
 
   const addPlayer = () => {
     audioService.playSound("buttonPress");
@@ -114,6 +119,12 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
             </View>
             <Text style={styles.title}>KNOTTY ROULETTE</Text>
             <Text style={styles.subtitle}>Add Players to Begin</Text>
+            
+            {/* Add debug info here */}
+            <View style={styles.debugInfo}>
+              <Text style={styles.debugText}>Build Profile: {buildProfile || 'undefined'}</Text>
+              <Text style={styles.debugText}>__DEV__: {isDev ? 'true' : 'false'}</Text>
+            </View>
           </View>
 
           <ScrollView style={styles.content}>
@@ -377,5 +388,17 @@ const styles = StyleSheet.create({
   },
   spacer: {
     width: SIZES.PADDING_LARGE, // Adjust as needed for spacing
+  },
+  debugInfo: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  debugText: {
+    color: COLORS.YELLOW,
+    fontSize: 12,
+    fontFamily: FONTS.PRIMARY,
+    textAlign: 'center',
   },
 });

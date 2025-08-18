@@ -50,7 +50,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/167.png",
+        "foregroundImage": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/92.png",
         "backgroundColor": "#FFFF00"
       },
       "icon": "./assets/images/favicon.png",

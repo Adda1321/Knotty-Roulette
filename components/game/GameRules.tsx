@@ -1,5 +1,12 @@
 import React from "react";
-import { Modal, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
 import Button from "../ui/Button";
@@ -13,11 +20,11 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
   const rules = [
     {
       number: 1,
-      text: "Grab a Knotty Times - No drink? no play.",
+      text: "Grab a Knotty Times.",
     },
     {
       number: 2,
-      text: "Round up at least 2 players - The more, the knotty-er. 😏",
+      text: "Round up at least 2 players - The more, the knotty-er.😏",
     },
     {
       number: 3,
@@ -74,22 +81,22 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
               </View>
             ))}
           </ScrollView>
-        
-            {/* Close Button */}
-            <Button
-              text="Got it!"
-              onPress={() => {
-                audioService.playSound("buttonPress");
-                audioService.playHaptic("light");
-                onClose();
-              }}
-              backgroundColor={COLORS.YELLOW}
-              textColor={COLORS.TEXT_DARK}
-              fontSize={SIZES.SUBTITLE}
-              // fontWeight="bold"
-              fontFamily={FONTS.DOSIS_BOLD}
-              style={styles.closeButton}
-            />
+
+          {/* Close Button */}
+          <Button
+            text="Got it!"
+            onPress={() => {
+              audioService.playSound("buttonPress");
+              audioService.playHaptic("light");
+              onClose();
+            }}
+            backgroundColor={COLORS.YELLOW}
+            textColor={COLORS.TEXT_DARK}
+            fontSize={SIZES.SUBTITLE}
+            // fontWeight="bold"
+            fontFamily={FONTS.DOSIS_BOLD}
+            style={styles.closeButton}
+          />
         </View>
       </View>
     </Modal>
@@ -104,7 +111,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   container: {
-    backgroundColor: COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.FIELDS,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     margin: SIZES.PADDING_MEDIUM,
     maxHeight: Platform.OS === "ios" ? "80%" : "90%",
@@ -121,21 +128,21 @@ const styles = StyleSheet.create({
     padding: SIZES.PADDING_LARGE,
   },
   title: {
-    fontSize: SIZES.TITLE,
+    fontSize: 30,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
     marginBottom: SIZES.PADDING_SMALL,
   },
   subtitle: {
-    fontSize: SIZES.CAPTION,
+    fontSize: SIZES.SUBTITLE,
     color: COLORS.TEXT_PRIMARY,
     fontFamily: FONTS.PRIMARY,
     fontStyle: "italic",
   },
   content: {
     flex: 1,
-    backgroundColor: COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.FIELDS,
     padding: SIZES.PADDING_LARGE,
   },
   ruleContainer: {

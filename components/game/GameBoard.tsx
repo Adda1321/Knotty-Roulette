@@ -3,18 +3,19 @@ import { Surface } from "react-native-paper";
 
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Easing,
-    Platform,
-    StyleSheet,
-    Text,
-    View,
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    ANIMATION_CONFIGS,
-    ANIMATION_VALUES,
+  ANIMATION_CONFIGS,
+  ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import adService from "../../services/adService";
@@ -34,8 +35,10 @@ interface GameBoardProps {
   challenges: Challenge[];
   currentPlayerIndex: number;
   isOnline: boolean;
+  isNewGame: boolean;
   onPlayerTurnComplete: (playerIndex: number, points: number) => void;
   onResetGame: () => void;
+  onRulesShown: () => void;
 }
 
 const { width } = Dimensions.get("window");
@@ -45,8 +48,10 @@ export default function GameBoard({
   challenges,
   currentPlayerIndex,
   isOnline,
+  isNewGame,
   onPlayerTurnComplete,
   onResetGame,
+  onRulesShown,
 }: GameBoardProps) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(
@@ -63,6 +68,28 @@ export default function GameBoard({
   const rotation = useRef(new Animated.Value(0)).current;
   const spinButtonScale = useRef(new Animated.Value(1)).current;
   const wheelScale = useRef(new Animated.Value(1)).current;
+
+  // Auto-show rules for new games
+  useEffect(() => {
+    if (isNewGame) {
+      setShowRules(true);
+    }
+  }, [isNewGame]);
+
+  // Handle rules close for new games
+  const handleRulesClose = () => {
+    setShowRules(false);
+    if (isNewGame) {
+      onRulesShown(); // Notify parent that rules have been shown
+    }
+  };
+
+  // Handle manual rules opening (not from new game)
+  const handleManualRulesOpen = () => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium");
+    setShowRules(true);
+  };
 
   const getNonRepeatingChallenge = (): Challenge => {
     const available = challenges.filter(
@@ -103,6 +130,7 @@ export default function GameBoard({
       audioService.playSound("bonusAchieved");
       audioService.playHaptic("success");
     } else if (action === "pass") {
+      console.log("Sound PALYEDD passChallenge");
       audioService.playSound("passChallenge");
       audioService.playHaptic("warning");
     }
@@ -299,15 +327,11 @@ export default function GameBoard({
 
                 <Button
                   text="📖 Rules"
-                  onPress={() => {
-                    audioService.playSound("buttonPress");
-                    audioService.playHaptic("medium");
-                    setShowRules(true);
-                  }}
+                  onPress={handleManualRulesOpen}
                   backgroundColor={COLORS.YELLOW}
                   textColor={COLORS.TEXT_DARK}
                   fontSize={SIZES.CAPTION}
-                  fontWeight="600"
+                  fontFamily={FONTS.DOSIS_BOLD}
                   style={{ borderRadius: 8 }}
                 />
               </View>
@@ -338,7 +362,8 @@ export default function GameBoard({
               // shadowIntensity={5}
               // shadowRadius={10}
               fontSize={SIZES.CAPTION}
-              fontWeight="600"
+              fontFamily={FONTS.DOSIS_BOLD}
+              // fontWeight="600"
             />
           </Surface>
         </View>
@@ -346,49 +371,24 @@ export default function GameBoard({
         {/* Main Content - Centered */}
         <View style={styles.mainContent}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={styles.headerContainer}>
             <Text style={styles.title}>KNOTTY ROULETTE</Text>
+            <View style={styles.mascotContainer}>
+              <Image
+                source={require("../../assets/images/KnottyMascotComplete.png")}
+                style={styles.mascotImage}
+                resizeMode="contain"
+              />
+            </View>
           </View>
 
           {/* Game Area */}
           <LinearGradient
-            // colors={["#84BB78","#84BB78"]}
-            colors={["#def6e2", "#84BB78"]}
+            colors={["#d4f6daff", "#286a19ff"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.gameArea}
           >
-            {/* Diagonal Glare Overlay
-  <Animated.View style={[
-    styles.glareOverlay,
-    {
-      opacity: glareAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0.7, 0.10]
-      })
-    }
-  ]}>
-    <LinearGradient
-      colors={['rgba(255, 255, 255, 0.8)', 'rgba(255, 255, 255, 0)']}
-      start={{ x: 1, y: 0 }} // Top right
-      end={{ x: 0, y: 1 }}   // Bottom left
-      style={StyleSheet.absoluteFill}
-    />
-  </Animated.View> */}
-            {/* Shine Layer 1 */}
-            {/* <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.backgdglareLayer,
-              {
-                transform: [
-                  { translateX: shineAnim1 },
-                  { skewX: "-15deg" },
-                ],
-              },
-            ]}
-          /> */}
-
             {/* Rest of your content */}
 
             {/* Spinning Wheel */}
@@ -422,6 +422,7 @@ export default function GameBoard({
                           }),
                         },
                       ],
+                      opacity: 0.8, // Make the image less bright
                     },
                   ]}
                   resizeMode="contain"
@@ -464,7 +465,7 @@ export default function GameBoard({
                     [COLORS.DARK_GREEN, COLORS.YELLOW] as const
                   }
                   textColor={COLORS.TEXT_DARK}
-                  fontSize={SIZES.BODY}
+                  fontSize={SIZES.SUBTITLE}
                   fontFamily={FONTS.DOSIS_BOLD}
                   shadowIntensity={5}
                   // shadowRadius={12}
@@ -485,19 +486,18 @@ export default function GameBoard({
             players={players}
             currentPlayerIndex={currentPlayerIndex}
           />
-
-          {/* Challenge Display - Moved outside game area */}
-          {showChallenge && currentChallenge && (
-            <ChallengeDisplay
-              challenge={currentChallenge}
-              playerName={currentPlayer.name}
-              onComplete={handleChallengeComplete}
-            />
-          )}
         </View>
+        {/* Challenge Display - Moved outside game area */}
+        {showChallenge && currentChallenge && (
+          <ChallengeDisplay
+            challenge={currentChallenge}
+            playerName={currentPlayer.name}
+            onComplete={handleChallengeComplete}
+          />
+        )}
 
         {/* Game Rules Modal */}
-        <GameRules visible={showRules} onClose={() => setShowRules(false)} />
+        <GameRules visible={showRules} onClose={handleRulesClose} />
 
         {/* Challenge Completion Modal */}
         <CustomModal
@@ -511,7 +511,7 @@ export default function GameBoard({
           title={getCompletionModalTitle()}
           message={getCompletionModalMessage()}
           showCloseButton={true}
-          closeButtonText="Spin Again"
+          closeButtonText={`${players[(currentPlayerIndex + 1) % players.length]?.name}'s Turn To Spin`}
           showConfirmButton={false}
           showSparkles={
             completionData?.action === "complete" ||
@@ -526,7 +526,7 @@ export default function GameBoard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.DARK_GREEN,
+    backgroundColor: "#116b20ff",
     paddingVertical: SIZES.PADDING_SMALL,
   },
   content: {
@@ -539,7 +539,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: SIZES.PADDING_LARGE,
     paddingVertical: SIZES.PADDING_SMALL,
-    backgroundColor: COLORS.DARK_GREEN,
+    backgroundColor: "#116b20ff",
   },
   leftButtons: {
     flexDirection: "row",
@@ -549,49 +549,63 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
-    maxHeight: "85%",
+    alignItems: "flex-start",
+    maxHeight: "88%",
   },
   header: {
     alignItems: "center",
+    marginTop: 5,
     marginBottom: SIZES.PADDING_SMALL,
   },
+  headerContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    marginTop:20
+  },
   title: {
-    fontSize: SIZES.EXTRALARGE,
+    fontSize:
+      Platform.OS === "android"
+        ? Math.min(SIZES.EXTRALARGE, width * 0.072)
+        : Math.min(SIZES.EXTRALARGE * 1.0, width),
     fontFamily: FONTS.DOSIS_BOLD,
     color: COLORS.YELLOW,
-    marginTop: SIZES.PADDING_MEDIUM,
-
     marginBottom: SIZES.PADDING_MEDIUM,
-    textAlign: "center",
     ...SIZES.TEXT_SHADOW_MEDIUM,
+    textAlign: "left",
+    marginLeft: 5,
+    flex: 1,
+    flexShrink: 1,
   },
   currentPlayer: {
     fontSize: SIZES.SUBTITLE,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     // fontWeight: "800",
-    marginBottom: SIZES.PADDING_SMALL,
+    // marginBottom: SIZES.PADDING_SMALL,
+    paddingTop:5,
     ...SIZES.TEXT_SHADOW_SMALL,
   },
   passInstruction: {
-    fontSize: SIZES.CAPTION,
+    fontSize: SIZES.BODY,
     color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.PRIMARY,
+    // fontFamily: FONTS.PRIMARY,
     fontStyle: "italic",
   },
   gameArea: {
     flex: 1,
     position: "relative",
     overflow: "hidden",
-    backgroundColor: COLORS.LIGHT_GREEN,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
-    padding: SIZES.PADDING_MEDIUM,
-    ...SIZES.SHADOW_SMALL,
+    // padding: SIZES.PADDING_MEDIUM,
+    // ...SIZES.SHADOW_SMALL,
     alignItems: "center",
-    marginBottom: SIZES.PADDING_SMALL,
+    // marginBottom: 50,
+    marginTop: -45,
     width: "100%",
     maxWidth: 400,
+    zIndex: -1,
   },
   glareOverlay: {
     position: "absolute",
@@ -613,7 +627,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 20,
     // Make container circular to match wheel shape
-    borderRadius: width * 0.25 + 8, // Half of wheel width + padding
+    borderRadius: width * 0.3 + 8, // Half of wheel width + padding (updated for larger wheel)
     // Add padding to ensure shadow is visible
     padding: 12,
     // Ensure shadow is visible on all sides
@@ -622,8 +636,8 @@ const styles = StyleSheet.create({
     // backgroundColor: 'transparent',
   },
   wheel: {
-    width: width * 0.5,
-    height: 200,
+    width: width * 0.6, // Increased from 0.5 to 0.6 (20% larger)
+    height: 240, // Increased from 200 to 240 (20% larger)
   },
   spinButton: {
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
@@ -635,20 +649,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -10,
     left: 0,
-    height: 200,
+    height: 240, // Updated to match new wheel height
     width: 50, // Made thinner
     backgroundColor: "rgba(255, 255, 255, 0.12)", // Slightly more transparent
     zIndex: 1,
   },
-  // backgdglareLayer: {
-  //   position: "absolute",
-  //   top: 0,
-  //   left: 0,
-  //   height: "100%",
-  //   width: 600,
-  //   backgroundColor: "rgba(255, 255, 255, 0.1)", // More transparent
-  //   zIndex: 1,
-  // },
   glareLayer2: {
     position: "absolute",
     top: 0,
@@ -657,5 +662,18 @@ const styles = StyleSheet.create({
     width: 30,
     backgroundColor: "rgba(255, 255, 255, 0.05)", // More transparent
     zIndex: 1,
+  },
+  mascotContainer: {
+    alignSelf: "flex-end",
+    marginRight: -10,
+    flexShrink: 0,
+    minWidth: 100,
+  },
+
+  mascotImage: {
+    width: 130,
+    height: 130,
+    zIndex: 1,
+    transform: [{ rotate: "5deg" }],
   },
 });

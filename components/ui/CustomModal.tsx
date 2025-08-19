@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     padding: SIZES.PADDING_LARGE,
   },
   container: {
-    backgroundColor: COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.FIELDS,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     width: "100%",
     maxWidth: 400,

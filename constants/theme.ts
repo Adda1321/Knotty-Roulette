@@ -2,7 +2,8 @@ export const COLORS = {
   // Primary Colors
   DARK_GREEN: "#6bc26e",
   LIGHT_GREEN: "#def6e2",
-  YELLOW: "#e5c200",
+  YELLOW: "#F4C614",
+  FIELDS: "#F1E9BE",
 
   // Background Colors
   BACKGROUND_DARK: "#1a1a1a",
@@ -36,6 +37,7 @@ export const FONTS = {
   DOSIS: "Dosis-Regular",
   SECONDARY: "SpaceMono",
   DOSIS_BOLD: "Dosis-Bold",
+  DOSIS_MEDIUM: "Dosis-Medium",
   FUN: "FontdinerSwanky",
 };
 
@@ -47,7 +49,6 @@ export const SIZES = {
   BODY: 16,
   CAPTION: 14,
   SMALL: 12,
-
   // Spacing
   PADDING_SMALL: 8,
   PADDING_MEDIUM: 16,

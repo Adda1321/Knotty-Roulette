@@ -36,12 +36,14 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
   const toggleMusicMute = async () => {
     const newState = await backgroundMusic.toggleMute();
     setIsMusicMuted(newState);
+    audioService.playSound("buttonPress");
     audioService.playHaptic("medium");
   };
 
   const toggleSoundsMute = () => {
     const newState = audioService.toggleSoundsMute();
     setIsSoundsMuted(newState);
+    audioService.playSound("buttonPress");
     audioService.playHaptic("medium");
   };
 
@@ -55,13 +57,12 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
   const handleSettingsPress = () => {
     setShowSettings(true);
     audioService.playSound("buttonPress");
-    audioService.playHaptic("light");
+    audioService.playHaptic("medium");
   };
 
   const closeSettings = () => {
     setShowSettings(false);
     audioService.playSound("buttonPress");
-
     audioService.playHaptic("medium");
   };
 
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
     padding: SIZES.PADDING_LARGE,
   },
   container: {
-    backgroundColor: COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.FIELDS,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     width: "100%",
     maxWidth: 400,
@@ -260,6 +261,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SIZES.PADDING_LARGE,
+    backgroundColor: COLORS.FIELDS,
   },
   settingRow: {
     flexDirection: "row",
@@ -311,6 +313,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     padding: SIZES.PADDING_LARGE,
+
   },
   closeButton: {
     width: "100%",

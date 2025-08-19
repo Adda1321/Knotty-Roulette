@@ -1,21 +1,21 @@
-import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
-import GameBoard from '../../components/game/GameBoard';
-import PlayerSetup from '../../components/game/PlayerSetup';
-import CustomModal from '../../components/ui/CustomModal';
-import Loader from '../../components/ui/Loader';
-import { COLORS, FONTS, SIZES } from '../../constants/theme';
-import { fetchChallenges } from '../../services/api';
-import audioService from '../../services/audio';
-import backgroundMusic from '../../services/backgroundMusic';
-import { Challenge, GameState, Player } from '../../types/game';
-
+import GameBoard from "@/components/game/GameBoard";
+import { StatusBar } from "expo-status-bar";
+import React, { useEffect, useState } from "react";
+import { StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
+import PlayerSetup from "../../components/game/PlayerSetup";
+import CustomModal from "../../components/ui/CustomModal";
+import Loader from "../../components/ui/Loader";
+import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import adService from "../../services/adService";
+import { fetchChallenges } from "../../services/api";
+import audioService from "../../services/audio";
+import userService from "../../services/userService";
+import { Challenge, GameState, Player } from "../../types/game";
 
 export default function HomeScreen() {
-  const [gameState, setGameState] = useState<GameState>('setup');
+  const [gameState, setGameState] = useState<GameState>("setup");
   const [players, setPlayers] = useState<Player[]>([]);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
@@ -23,28 +23,28 @@ export default function HomeScreen() {
   const [isOnline, setIsOnline] = useState(true);
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [winner, setWinner] = useState<Player | null>(null);
+  const [isNewGame, setIsNewGame] = useState(false);
 
   useEffect(() => {
-    loadChallenges();
+    initializeServices();
   }, []);
-  useEffect(() => {
-    audioService.initialize();
-  }, []);
-  useEffect(() => {
-    // Initialize and start background music
-    const initializeBackgroundMusic = async () => {
-      try {
-        await backgroundMusic.initialize();
-        await backgroundMusic.loadBackgroundMusic();
-        await backgroundMusic.playBackgroundMusic();
-        console.log('🎵 Background music initialized in main app');
-      } catch (error) {
-        console.error('❌ Failed to initialize background music in main app:', error);
-      }
-    };
+  const initializeServices = async () => {
+    try {
+      // Initialize user service first
+      await userService.initialize();
 
-    initializeBackgroundMusic();
-  }, []);
+      // Initialize ad service (depends on user service)
+      await adService.initialize();
+
+      // Load challenges
+      await loadChallenges();
+    } catch (error) {
+      console.error("Error initializing services:", error);
+      // Still try to load challenges even if services fail
+      await loadChallenges();
+    }
+  };
+
   const loadChallenges = async () => {
     setIsLoading(true);
     try {
@@ -52,7 +52,7 @@ export default function HomeScreen() {
       setChallenges(fetchedChallenges);
       setIsOnline(true); // Success means we're online
     } catch (error) {
-      console.error('Error loading challenges:', error);
+      console.error("Error loading challenges:", error);
       setIsOnline(false); // Error means we're offline
       // Don't show alert, just use fallback challenges
     } finally {
@@ -61,22 +61,27 @@ export default function HomeScreen() {
   };
 
   const startGame = (playerNames: string[]) => {
-    console.log('Received player names:', playerNames);
+    console.log("Received player names:", playerNames);
     const newPlayers = playerNames.map((name, index) => ({
       id: index,
       name,
       points: 0,
     }));
-    console.log('Created players:', newPlayers);
+    console.log("Created players:", newPlayers);
     setPlayers(newPlayers);
     setCurrentPlayerIndex(0);
-    setGameState('playing');
+    setGameState("playing");
+    setIsNewGame(true); // Set flag for new game
+
+    // Reset ad service spin counter for new game
+    adService.resetSpinCounter();
   };
 
   const resetGame = () => {
-    setGameState('setup');
+    setGameState("setup");
     setPlayers([]);
     setCurrentPlayerIndex(0);
+    setIsNewGame(false); // Reset flag when game is reset
   };
 
   if (isLoading) {
@@ -91,7 +96,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
-      {gameState === 'setup' ? (
+      {gameState === "setup" ? (
         <PlayerSetup onStartGame={startGame} />
       ) : (
         <GameBoard
@@ -99,18 +104,19 @@ export default function HomeScreen() {
           challenges={challenges}
           currentPlayerIndex={currentPlayerIndex}
           isOnline={isOnline}
+          isNewGame={isNewGame}
           onPlayerTurnComplete={(playerIndex, points) => {
             const updatedPlayers = [...players];
             updatedPlayers[playerIndex].points += points;
             setPlayers(updatedPlayers);
-            
+
             // Check for winner (first to 10 points)
             if (updatedPlayers[playerIndex].points >= 10) {
               // Play game over sound and haptic
-              audioService.playSound('gameOver');
-              audioService.playHaptic('success');
-              
-              setGameState('gameOver');
+              audioService.playSound("gameOver");
+              audioService.playHaptic("success");
+
+              setGameState("gameOver");
               setWinner(updatedPlayers[playerIndex]);
               setShowGameOverModal(true);
             } else {
@@ -119,19 +125,22 @@ export default function HomeScreen() {
             }
           }}
           onResetGame={resetGame}
+          onRulesShown={() => setIsNewGame(false)} // Reset flag when rules are shown
         />
       )}
 
       {/* Game Over Modal */}
       <CustomModal
-        visible={showGameOverModal}
-        onClose={() => {
-           audioService.playHaptic('medium');
-          setShowGameOverModal(false);
-          resetGame();
-        }}
+                  visible={showGameOverModal}
+          onClose={() => {
+            audioService.playHaptic("medium");
+            setShowGameOverModal(false);
+            resetGame();
+          }}
         title="Game Over!"
-        message={winner ? `${winner.name} wins with ${winner.points} points!` : ''}
+        message={
+          winner ? `${winner.name} wins with ${winner.points} points!` : ""
+        }
         showCloseButton={true}
         closeButtonText="New Game"
         showConfirmButton={false}
@@ -146,7 +155,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.BACKGROUND_DARK,
-    padding:0,
+    padding: 0,
     margin: 0,
   },
   loadingText: {

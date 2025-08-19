@@ -9,14 +9,8 @@ class BackgroundMusicService {
 
   async initialize() {
     try {
-      // Set audio mode for background music playback
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        staysActiveInBackground: false, // Changed to false to stop when backgrounded
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      });
+      // Audio mode is already set by the main audio service
+      // No need to set it again here
 
       // Set up app state listener for background/foreground
       AppState.addEventListener('change', this.handleAppStateChange.bind(this));
@@ -44,6 +38,8 @@ class BackgroundMusicService {
         // Already loaded
         return;
       }
+      
+      console.log('Loading background music...');
       const { sound } = await Audio.Sound.createAsync(
         require('../assets/sounds/background-music.wav'),
         {
@@ -53,21 +49,60 @@ class BackgroundMusicService {
         }
       );
       this.backgroundMusic = sound;
-      console.log('Background music loaded');
+      console.log('✅ Background music loaded successfully');
     } catch (error) {
-      console.error('Failed to load background music:', error);
+      console.error('❌ Failed to load background music:', error);
+      // Try to recreate the sound
+      try {
+        console.log('🔄 Retrying background music load...');
+        const { sound } = await Audio.Sound.createAsync(
+          require('../assets/sounds/background-music.wav'),
+          {
+            shouldPlay: false,
+            isLooping: true,
+            volume: this.isMuted ? 0 : this.volume,
+          }
+        );
+        this.backgroundMusic = sound;
+        console.log('✅ Background music loaded on retry');
+      } catch (retryError) {
+        console.error('❌ Background music load failed on retry:', retryError);
+      }
     }
   }
 
   async playBackgroundMusic() {
-    if (!this.backgroundMusic || this.isMuted) return;
+    if (!this.backgroundMusic || this.isMuted) {
+      console.log('⚠️ Background music not available or muted');
+      return;
+    }
 
     try {
-      await this.backgroundMusic.playAsync();
-      this.isPlaying = true;
-      console.log('Background music started');
+      // Check if already playing
+      const status = await this.backgroundMusic.getStatusAsync();
+      if ('isLoaded' in status && status.isLoaded && 'isPlaying' in status && !status.isPlaying) {
+        await this.backgroundMusic.playAsync();
+        this.isPlaying = true;
+        console.log('✅ Background music started');
+      } else if ('isPlaying' in status && status.isPlaying) {
+        console.log('ℹ️ Background music already playing');
+      } else {
+        console.log('⚠️ Background music not loaded properly');
+      }
     } catch (error) {
-      console.error('Failed to play background music:', error);
+      console.error('❌ Failed to play background music:', error);
+      // Try to reload and play
+      try {
+        console.log('🔄 Retrying background music play...');
+        await this.loadBackgroundMusic();
+        if (this.backgroundMusic) {
+          await this.backgroundMusic.playAsync();
+          this.isPlaying = true;
+          console.log('✅ Background music started on retry');
+        }
+      } catch (retryError) {
+        console.error('❌ Background music play failed on retry:', retryError);
+      }
     }
   }
 

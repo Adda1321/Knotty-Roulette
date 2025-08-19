@@ -1,45 +1,58 @@
-import React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { COLORS, FONTS, SIZES } from '../../constants/theme';
-import { Player } from '../../types/game';
+import React from "react";
+import { FlatList, StyleSheet, Text, View } from "react-native";
+import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import { Player } from "../../types/game";
 
 interface ScoreboardProps {
   players: Player[];
   currentPlayerIndex: number;
 }
 
-export default function Scoreboard({ players, currentPlayerIndex }: ScoreboardProps) {
-  console.log('Scoreboard received players:', players);
-  console.log('Scoreboard players length:', players.length);
-  
+export default function Scoreboard({
+  players,
+  currentPlayerIndex,
+}: ScoreboardProps) {
+
   // Sort players by score (highest first)
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
 
-  const renderPlayerCard = ({ item: player, index }: { item: Player; index: number }) => (
+  const renderPlayerCard = ({
+    item: player,
+    index,
+  }: {
+    item: Player;
+    index: number;
+  }) => (
     <View
       style={[
         styles.playerCard,
         player.id === currentPlayerIndex && styles.currentPlayerCard,
       ]}
     >
-      <Text style={[
-        styles.playerName,
-        player.id === currentPlayerIndex && styles.currentPlayerName,
-      ]}>
+      <Text
+        style={[
+          styles.playerName,
+          player.id === currentPlayerIndex && styles.currentPlayerName,
+        ]}
+      >
         {player.name}
-        {player.id === currentPlayerIndex && ' (Current)'}
+        {player.id === currentPlayerIndex && " (Current)"}
       </Text>
-      <Text style={[
-        styles.playerScore,
-        player.id === currentPlayerIndex && styles.currentPlayerScore,
-      ]}>{player.points}</Text>
+      <Text
+        style={[
+          styles.playerScore,
+          player.id === currentPlayerIndex && styles.currentPlayerScore,
+        ]}
+      >
+        {player.points}
+      </Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Scoreboard</Text>
-      
+
       <FlatList
         data={sortedPlayers}
         renderItem={renderPlayerCard}
@@ -48,7 +61,7 @@ export default function Scoreboard({ players, currentPlayerIndex }: ScoreboardPr
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={[
           styles.playersContainer,
-          sortedPlayers.length <= 3 && styles.centerContent
+          sortedPlayers.length <= 3 && styles.centerContent,
         ]}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         style={styles.flatList}
@@ -61,44 +74,45 @@ export default function Scoreboard({ players, currentPlayerIndex }: ScoreboardPr
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.LIGHT_GREEN,
+    backgroundColor: "#5aad5d", // Darker shade of 6bc26e - more sophisticated
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_SMALL,
-    margin: SIZES.PADDING_SMALL,
+    marginTop: 14,
     maxHeight: 150,
-    paddingVertical: SIZES.PADDING_MEDIUM,
-    width: '100%',
+    paddingVertical: 12,
+    width: "100%",
     ...SIZES.SHADOW_SMALL,
   },
   title: {
-    fontSize: SIZES.BODY,
+    fontSize: SIZES.SUBTITLE,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: SIZES.PADDING_SMALL,
   },
   playersContainer: {
     paddingHorizontal: SIZES.PADDING_SMALL,
     flexGrow: 1,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   centerContent: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   separator: {
     width: SIZES.PADDING_SMALL,
   },
   playerCard: {
-    backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_SMALL,
     padding: SIZES.PADDING_SMALL,
     minWidth: 80,
     maxWidth: 100,
     height: 60,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...SIZES.SHADOW_SMALL,
+    alignItems: "center",
+    justifyContent: "center",
+    ...SIZES.SHADOW_SMALL,  
+    backgroundColor:COLORS.FIELDS,
+
   },
   currentPlayerCard: {
     backgroundColor: COLORS.DARK_GREEN,
@@ -107,10 +121,10 @@ const styles = StyleSheet.create({
   },
   playerName: {
     fontSize: SIZES.SMALL,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.PRIMARY,
-    textAlign: 'center',
+    fontFamily: FONTS.DOSIS_MEDIUM,
+    textAlign: "center",
     marginBottom: 2,
   },
   currentPlayerName: {
@@ -118,14 +132,14 @@ const styles = StyleSheet.create({
   },
   playerScore: {
     fontSize: SIZES.SUBTITLE,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: COLORS.DARK_GREEN,
-    fontFamily: FONTS.PRIMARY,
+    fontFamily: FONTS.DOSIS_MEDIUM,
   },
   currentPlayerScore: {
     color: COLORS.YELLOW,
   },
   flatList: {
-    width: '100%',
+    width: "100%",
   },
 });

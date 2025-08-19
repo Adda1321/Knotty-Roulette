@@ -1,4 +1,4 @@
-import Constants from 'expo-constants';
+import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
 import { Surface } from "react-native-paper";
@@ -6,6 +6,7 @@ import { Surface } from "react-native-paper";
 import {
   Animated,
   Easing,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -100,7 +101,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
 
   return (
     <LinearGradient
-      colors={[COLORS.DARK_GREEN, "#679c67", "#3f663f"]}
+      colors={[COLORS.DARK_GREEN, "#116b20ff", "#3f663f"]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -117,20 +118,32 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                 }}
               />
             </View>
+
+            <View style={styles.mascotContainer}>
+              <Image
+                source={require("../../assets/images/Knotty Mascot.png")}
+                style={styles.mascotImage}
+                resizeMode="contain"
+              />
+            </View>
             <Text style={styles.title}>KNOTTY ROULETTE</Text>
             <Text style={styles.subtitle}>Add Players to Begin</Text>
-            
+
             {/* Add debug info here */}
             <View style={styles.debugInfo}>
-              <Text style={styles.debugText}>Build Profile: {buildProfile || 'undefined'}</Text>
-              <Text style={styles.debugText}>__DEV__: {isDev ? 'true' : 'false'}</Text>
+              <Text style={styles.debugText}>
+                Build Profile: {buildProfile || "undefined"}
+              </Text>
+              <Text style={styles.debugText}>
+                __DEV__: {isDev ? "true" : "false"}
+              </Text>
             </View>
           </View>
 
           <ScrollView style={styles.content}>
             <View style={styles.playerList}>
               {shouldScroll ? (
-                // Use ScrollView for player list when we have many players
+                // Scrollable version
                 <ScrollView
                   ref={scrollViewRef}
                   showsVerticalScrollIndicator={false}
@@ -140,6 +153,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                   {players.map((player, index) => (
                     <View key={index}>
                       <View style={styles.playerInputContainer}>
+                        {/* Player input field */}
                         <TextInput
                           style={styles.playerInput}
                           placeholder={`Player ${index + 1}`}
@@ -149,7 +163,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                           maxLength={20}
                           selectionColor="#e94560"
                         />
-                        {/* Show remove button only when more than minimum players */}
+                        {/* Remove button */}
                         {players.length > 2 && (
                           <TouchableOpacity
                             style={styles.removeButton}
@@ -164,34 +178,35 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                         )}
                       </View>
 
-                      {/* Add Player button after each field when under max */}
+                      {/* Add Player button - now with double border in both cases */}
                       {index === players.length - 1 && players.length < 8 && (
-                        <Surface elevation={5} style={{ borderRadius: 10 }}>
-                          <Button
-                            text="+ Add Player"
-                            onPress={addPlayer}
-                            backgroundColor={COLORS.YELLOW}
-                            textColor={COLORS.TEXT_DARK}
-                            fontSize={SIZES.CAPTION}
-                            fontFamily={FONTS.PRIMARY}
-                            fontWeight="600"
-                            paddingHorizontal={SIZES.PADDING_SMALL}
-                            paddingVertical={SIZES.PADDING_SMALL}
-                            style={styles.addPlayerButton}
-                            shadowIntensity={8}
-                            shadowRadius={12}
-                          />
-                        </Surface>
+                        <View style={styles.doubleBorderOuter}>
+                          <View style={styles.doubleBorderInner}>
+                            <Button
+                              text="+ Add Player"
+                              onPress={addPlayer}
+                              backgroundColor={COLORS.YELLOW}
+                              textColor={COLORS.TEXT_DARK}
+                              fontSize={SIZES.BODY}
+                              fontFamily={FONTS.DOSIS_MEDIUM}
+                              fontWeight="800"
+                              paddingHorizontal={SIZES.PADDING_SMALL}
+                              paddingVertical={SIZES.PADDING_SMALL}
+                              style={{ borderRadius: 4 }}
+                            />
+                          </View>
+                        </View>
                       )}
                     </View>
                   ))}
                 </ScrollView>
               ) : (
-                // Use regular View when we have few players
+                // Non-scrollable version
                 <>
                   {players.map((player, index) => (
                     <View key={index}>
                       <View style={styles.playerInputContainer}>
+                        {/* Player input field */}
                         <TextInput
                           style={styles.playerInput}
                           placeholder={`Player ${index + 1}`}
@@ -201,7 +216,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                           maxLength={20}
                           selectionColor="#e94560"
                         />
-                        {/* Show remove button only when more than minimum players */}
+                        {/* Remove button */}
                         {players.length > 2 && (
                           <TouchableOpacity
                             style={styles.removeButton}
@@ -216,24 +231,24 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                         )}
                       </View>
 
-                      {/* Add Player button after each field when under max */}
+                      {/* Add Player button - now with double border */}
                       {index === players.length - 1 && players.length < 8 && (
-                        <Surface elevation={5} style={{ borderRadius: 8 }}>
-                          <Button
-                            text="+ Add Player"
-                            onPress={addPlayer}
-                            backgroundColor={COLORS.YELLOW}
-                            textColor={COLORS.TEXT_DARK}
-                            fontSize={SIZES.CAPTION}
-                            fontFamily={FONTS.PRIMARY}
-                            fontWeight="600"
-                            paddingHorizontal={SIZES.PADDING_SMALL}
-                            paddingVertical={SIZES.PADDING_SMALL}
-                            style={styles.addPlayerButton}
-                            shadowIntensity={8}
-                            shadowRadius={12}
-                          />
-                        </Surface>
+                        <View style={styles.doubleBorderOuter}>
+                          <View style={styles.doubleBorderInner}>
+                            <Button
+                              text="+ Add Player"
+                              onPress={addPlayer}
+                              backgroundColor={COLORS.YELLOW}
+                              textColor={COLORS.TEXT_DARK}
+                              fontSize={SIZES.CAPTION}
+                              fontFamily={FONTS.DOSIS_BOLD}
+                              fontWeight="600"
+                              paddingHorizontal={SIZES.PADDING_SMALL}
+                              paddingVertical={SIZES.PADDING_SMALL}
+                              style={{ borderRadius: 4 }}
+                            />
+                          </View>
+                        </View>
                       )}
                     </View>
                   ))}
@@ -244,29 +259,46 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
             <View style={styles.startButtonContainer}>
               <Animated.View style={{ transform: [{ translateY }] }}>
                 <Surface elevation={5} style={{ borderRadius: 8 }}>
-                  <Button
-                    text="START GAME"
-                    onPress={() => {
-                      audioService.playHaptic("medium"); // add haptic here too
-                      startGame();
-                    }}
-                    disabled={players.filter((p) => p.trim()).length < 2}
-                    backgroundColor={
-                      players.filter((p) => p.trim()).length < 2
-                        ? "#bfa204"
-                        : COLORS.YELLOW
-                    }
-                    textColor={COLORS.TEXT_DARK}
-                    backgroundGradient={
-                      [COLORS.DARK_GREEN, COLORS.YELLOW] as const
-                    }
-                    fontSize={SIZES.SUBTITLE}
-                    fontFamily={FONTS.DOSIS_BOLD}
-                    paddingHorizontal={SIZES.PADDING_LARGE}
-                    paddingVertical={15}
-                    shadowIntensity={10}
-                    shadowRadius={15}
-                  />
+                  <View style={styles.startButtonOuter}>
+                    <Button
+                      text={
+                        <View
+                          style={{ flexDirection: "row", alignItems: "center" }}
+                        >
+                          <Image
+                            source={require("../../assets/images/play-button-arrowhead.png")}
+                            style={{ width: 14, height: 14, marginRight: 8 }}
+                          />
+                          <Text
+                            style={{
+                              color: COLORS.TEXT_DARK,
+                              fontSize: SIZES.SUBTITLE,
+                              fontFamily: FONTS.DOSIS_BOLD,
+                            }}
+                          >
+                            START GAME
+                          </Text>
+                        </View>
+                      }
+                      onPress={() => {
+                        audioService.playHaptic("medium");
+                        startGame();
+                      }}
+                      disabled={players.filter((p) => p.trim()).length < 2}
+                      backgroundColor={
+                        players.filter((p) => p.trim()).length < 2
+                          ? "#bfa204"
+                          : COLORS.YELLOW
+                      }
+                      textColor={COLORS.TEXT_DARK}
+                      backgroundGradient={
+                        [COLORS.DARK_GREEN, COLORS.YELLOW] as const
+                      }
+                      paddingHorizontal={SIZES.PADDING_LARGE}
+                      paddingVertical={15}
+                      style={styles.startButtonInner}
+                    />
+                  </View>
                 </Surface>
               </Animated.View>
             </View>
@@ -321,14 +353,14 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
     color: COLORS.YELLOW,
     marginBottom: SIZES.PADDING_SMALL,
-    marginTop: 90,
     textAlign: "center",
     ...SIZES.TEXT_SHADOW_MEDIUM,
+    marginTop: -48,
   },
   subtitle: {
     fontSize: SIZES.BODY,
     color: COLORS.TEXT_PRIMARY,
-    fontFamily: FONTS.PRIMARY,
+    fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
     marginBottom: SIZES.PADDING_LARGE,
   },
@@ -350,12 +382,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
-    backgroundColor: COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.FIELDS,
     borderRadius: SIZES.BORDER_RADIUS_SMALL,
     paddingHorizontal: 15,
     paddingVertical: 5,
     borderWidth: 1,
-    borderColor: COLORS.CARD_BORDER,
+    borderColor: "#F1E9BE",
     ...SIZES.SHADOW_SMALL,
   },
   playerInput: {
@@ -363,7 +395,7 @@ const styles = StyleSheet.create({
     fontSize: SIZES.BODY,
     color: COLORS.TEXT_DARK,
     paddingVertical: 12,
-    fontFamily: FONTS.PRIMARY,
+    fontFamily: FONTS.DOSIS_BOLD,
   },
   removeButton: {
     width: 28,
@@ -390,7 +422,7 @@ const styles = StyleSheet.create({
     width: SIZES.PADDING_LARGE, // Adjust as needed for spacing
   },
   debugInfo: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: "rgba(0,0,0,0.3)",
     padding: 8,
     borderRadius: 8,
     marginTop: 10,
@@ -399,6 +431,74 @@ const styles = StyleSheet.create({
     color: COLORS.YELLOW,
     fontSize: 12,
     fontFamily: FONTS.PRIMARY,
-    textAlign: 'center',
+    textAlign: "center",
+  },
+
+  mascotContainer: {
+    alignSelf: "flex-end",
+    marginRight: Platform.OS === "ios" ? 20 : 0,
+  },
+
+  mascotImage: {
+    width: 150,
+    height: 150,
+    zIndex: 1,
+    transform: [{ rotate: "5deg" }],
+    marginBottom: Platform.OS === "ios" ? 0 : -5,
+  },
+  doubleBorderOuter: {
+    borderWidth: 2,
+    borderColor: COLORS.YELLOW,
+    borderRadius: 6,
+    padding: 2,
+    backgroundColor: COLORS.YELLOW,
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    marginTop: 10,
+  },
+  doubleBorderInner: {
+    borderWidth: 3,
+    borderColor: "#BE960C",
+    borderRadius: 6,
+  },
+  startButtonOuter: {
+    borderWidth: 3,
+    borderColor: "#63A133",
+    borderRadius: 8,
+    padding: 1, // This creates space between border and button
+    backgroundColor: "#63A133", // Matches border color for seamless look
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    overflow: "hidden", // Ensures clean rounded corners
+  },
+  startButtonInner: {
+    borderRadius: 5, // Slightly less than outer for border effect
+    overflow: "hidden", // Important for gradient + borderRadius
+  },
+  texturedButton: {
+    backgroundColor: COLORS.DARK_GREEN,
+    overflow: "hidden",
+    borderRadius: 8,
+  },
+  textureOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "transparent",
+    backgroundImage: `linear-gradient(
+      45deg,
+      rgba(0, 80, 0, 0.8) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(0, 80, 0, 0.8) 50%,
+      rgba(0, 80, 0, 0.8) 75%,
+      transparent 75%,
+      transparent
+    )`,
+    backgroundSize: "8px 8px",
   },
 });

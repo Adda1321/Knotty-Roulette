@@ -4,7 +4,7 @@
     "slug": "knotty-roulette",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png",
+    "icon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/1024.png",
     "scheme": "knottyroulette",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -65,7 +65,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/256.png"
+      "favicon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/1024.png"
     },
     "plugins": [
       "expo-router",

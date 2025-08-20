@@ -143,14 +143,14 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
             <Text style={styles.subtitle}>Add Players to Begin</Text>
 
             {/* Add debug info here */}
-            <View style={styles.debugInfo}>
+            {/* <View style={styles.debugInfo}>
               <Text style={styles.debugText}>
                 Build Profile: {buildProfile || "undefined"}
               </Text>
               <Text style={styles.debugText}>
                 __DEV__: {isDev ? "true" : "false"}
               </Text>
-            </View>
+            </View> */}
           </View>
 
           <ScrollView style={styles.content}>
@@ -334,6 +334,7 @@ style={styles.startButtonInner}
       <ThemeStore
         visible={showThemeStore}
         onClose={() => setShowThemeStore(false)}
+        isGameActive={false} // PlayerSetup is before game starts
       />
     </LinearGradient>
   );

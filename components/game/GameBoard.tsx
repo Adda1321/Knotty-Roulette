@@ -534,6 +534,7 @@ export default function GameBoard({
       <ThemeStore
         visible={showThemeStore}
         onClose={() => setShowThemeStore(false)}
+        isGameActive={true}
       />
     </SafeAreaView>
   );

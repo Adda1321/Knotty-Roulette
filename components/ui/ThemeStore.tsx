@@ -1,19 +1,29 @@
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    Dimensions,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import {
+  COLORS,
+  FONTS,
+  SIZES,
+  THEME_PACKS,
+  THEME_PACK_DATA,
+} from "../../constants/theme";
 import audioService from "../../services/audio";
+import themePackService from "../../services/themePackService";
+import { getSampleChallenges } from "../../utils/themeHelpers";
 import Button from "./Button";
+import CustomModal from "./CustomModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -26,94 +36,94 @@ interface ThemePack {
   previewImage: any;
   isOwned: boolean;
   isLocked: boolean;
+  isCurrent: boolean;
   emoji: string;
 }
 
-interface ThemeStoreProps {
+export default function ThemeStore({
+  visible,
+  onClose,
+  isGameActive = false, // Add prop to check if game is active
+}: {
   visible: boolean;
   onClose: () => void;
-}
-
-const THEME_PACKS: ThemePack[] = [
-  {
-    id: "default",
-    name: "Default Theme",
-    description:
-      "The classic Knotty Roulette experience with party challenges and drinking games.",
-    price: "Free",
-    image: require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs.png"),
-    previewImage: require("../../assets/images/ThemedPacksImages/DefaultTheme.jpeg"),
-    isOwned: true,
-    isLocked: false,
-    emoji: "🎯",
-  },
-  {
-    id: "college",
-    name: "College Theme",
-    description:
-      "Campus life challenges perfect for dorm parties and frat events.",
-    price: "$2.99",
-    image: require("../../assets/images/MascotImages/College/College-legs-mascot.png"),
-    previewImage: require("../../assets/images/ThemedPacksImages/CollegeThemePack.jpeg"),
-    isOwned: false,
-    isLocked: true,
-    emoji: "🎓",
-  },
-  {
-    id: "couple",
-    name: "Couple Theme",
-    description:
-      "Romantic and spicy challenges for date nights and intimate gatherings.",
-    price: "$2.99",
-    image: require("../../assets/images/MascotImages/Couple/Couple-legs-mascot.png"),
-    previewImage: require("../../assets/images/ThemedPacksImages/CoupleThemePack.jpeg"),
-    isOwned: false,
-    isLocked: true,
-    emoji: "💕",
-  },
-];
-
-const BUNDLE_DEALS = [
-  {
-    id: "both-themes",
-    title: "Both Theme Packs",
-    description: "Get both College and Couple themes at a discounted price",
-    originalPrice: "$5.98",
-    discountedPrice: "$4.99",
-    savings: "$0.99",
-    themes: ["college", "couple"],
-  },
-];
-
-export default function ThemeStore({ visible, onClose }: ThemeStoreProps) {
-  const [selectedPack, setSelectedPack] = useState<ThemePack | null>(null);
+  isGameActive?: boolean;
+}) {
   const [showPreview, setShowPreview] = useState(false);
+  const [selectedPack, setSelectedPack] = useState<ThemePack | null>(null);
+  const [themePacks, setThemePacks] = useState<ThemePack[]>([]);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(false);
+  const [purchasedPackName, setPurchasedPackName] = useState("");
+  const [showSwitchConfirmation, setShowSwitchConfirmation] = useState(false);
+  const [packToSwitch, setPackToSwitch] = useState<ThemePack | null>(null);
+  const [showResetConfirmation, setShowResetConfirmation] = useState(false);
 
-  const handlePackPress = (pack: ThemePack) => {
-    audioService.playHaptic("light");
-    audioService.playSound("buttonPress");
+  // Load theme packs with current status
+  useEffect(() => {
+    if (visible) {
+      loadThemePacks();
+    }
+  }, [visible]);
+
+  const loadThemePacks = () => {
+    const packsWithStatus = themePackService.getAllPacksWithStatus();
+    const packs: ThemePack[] = [
+      {
+        id: THEME_PACKS.DEFAULT,
+        name: THEME_PACK_DATA[THEME_PACKS.DEFAULT].name,
+        description: THEME_PACK_DATA[THEME_PACKS.DEFAULT].description,
+        price: "Free",
+        image: require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs.png"),
+        previewImage: require("../../assets/images/ThemedPacksImages/DefaultTheme.jpeg"),
+        isOwned: packsWithStatus[0].isOwned,
+        isLocked: packsWithStatus[0].isLocked,
+        isCurrent: packsWithStatus[0].isCurrent,
+        emoji: THEME_PACK_DATA[THEME_PACKS.DEFAULT].emoji,
+      },
+      {
+        id: THEME_PACKS.COLLEGE,
+        name: THEME_PACK_DATA[THEME_PACKS.COLLEGE].name,
+        description: THEME_PACK_DATA[THEME_PACKS.COLLEGE].description,
+        price: `$${THEME_PACK_DATA[THEME_PACKS.COLLEGE].price}`,
+        image: require("../../assets/images/MascotImages/College/College-legs-mascot.png"),
+        previewImage: require("../../assets/images/ThemedPacksImages/CollegeThemePack.jpeg"),
+        isOwned: packsWithStatus[1].isOwned,
+        isLocked: packsWithStatus[1].isLocked,
+        isCurrent: packsWithStatus[1].isCurrent,
+        emoji: THEME_PACK_DATA[THEME_PACKS.COLLEGE].emoji,
+      },
+      {
+        id: THEME_PACKS.COUPLE,
+        name: THEME_PACK_DATA[THEME_PACKS.COUPLE].name,
+        description: THEME_PACK_DATA[THEME_PACKS.COUPLE].description,
+        price: `$${THEME_PACK_DATA[THEME_PACKS.COUPLE].price}`,
+        image: require("../../assets/images/MascotImages/Couple/Couple-legs-mascot.png"),
+        previewImage: require("../../assets/images/ThemedPacksImages/CoupleThemePack.jpeg"),
+        isOwned: packsWithStatus[2].isOwned,
+        isLocked: packsWithStatus[2].isLocked,
+        isCurrent: packsWithStatus[2].isCurrent,
+        emoji: THEME_PACK_DATA[THEME_PACKS.COUPLE].emoji,
+      },
+    ];
+    setThemePacks(packs);
+  };
+
+  const BUNDLE_DEALS = [
+    {
+      id: "both-themes",
+      title: "Both Theme Packs",
+      description: "Get both College and Couple themes at a discounted price",
+      originalPrice: "$5.98",
+      discountedPrice: "$4.99",
+      savings: "$0.99",
+      themes: ["college", "couple"],
+    },
+  ];
+
+  const openPreview = (pack: ThemePack) => {
     setSelectedPack(pack);
     setShowPreview(true);
-  };
-
-  const handlePurchase = (pack: ThemePack) => {
-    audioService.playHaptic("medium");
-    audioService.playSound("buttonPress");
-
-    // Mock purchase - replace with actual IAP logic later
-    console.log(`Mock purchase initiated for ${pack.name}`);
-
-    // For now, just close the preview
-    setShowPreview(false);
-    setSelectedPack(null);
-  };
-
-  const handleBundlePurchase = (bundle: (typeof BUNDLE_DEALS)[0]) => {
-    audioService.playHaptic("medium");
-    audioService.playSound("buttonPress");
-
-    // Mock bundle purchase
-    console.log(`Mock bundle purchase initiated for ${bundle.title}`);
   };
 
   const closePreview = () => {
@@ -121,71 +131,84 @@ export default function ThemeStore({ visible, onClose }: ThemeStoreProps) {
     setSelectedPack(null);
   };
 
+  const handlePurchase = async (pack: ThemePack) => {
+    if (pack.isOwned) return;
+
+    setIsPurchasing(true);
+    try {
+      const success = await themePackService.purchasePack(pack.id as any);
+
+      if (success) {
+        setPurchasedPackName(pack.name);
+        setShowPurchaseSuccess(true);
+        // Play sound after modal is shown for better audio timing
+        setTimeout(() => {
+          audioService.playSound("bonusAchieved");
+          audioService.playHaptic("success");
+        }, 100);
+        loadThemePacks(); // Refresh the list
+        closePreview();
+      } else {
+        Alert.alert(
+          "Purchase Failed",
+          "Unable to complete purchase. Please try again."
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "An error occurred during purchase.");
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+  console.log("isGameActive=>>",isGameActive)
+
+  const handlePackSelection = async (pack: ThemePack) => {
+    if (!pack.isOwned) return;
+
+    // Show confirmation modal instead of direct switch
+    setPackToSwitch(pack);
+    setShowSwitchConfirmation(true);
+  };
+
+  const confirmThemeSwitch = async () => {
+    if (!packToSwitch) return;
+
+    const success = await themePackService.setCurrentPack(
+      packToSwitch.id as any
+    );
+    if (success) {
+      loadThemePacks(); // Refresh to show current selection
+      audioService.playSound("buttonPress");
+      audioService.playHaptic("light");
+    }
+
+    setShowSwitchConfirmation(false);
+    setPackToSwitch(null);
+  };
+
+  const handleBundlePurchase = (bundle: any) => {
+    audioService.playHaptic("medium");
+    audioService.playSound("buttonPress");
+
+    // Mock bundle purchase - replace with actual IAP logic later
+    console.log(`Mock bundle purchase initiated for ${bundle.title}`);
+  };
+
   const closeStore = () => {
     audioService.playHaptic("light");
+    audioService.playSound("buttonPress");
     onClose();
   };
 
-  // Function to get sample challenges for each theme pack
-  const getSampleChallenges = (themeId?: string) => {
-    const sampleChallenges = [
-      {
-        challenge_text:
-          "Give a flirty compliment to someone in the group or a stranger – Bonus if a stranger!",
-        has_bonus: true,
-      },
-      {
-        challenge_text:
-          "Show off your best dance moves! – Bonus if you commit for at least 10 seconds!",
-        has_bonus: true,
-      },
-      {
-        challenge_text:
-          "Ask the bartender or a friend for their best flirting advice – Bonus if you actually try it on someone!",
-        has_bonus: true,
-      },
-    ];
-
-    // Return different challenges based on theme
-    if (themeId === "college") {
-      return [
-        {
-          challenge_text:
-            "Challenge someone to a dance-off – Loser must finish their drink!",
-          has_bonus: false,
-        },
-        {
-          challenge_text:
-            'Start a chant – Even if it\'s just "One more round!"',
-          has_bonus: false,
-        },
-        {
-          challenge_text:
-            "Pretend you know a stranger for 30 seconds – Sell it!",
-          has_bonus: false,
-        },
-      ];
-    } else if (themeId === "couple") {
-      return [
-        {
-          challenge_text:
-            "Make eye contact with someone in the group for 10 seconds – No breaking first!",
-          has_bonus: false,
-        },
-        {
-          challenge_text:
-            "Whisper a made-up secret to someone in the group – Make it juicy.",
-          has_bonus: false,
-        },
-        {
-          challenge_text:
-            "Try to make someone in the group blush – No touching allowed!",
-          has_bonus: false,
-        },
-      ];
+  const handleResetStore = async () => {
+    try {
+      await themePackService.resetPurchases();
+      loadThemePacks(); // Refresh the list
+      audioService.playSound("buttonPress");
+      audioService.playHaptic("medium");
+    } catch (error) {
+      console.error("Error resetting store:", error);
     }
-
-    return sampleChallenges;
   };
 
   const renderBundleDeals = () => (
@@ -225,36 +248,54 @@ export default function ThemeStore({ visible, onClose }: ThemeStoreProps) {
     <TouchableOpacity
       key={pack.id}
       style={[styles.themeCard, pack.isLocked && styles.lockedCard]}
-      onPress={() => handlePackPress(pack)}
+      onPress={() => openPreview(pack)}
       activeOpacity={0.8}
     >
       <View style={styles.cardHeader}>
-        <Text style={styles.cardEmoji}>{pack.emoji}</Text>
+        {/* <View style={styles.themeEmojiContainer}> */}
+        <Text style={styles.themeEmoji}>{pack.emoji}</Text>
+        {/* </View> */}
         {pack.isOwned && (
           <View style={styles.ownedBadge}>
-            <Ionicons name="checkmark-circle" size={20} color={COLORS.ONLINE} />
-            <Text style={styles.ownedText}>Owned</Text>
+            <Text style={styles.ownedBadgeText}>Owned</Text>
           </View>
         )}
-        {pack.isLocked && (
-          <View style={styles.lockIcon}>
-            <Ionicons name="lock-closed" size={24} color={COLORS.TEXT_DARK} />
-          </View>
-        )}
-      </View>
-
-      <View style={styles.imageContainer}>
-        <Image
-          source={pack.image}
-          style={styles.themeImage}
-          resizeMode="cover"
-          defaultSource={require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs.png")} // Fallback image
-        />
       </View>
 
       <View style={styles.cardContent}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={pack.image}
+            style={styles.themeImage}
+            resizeMode="contain"
+          />
+        </View>
         <Text style={styles.themeName}>{pack.name}</Text>
         <Text style={styles.themePrice}>{pack.price}</Text>
+
+        {/* Show "In Use", "Use This Theme", or "Preview" button */}
+        {pack.isOwned && pack.isCurrent ? (
+          <TouchableOpacity
+            style={[
+              styles.selectButton,
+              {
+                backgroundColor: COLORS.DARK_GREEN,
+              },
+            ]}
+            disabled={true}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.selectButtonText}>In Use</Text>
+          </TouchableOpacity>
+        ) : pack.isOwned && !pack.isCurrent ? (
+          <TouchableOpacity
+            style={styles.selectButton}
+            onPress={() => handlePackSelection(pack)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.selectButtonText}>Use This Theme</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -303,7 +344,7 @@ export default function ThemeStore({ visible, onClose }: ThemeStoreProps) {
                     Sample Challenges
                   </Text>
                   <Text style={styles.sampleChallengesSubtitle}>
-                    Get a taste of what's inside this theme pack
+                    {`Get a taste of what's inside this theme pack`}
                   </Text>
 
                   {getSampleChallenges(selectedPack?.id).map(
@@ -312,7 +353,7 @@ export default function ThemeStore({ visible, onClose }: ThemeStoreProps) {
                       const midPoint = Math.floor(text.length / 2);
                       const firstHalf = text.substring(0, midPoint);
                       const secondHalf = text.substring(midPoint);
-                      
+
                       return (
                         <View key={index} style={styles.sampleChallengeItem}>
                           <View style={styles.challengeTextContainer}>
@@ -343,7 +384,7 @@ export default function ThemeStore({ visible, onClose }: ThemeStoreProps) {
                       {selectedPack?.price}
                     </Text>
                     <Button
-                      text="Purchase"
+                      text={isPurchasing ? "Purchasing..." : "Purchase"}
                       onPress={() => handlePurchase(selectedPack!)}
                       backgroundColor={COLORS.YELLOW}
                       textColor={COLORS.TEXT_DARK}
@@ -388,9 +429,20 @@ export default function ThemeStore({ visible, onClose }: ThemeStoreProps) {
           <View style={styles.container}>
             <View style={styles.header}>
               <Text style={styles.title}>Theme Store</Text>
-              <TouchableOpacity onPress={closeStore} style={styles.closeButton}>
-                <Ionicons name="close" size={24} color={COLORS.TEXT_DARK} />
-              </TouchableOpacity>
+              <View style={styles.headerButtons}>
+                <TouchableOpacity
+                  onPress={() => setShowResetConfirmation(true)}
+                  style={styles.resetButton}
+                >
+                  <Ionicons name="refresh" size={20} color={COLORS.YELLOW} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={closeStore}
+                  style={styles.closeButton}
+                >
+                  <Ionicons name="close" size={24} color={COLORS.TEXT_DARK} />
+                </TouchableOpacity>
+              </View>
             </View>
 
             <View style={styles.contentContainer}>
@@ -406,7 +458,7 @@ export default function ThemeStore({ visible, onClose }: ThemeStoreProps) {
                 <View style={styles.themesSection}>
                   <Text style={styles.sectionTitle}>Theme Packs</Text>
                   <View style={styles.themesGrid}>
-                    {THEME_PACKS.map(renderThemeCard)}
+                    {themePacks.map(renderThemeCard)}
                   </View>
                 </View>
               </ScrollView>
@@ -416,6 +468,50 @@ export default function ThemeStore({ visible, onClose }: ThemeStoreProps) {
       </Modal>
 
       {renderPreviewModal()}
+      <CustomModal
+        visible={showPurchaseSuccess}
+        onClose={() => setShowPurchaseSuccess(false)}
+        title="Purchase Successful! 🎉"
+        message={`You've unlocked the ${purchasedPackName}! You can now use this theme pack. Select it manually when you're ready to switch themes.`}
+        showConfirmButton={true}
+        confirmButtonText="Awesome!"
+        onConfirm={() => {
+          setShowPurchaseSuccess(false);
+          loadThemePacks(); // Refresh the list
+        }}
+        showSparkles={true}
+      />
+
+      {/* Theme Switch Confirmation Modal */}
+      <CustomModal
+        visible={showSwitchConfirmation}
+        onClose={() => setShowSwitchConfirmation(false)}
+        title="Switch Theme Pack?"
+        message={`Are you sure you want to switch to ${packToSwitch?.name}? You can only change themes when not in an active game.`}
+        showConfirmButton={true}
+        confirmButtonText="Switch Theme"
+        onConfirm={confirmThemeSwitch}
+        showCloseButton={true}
+        closeButtonText="Cancel"
+        disabled={isGameActive}
+      />
+
+      {/* Store Reset Confirmation Modal */}
+      <CustomModal
+        visible={showResetConfirmation}
+        onClose={() => setShowResetConfirmation(false)}
+        title="Reset Theme Store?"
+        message="This will reset all theme pack purchases and return you to the default theme. This action cannot be undone."
+        showConfirmButton={true}
+        confirmButtonText="Reset Store"
+        onConfirm={() => {
+          handleResetStore();
+          setShowResetConfirmation(false);
+        }}
+        showCloseButton={true}
+        closeButtonText="Cancel"
+        destructive={true}
+      />
     </>
   );
 }
@@ -455,6 +551,14 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: SIZES.PADDING_SMALL,
+  },
+  headerButtons: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  resetButton: {
+    padding: SIZES.PADDING_SMALL,
+    marginRight: SIZES.PADDING_SMALL,
   },
   contentContainer: {
     flex: 1,
@@ -552,87 +656,80 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
   },
   themesSection: {
-    // marginTop: SIZES.PADDING_LARGE,
-    // backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    paddingHorizontal: SIZES.PADDING_SMALL,
-    // backgroundColor: "red",
+    marginTop: SIZES.PADDING_LARGE,
   },
   themesGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    gap: 2,
+    gap: SIZES.PADDING_MEDIUM,
+    paddingHorizontal: SIZES.PADDING_SMALL,
   },
   themeCard: {
-    width: (screenWidth - SIZES.PADDING_MEDIUM * 6) / 2, // Account for container padding, grid gap, and card margins
     backgroundColor: COLORS.CARD_BACKGROUND,
-    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
-    paddingVertical: SIZES.PADDING_MEDIUM,
-    paddingHorizontal: SIZES.PADDING_SMALL + 2,
-    marginBottom: SIZES.PADDING_MEDIUM,
-    ...SIZES.SHADOW_CARD,
-    borderWidth: 2,
-    borderColor: COLORS.CARD_BORDER,
-    alignItems: "center",
-    minHeight: 180,
-    maxWidth: 150, // Reduced max width to ensure 2-column layout
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
+    borderRadius: SIZES.BORDER_RADIUS_LARGE,
+    padding: SIZES.PADDING_MEDIUM,
+    width: (screenWidth - SIZES.PADDING_LARGE * 4 - SIZES.PADDING_SMALL) / 2,
+    minHeight: 200,
+    maxWidth: 180,
+    // borderWidth: 1, // Removed border
+    // borderColor: COLORS.CARD_BORDER, // Removed border
+    ...SIZES.SHADOW_SMALL,
+    overflow: "hidden", // Ensure content doesn't overflow
   },
   lockedCard: {
-    opacity: 0.7,
-    borderColor: COLORS.OFFLINE,
+    opacity: 0.6,
   },
   cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: SIZES.PADDING_SMALL,
-    width: "100%",
+    width: "100%", // Ensure full width
   },
-  cardEmoji: {
-    fontSize: 20,
+  themeEmoji: {
+    fontSize: 20, // Slightly smaller to ensure it fits
   },
   ownedBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: COLORS.LIGHT_GREEN,
-    paddingHorizontal: 8,
+    backgroundColor: COLORS.ONLINE,
+    paddingHorizontal: SIZES.PADDING_SMALL,
     paddingVertical: 2,
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL - 2,
   },
-  ownedText: {
-    fontSize: SIZES.SMALL,
-    color: COLORS.TEXT_DARK,
+  ownedBadgeText: {
+    fontSize: SIZES.CAPTION,
+    color: COLORS.FIELDS, // Use existing color instead of WHITE
     fontFamily: FONTS.DOSIS_BOLD,
-    marginLeft: 2,
   },
-  lockIcon: {
-    backgroundColor: COLORS.CARD_BORDER,
-    padding: SIZES.PADDING_SMALL,
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+  // inUseBadge: {
+  //   backgroundColor: COLORS.ONLINE,
+  //   paddingHorizontal: SIZES.PADDING_SMALL,
+  //   paddingVertical: 2,
+  //   borderRadius: SIZES.BORDER_RADIUS_SMALL,
+  //   marginTop: SIZES.PADDING_MEDIUM,
+  // },
+  // inUseBadgeText: {
+  //   fontSize: SIZES.CAPTION,
+  //   color: COLORS.FIELDS, // Use existing color instead of WHITE
+  //   fontFamily: FONTS.DOSIS_BOLD,
+  // },
+  cardContent: {
+    flex: 1,
+    alignItems: "center",
   },
   imageContainer: {
+    height: 80,
     width: "100%",
-    height: 100,
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    marginBottom: SIZES.PADDING_SMALL,
-    padding: 2, // Reduced padding to give images more space
     overflow: "hidden",
     justifyContent: "center",
     alignItems: "center",
+    padding: SIZES.PADDING_SMALL,
+    marginBottom: SIZES.PADDING_SMALL,
   },
   themeImage: {
-    width: "80%", // Use full container width
-    height: "80%", // Use full container height
-    resizeMode: "contain", // This will fill the container completely
-    // backgroundColor: "yellow",
-  },
-  cardContent: {
-    alignItems: "center",
     width: "100%",
+    height: "100%",
+    resizeMode: "contain",
   },
   themeName: {
     fontSize: SIZES.SMALL,
@@ -640,11 +737,13 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
     marginBottom: SIZES.PADDING_SMALL,
+    lineHeight: 16,
   },
   themePrice: {
     fontSize: SIZES.CAPTION,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
+    textAlign: "center",
   },
   previewOverlay: {
     flex: 1,
@@ -848,4 +947,33 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
   },
+  selectButton: {
+    backgroundColor: COLORS.YELLOW,
+    paddingHorizontal: SIZES.PADDING_LARGE,
+    paddingVertical: SIZES.PADDING_MEDIUM,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    minWidth: 150,
+    alignItems: "center",
+    marginTop: SIZES.PADDING_SMALL,
+  },
+  selectButtonText: {
+    fontSize: SIZES.SMALL,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.DOSIS_BOLD,
+  },
+  previewButton: {
+    backgroundColor: COLORS.YELLOW,
+    paddingHorizontal: SIZES.PADDING_LARGE,
+    paddingVertical: SIZES.PADDING_MEDIUM,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    minWidth: 150,
+    alignItems: "center",
+    marginTop: SIZES.PADDING_SMALL,
+  },
+  previewButtonText: {
+    fontSize: SIZES.SMALL,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.DOSIS_BOLD,
+  },
+
 });

@@ -1,11 +1,11 @@
 import React from "react";
 import {
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { Surface } from "react-native-paper";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
@@ -28,6 +28,7 @@ interface CustomModalProps {
   sparkleFadeDelay?: number;
   sparkleFadeDuration?: number;
   sparkleAppearDuration?: number;
+  disabled?: boolean; // New prop to disable buttons
 }
 
 export default function CustomModal({
@@ -47,6 +48,7 @@ export default function CustomModal({
   sparkleFadeDelay = 200,
   sparkleFadeDuration = 300,
   sparkleAppearDuration = 300,
+  disabled = false,
 }: CustomModalProps) {
   // Don't render anything if modal is not visible
   if (!visible) return null;
@@ -132,10 +134,15 @@ export default function CustomModal({
                     style={[
                       styles.confirmButton,
                       destructive && styles.destructiveButton,
+                      disabled && styles.disabledButton,
                     ]}
                     onPress={onConfirm}
+                    disabled={disabled} // Disable button if prop is true
                   >
-                    <Text style={styles.confirmButtonText}>
+                    <Text style={[
+                      styles.confirmButtonText,
+                      disabled && styles.disabledButtonText,
+                    ]}>
                       {confirmButtonText}
                     </Text>
                   </TouchableOpacity>
@@ -149,6 +156,13 @@ export default function CustomModal({
 }
 
 const styles = StyleSheet.create({
+  disabledButtonText: {
+    color: COLORS.FIELDS,
+  },
+  disabledButton: {
+    opacity: 0.7,
+    backgroundColor: COLORS.TEXT_SECONDARY,
+  },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.7)",

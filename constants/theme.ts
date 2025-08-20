@@ -107,3 +107,48 @@ export const SIZES = {
     textShadowRadius: 6,
   },
 };
+
+// Theme Pack Constants
+export const THEME_PACKS = {
+  DEFAULT: "default",
+  COLLEGE: "college", 
+  COUPLE: "couple",
+} as const;
+
+export type ThemePackId = typeof THEME_PACKS[keyof typeof THEME_PACKS];
+
+export interface ThemePackData {
+  id: ThemePackId;
+  name: string;
+  description: string;
+  price: number;
+  emoji: string;
+  isDefault: boolean;
+}
+
+export const THEME_PACK_DATA: Record<ThemePackId, ThemePackData> = {
+  [THEME_PACKS.DEFAULT]: {
+    id: THEME_PACKS.DEFAULT,
+    name: "Default Theme",
+    description: "The classic Knotty Roulette experience with party challenges and drinking games.",
+    price: 0,
+    emoji: "🎯",
+    isDefault: true,
+  },
+  [THEME_PACKS.COLLEGE]: {
+    id: THEME_PACKS.COLLEGE,
+    name: "College Theme",
+    description: "Wild college party challenges perfect for dorm rooms and frat parties.",
+    price: 2.99,
+    emoji: "🎓",
+    isDefault: false,
+  },
+  [THEME_PACKS.COUPLE]: {
+    id: THEME_PACKS.COUPLE,
+    name: "Couple Theme", 
+    description: "Romantic and flirty challenges designed for couples and date nights.",
+    price: 2.99,
+    emoji: "💕",
+    isDefault: false,
+  },
+};

@@ -167,7 +167,7 @@ export default function ChallengeDisplay({
             </View>
             <View style={styles.mascotContainer}>
               <Image
-                source={require("../../assets/images/Knotty Mascot 2.png")}
+                source={require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs-thumbsup.png")}
                 style={styles.mascotImage}
                 resizeMode="contain"
               />

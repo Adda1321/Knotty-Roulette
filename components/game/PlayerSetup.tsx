@@ -23,6 +23,8 @@ import audioService from "../../services/audio";
 import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
+import StoreButton from "../ui/StoreButton";
+import ThemeStore from "../ui/ThemeStore";
 
 interface PlayerSetupProps {
   onStartGame: (playerNames: string[]) => void;
@@ -33,6 +35,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   const [showNotEnoughPlayersModal, setShowNotEnoughPlayersModal] =
     useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
+  const [showThemeStore, setShowThemeStore] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Add this for debugging
@@ -117,11 +120,21 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                   audioService.playHaptic("medium");
                 }}
               />
+              
+              <View style={styles.buttonSpacer} />
+              
+              <StoreButton
+                onPress={() => {
+                  audioService.playSound("buttonPress");
+                  audioService.playHaptic("medium");
+                  setShowThemeStore(true);
+                }}
+              />
             </View>
 
             <View style={styles.mascotContainer}>
               <Image
-                source={require("../../assets/images/Knotty Mascot.png")}
+                source={require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs.png")}
                 style={styles.mascotImage}
                 resizeMode="contain"
               />
@@ -296,7 +309,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                       }
                       paddingHorizontal={SIZES.PADDING_LARGE}
                       paddingVertical={15}
-                      style={styles.startButtonInner}
+style={styles.startButtonInner}
                     />
                   </View>
                 </Surface>
@@ -315,6 +328,12 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
         showCloseButton={true}
         closeButtonText="OK"
         showConfirmButton={false}
+      />
+
+      {/* Theme Store Modal */}
+      <ThemeStore
+        visible={showThemeStore}
+        onClose={() => setShowThemeStore(false)}
       />
     </LinearGradient>
   );
@@ -500,5 +519,24 @@ const styles = StyleSheet.create({
       transparent
     )`,
     backgroundSize: "8px 8px",
+  },
+  buttonSpacer: {
+    width: SIZES.PADDING_SMALL, // Space between buttons
+  },
+  startButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 15,
+  },
+  playIcon: {
+    width: 14,
+    height: 14,
+    marginRight: 8,
+  },
+  startButtonText: {
+    color: COLORS.TEXT_DARK,
+    fontSize: SIZES.SUBTITLE,
+    fontFamily: FONTS.DOSIS_BOLD,
   },
 });

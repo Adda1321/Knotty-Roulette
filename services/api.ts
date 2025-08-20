@@ -3,24 +3,72 @@ import { Challenge, VoteData } from '../types/game';
 
 export async function fetchChallenges(): Promise<Challenge[]> {
   try {
+    console.log('=== fetchChallenges called ===');
+    console.log('AJAX URL:', WORDPRESS_CONFIG.AJAX_URL);
+    console.log('Action:', WORDPRESS_CONFIG.ACTIONS.GET_CHALLENGES);
+
+    // Try with FormData first
     const formData = new FormData();
     formData.append('action', WORDPRESS_CONFIG.ACTIONS.GET_CHALLENGES);
-    // No nonce required for public API calls
+    
+    console.log('Sending request with FormData...');
 
     const response = await fetch(WORDPRESS_CONFIG.AJAX_URL, {
       method: 'POST',
       body: formData,
     });
 
+    console.log('Response status:', response.status);
+    console.log('Response headers:', response.headers);
+
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Try to get error details from response
+      let errorText = '';
+      try {
+        errorText = await response.text();
+        console.log('Error response body:', errorText);
+      } catch (e) {
+        console.log('Could not read error response body');
+      }
+      
+      throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
     }
 
     const data = await response.json();
     
+    console.log('=== RAW RESPONSE FROM BACKEND ===');
+    console.log('Full response:', data);
+    console.log('Response success:', data.success);
+    console.log('Response data type:', typeof data.data);
+    
     if (data.success && data.data) {
       console.log('✅ Fetched challenges from WordPress:', data.data.length, 'challenges');
       console.log('Sample challenge:', data.data[0]);
+      
+      // Analyze challenges by theme pack
+      console.log('=== CHALLENGE THEME ANALYSIS ===');
+      const challengesByTheme: { [key: string]: any[] } = {};
+      
+      data.data.forEach((challenge: any, index: number) => {
+        const theme = challenge.card_pack || 'Default Theme';
+        if (!challengesByTheme[theme]) {
+          challengesByTheme[theme] = [];
+        }
+        challengesByTheme[theme].push(challenge);
+        
+        console.log(`Challenge ${index + 1}:`, {
+          id: challenge.id || challenge.challenge_id,
+          text: challenge.text || challenge.challenge_text,
+          theme: theme,
+          hasBonus: challenge.has_bonus,
+          createdAt: challenge.created_at
+        });
+      });
+      
+      console.log('=== THEME BREAKDOWN ===');
+      Object.keys(challengesByTheme).forEach(theme => {
+        console.log(`${theme}: ${challengesByTheme[theme].length} challenges`);
+      });
       
       // Convert has_bonus from string to boolean
       const processedChallenges = data.data.map((challenge: any) => ({
@@ -37,7 +85,37 @@ export async function fetchChallenges(): Promise<Challenge[]> {
       return getFallbackChallenges();
     }
   } catch (error) {
-    console.error('Error fetching challenges:', error);
+    console.error('=== ERROR FETCHING CHALLENGES ===');
+    console.error('Error details:', error);
+    
+    // Try alternative request format as fallback
+    try {
+      console.log('🔄 Trying alternative request format...');
+      const urlEncodedData = new URLSearchParams();
+      urlEncodedData.append('action', WORDPRESS_CONFIG.ACTIONS.GET_CHALLENGES);
+      
+      const altResponse = await fetch(WORDPRESS_CONFIG.AJAX_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: urlEncodedData,
+      });
+      
+      if (altResponse.ok) {
+        const altData = await altResponse.json();
+        console.log('✅ Alternative request succeeded:', altData);
+        if (altData.success && altData.data) {
+          return altData.data.map((challenge: any) => ({
+            ...challenge,
+            has_bonus: challenge.has_bonus === "1" || challenge.has_bonus === 1 || challenge.has_bonus === true
+          }));
+        }
+      }
+    } catch (altError) {
+      console.error('Alternative request also failed:', altError);
+    }
+    
     // Return fallback challenges on error
     return getFallbackChallenges();
   }

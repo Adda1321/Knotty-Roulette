@@ -25,6 +25,8 @@ import Button from "../ui/Button";
 
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
+import StoreButton from "../ui/StoreButton";
+import ThemeStore from "../ui/ThemeStore";
 import ChallengeDisplay from "./ChallengeDisplay";
 import GameRules from "./GameRules";
 import Scoreboard from "./Scoreboard";
@@ -64,6 +66,7 @@ export default function GameBoard({
     points: number;
     action: "complete" | "pass" | "bonus";
   } | null>(null);
+  const [showThemeStore, setShowThemeStore] = useState(false);
   const rotation = useRef(new Animated.Value(0)).current;
   const spinButtonScale = useRef(new Animated.Value(1)).current;
   const wheelScale = useRef(new Animated.Value(1)).current;
@@ -334,6 +337,14 @@ export default function GameBoard({
               </View>
             </Surface>
 
+            <StoreButton
+              onPress={() => {
+                audioService.playSound("buttonPress");
+                audioService.playHaptic("medium");
+                setShowThemeStore(true);
+              }}
+            />
+
             <SoundSettings
               onPress={() => {
                 audioService.playSound("buttonPress");
@@ -372,7 +383,7 @@ export default function GameBoard({
             <Text style={styles.title}>KNOTTY ROULETTE</Text>
             <View style={styles.mascotContainer}>
               <Image
-                source={require("../../assets/images/KnottyMascotComplete.png")}
+                source={require("../../assets/images/MascotImages/Default/KnottyMascotComplete.png")}
                 style={styles.mascotImage}
                 resizeMode="contain"
               />
@@ -508,7 +519,9 @@ export default function GameBoard({
           title={getCompletionModalTitle()}
           message={getCompletionModalMessage()}
           showCloseButton={true}
-          closeButtonText={`${players[(currentPlayerIndex + 1) % players.length]?.name}'s Turn To Spin`}
+          closeButtonText={`${
+            players[(currentPlayerIndex + 1) % players.length]?.name
+          }'s Turn To Spin`}
           showConfirmButton={false}
           showSparkles={
             completionData?.action === "complete" ||
@@ -516,6 +529,12 @@ export default function GameBoard({
           }
         />
       </View>
+
+      {/* Theme Store Modal */}
+      <ThemeStore
+        visible={showThemeStore}
+        onClose={() => setShowThemeStore(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -559,7 +578,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     width: "100%",
-    marginTop:20
+    marginTop: 20,
   },
   title: {
     fontSize:
@@ -581,7 +600,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
     // fontWeight: "800",
     // marginBottom: SIZES.PADDING_SMALL,
-    paddingTop:5,
+    paddingTop: 5,
     ...SIZES.TEXT_SHADOW_SMALL,
   },
   passInstruction: {
@@ -674,4 +693,3 @@ const styles = StyleSheet.create({
     transform: [{ rotate: "5deg" }],
   },
 });
- 

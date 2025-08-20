@@ -1,0 +1,54 @@
+﻿Proposal: Knotty Roulette Mobile App Development
+
+
+Project: Mobile App Version of Knotty Roulette (iOS & Android)
+Tech Stack: React Native + WordPress Integration
+Timeline: 2 weeks
+________________
+
+
+Project Summary
+Build a clean, cross-platform mobile version of the existing Knotty Roulette web game, integrating with the current WordPress backend and enabling monetization through ads and in-app purchases.
+________________
+
+
+Timeline & Milestone Breakdown
+Phase 1: Initial Design Approval
+Timeline: 3 days
+Deliverables:
+* On-brand UX/UI mockups
+
+* Complete app screen flow and navigation structure
+
+* Approval of core visual direction
+
+Phase 2: Functioning App (Local Test)
+Timeline: 9 days
+Deliverables:
+   * Core roulette logic, challenge flow, and voting system
+
+   * React Native app integrated with WordPress backend
+
+   * In-app purchase and ad placeholders implemented
+
+   * Internal test build for iOS and Android
+
+Phase 3: Final Testing & Store Launch
+Timeline: 3 days
+Deliverables:
+      * Final bug fixes and UI polish
+
+      * AdMob and IAP fully working
+
+      * Store submission and publishing (Apple + Google)
+
+      * Post-launch testing and 1-week support
+
+UI NEXT PHASE DETAILS BY CLIENT:
+The client has clarified that during gameplay a user cannot switch between packs or themes. Once a game starts with a chosen deck, the player must complete it within that theme, and switching is only possible before starting or by restarting. Regarding in-app purchases, there are two categories of products. The first is the ad-free premium upgrade, priced at $2.99, which is the only way to remove ads. The second is card or theme packs, each priced at $2.99, which add more content but do not affect ads. Bundles combine these into discounted offers: both theme packs together for $4.99 (saving $1 compared to buying individually), or the all-in bundle for $6.99 (saving $2 compared to buying ad-free and packs separately).
+
+The client emphasized that buying a theme pack does not make a user premium and ads will still be shown. The upsell system needs to adapt based on what the user owns. A free user begins with ads shown every three spins, and after the fifth ad an upsell popup appears offering the ad-free plan for $2.99 or the all-in bundle for $6.99. If a user buys only a pack, they still see ads and the game should continue prompting them toward the ad-free upgrade. If a user buys only ad-free, upsells should focus on packs, first with the $4.99 two-pack deal and then, if one pack is purchased, a “complete your set for $2.99” message. Once the all-in bundle is purchased, there are no more upsells. The client has confirmed that “Best Deal” highlights should only appear in two situations: when the user is free and the all-in bundle saves them $2, or when they have ad-free and can save $1 on the two-pack offer. In other cases, such as owning one pack or having partial upgrades, there should be no “Best Deal” label, only direct upsells.
+
+A point that still needs clarification is how upsell popups should behave once ads are gone. Currently the trigger is every fifth ad, but if a user buys ad-free there are no ads left to use as a trigger. It is unclear whether upsells should then appear at other times such as at game over, at session start, or when the shop is opened, or whether upsells should be passive only, remaining visible in the shop UI without interrupting gameplay. This is important to resolve for consistent user experience.
+
+For the UI, the client prefers a grid layout to display theme packs, similar to an app store. Each pack should appear as a thumbnail card showing its name, visual cues like emojis or icons, and a price or “Owned” badge. When tapped, a larger modal opens showing a banner, short description, and a preview of a few blurred sample challenges along with the buy button. To make the experience engaging, the client wants unpurchased packs to show lock icons, bundle savings to be clearly highlighted at the top of the shop, animations like confetti when unlocking, and owned packs to move to the top with a green checkmark to highlight the user’s growing collection. Additionally, there should be a dedicated store button visible in the main UI, for example placed next to the settings icon, rather than hiding the shop within settings.

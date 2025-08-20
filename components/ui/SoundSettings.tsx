@@ -1,22 +1,18 @@
-import userService from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Surface } from "react-native-paper";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
 import backgroundMusic from "../../services/backgroundMusic";
-import purchaseService from "../../services/purchaseService";
 import Button from "./Button";
-import PremiumUpgradeModal from "./PremiumUpgradeModal";
 
 interface SoundSettingsProps {
   onPress: () => void;
@@ -27,43 +23,13 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
   const [isSoundsMuted, setIsSoundsMuted] = useState(false);
   const [isVibrationEnabled, setIsVibrationEnabled] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
-  const [showPremiumModal, setShowPremiumModal] = useState(false);
-  const [productDetails, setProductDetails] = useState<{
-    title: string;
-    price: string;
-    description: string;
-  } | null>(null);
 
   useEffect(() => {
     audioService.initialize();
-    fetchProductDetails();
-
     setIsMusicMuted(backgroundMusic.isMusicMuted());
     setIsSoundsMuted(audioService.isSoundsMuted());
     setIsVibrationEnabled(audioService.isVibrationEnabled());
   }, []);
-
-  const fetchProductDetails = async () => {
-    try {
-      const products = await purchaseService.getProducts();
-      if (products.length > 0) {
-        const product = products[0];
-        setProductDetails({
-          title: product.title,
-          price: product.price,
-          description: product.description,
-        });
-      }
-    } catch (error) {
-      console.error("Failed to fetch product details:", error);
-      // Fallback to default values
-      setProductDetails({
-        title: "Premium Pack",
-        price: "$4.99",
-        description: "Remove ads and unlock premium features",
-      });
-    }
-  };
 
   const toggleMusicMute = async () => {
     const newState = await backgroundMusic.toggleMute();
@@ -87,42 +53,15 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
   };
 
   const handleSettingsPress = () => {
-    setShowSettings(true);
     audioService.playSound("buttonPress");
     audioService.playHaptic("medium");
+    setShowSettings(true);
   };
 
   const closeSettings = () => {
     setShowSettings(false);
     audioService.playSound("buttonPress");
     audioService.playHaptic("medium");
-  };
-
-  const handlePremiumSuccess = () => {
-    setShowPremiumModal(false);
-    // Refresh the component to show premium status
-    setShowSettings(false);
-  };
-
-  const handleClearCache = async () => {
-    try {
-      audioService.playHaptic("light");
-      await purchaseService.clearPremiumStatus();
-      Alert.alert(
-        "Cache Cleared",
-        "Premium status cache has been cleared. You can now test the purchase flow again.",
-        [{ text: "OK" }]
-      );
-      // Refresh the component to show updated status
-      setShowSettings(false);
-    } catch (error) {
-      console.error("Clear cache error:", error);
-      Alert.alert(
-        "Clear Cache Error",
-        "An error occurred while clearing cache. Please try again.",
-        [{ text: "OK" }]
-      );
-    }
   };
 
   return (
@@ -156,6 +95,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
             </View>
 
             <View style={styles.content}>
+              {/* Music Toggle */}
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
                   <Ionicons
@@ -185,7 +125,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                   />
                 </TouchableOpacity>
               </View>
-
+              {/* Sound Effects Toggle */}
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
                   <Ionicons
@@ -213,7 +153,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                   />
                 </TouchableOpacity>
               </View>
-
+              {/* Vibration Toggle */}
               <View style={styles.settingRow}>
                 <View style={styles.settingInfo}>
                   <Ionicons
@@ -247,69 +187,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                   />
                 </TouchableOpacity>
               </View>
-              {/* Premium Upgrade Section */}
-              { userService.isFree() && (
-                <View style={styles.premiumSection}>
-                  <View style={styles.settingRow}>
-                    <View style={styles.settingInfo}>
-                      <Ionicons
-                        name="diamond"
-                        size={24}
-                        color={COLORS.YELLOW}
-                      />
-                      <Text style={[styles.settingText, styles.premiumText]}>
-                        {productDetails?.title || "Upgrade to Premium"}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={styles.upgradeButton}
-                      onPress={() => {
-                        audioService.playHaptic("light");
-                        setShowPremiumModal(true);
-                      }}
-                    >
-                      <Text style={styles.upgradeButtonText}>
-                        {productDetails?.price || "$4.99"}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={styles.premiumSubtext}>
-                    {productDetails?.description ||
-                      "Remove ads and unlock premium features"}
-                  </Text>
-                </View>
-              )}
-
-              {/* Premium Status */}
-              {( userService.isPremium()) && (
-                <View style={styles.premiumSection}>
-                  <View style={styles.settingRow}>
-                    <View style={styles.settingInfo}>
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={24}
-                        color={COLORS.YELLOW}
-                      />
-                      <Text style={[styles.settingText, styles.premiumText]}>
-                        Premium Active
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.premiumSubtext}>
-                    Enjoy ad-free gaming experience
-                  </Text>
-                  
-                  {/* Clear Cache Button - For Testing Only */}
-                  <TouchableOpacity
-                    style={styles.clearCacheButton}
-                    onPress={handleClearCache}
-                  >
-                    <Text style={styles.clearCacheButtonText}>
-                      Clear Cache (Testing)
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
+              -
             </View>
 
             <View style={styles.buttonContainer}>
@@ -322,9 +200,8 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                 <Button
                   text="Close"
                   onPress={() => {
-                    audioService.playHaptic("medium"); // add haptic here too
+                    audioService.playHaptic("medium");
                     audioService.playSound("buttonPress");
-
                     closeSettings();
                   }}
                   backgroundColor={COLORS.YELLOW}
@@ -342,13 +219,6 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
           </View>
         </View>
       </Modal>
-
-      {/* Premium Upgrade Modal */}
-      <PremiumUpgradeModal
-        visible={showPremiumModal}
-        onClose={() => setShowPremiumModal(false)}
-        onPurchaseSuccess={handlePremiumSuccess}
-      />
     </>
   );
 }
@@ -422,71 +292,13 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: 20,
   },
-  infoSection: {
-    backgroundColor: COLORS.CARD_BORDER,
-    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
-    padding: SIZES.PADDING_MEDIUM,
-  },
-  infoTitle: {
-    fontSize: SIZES.CAPTION,
-    color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.PRIMARY,
-    fontWeight: "600",
-    marginBottom: SIZES.PADDING_SMALL,
-  },
-  infoText: {
-    fontSize: SIZES.CAPTION,
-    color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.PRIMARY,
-    marginBottom: 2,
-  },
+
+
+
   buttonContainer: {
     padding: SIZES.PADDING_LARGE,
-
   },
   closeButton: {
     width: "100%",
-  },
-  premiumSection: {
-    backgroundColor: COLORS.CARD_BORDER,
-    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
-    padding: SIZES.PADDING_MEDIUM,
-    marginTop: SIZES.PADDING_LARGE,
-    marginBottom: SIZES.PADDING_LARGE,
-  },
-  premiumText: {
-    color: COLORS.YELLOW,
-    fontWeight: "600",
-  },
-  upgradeButton: {
-    backgroundColor: COLORS.YELLOW,
-    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
-    padding: SIZES.PADDING_MEDIUM,
-    minWidth: 80,
-    alignItems: "center",
-  },
-  upgradeButtonText: {
-    fontSize: SIZES.BODY,
-    color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.DOSIS_BOLD,
-  },
-  premiumSubtext: {
-    fontSize: SIZES.CAPTION,
-    color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.PRIMARY,
-    marginTop: SIZES.PADDING_SMALL,
-    textAlign: "center",
-  },
-  clearCacheButton: {
-    backgroundColor: COLORS.OFFLINE,
-    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
-    padding: SIZES.PADDING_MEDIUM,
-    alignItems: "center",
-    marginTop: SIZES.PADDING_SMALL,
-  },
-  clearCacheButtonText: {
-    color: COLORS.YELLOW,
-    fontSize: SIZES.BODY,
-    fontFamily: FONTS.DOSIS_BOLD,
   },
 });

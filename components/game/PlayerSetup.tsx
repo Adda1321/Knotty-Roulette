@@ -4,19 +4,20 @@ import React, { useEffect, useRef, useState } from "react";
 import { Surface } from "react-native-paper";
 
 import {
-  Animated,
-  Easing,
-  Image,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Animated,
+    Easing,
+    Image,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
+import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FONTS, SIZES } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext";
@@ -25,7 +26,6 @@ import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
 import StoreButton from "../ui/StoreButton";
-import ThemeStore from "../ui/ThemeStore";
 
 interface PlayerSetupProps {
   onStartGame: (playerNames: string[]) => void;
@@ -46,7 +46,6 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   const [showNotEnoughPlayersModal, setShowNotEnoughPlayersModal] =
     useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
-  const [showThemeStore, setShowThemeStore] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Add this for debugging
@@ -138,7 +137,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                 onPress={() => {
                   audioService.playSound("buttonPress");
                   audioService.playHaptic("medium");
-                  setShowThemeStore(true);
+                  router.push("/theme-store?isGameActive=false");
                 }}
               />
             </View>
@@ -416,12 +415,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
         showConfirmButton={false}
       />
 
-      {/* Theme Store Modal */}
-      <ThemeStore
-        visible={showThemeStore}
-        onClose={() => setShowThemeStore(false)}
-        isGameActive={false} // PlayerSetup is before game starts
-      />
+      {/* ThemeStore is now a page component, navigation handled by router */}
     </LinearGradient>
   );
 }

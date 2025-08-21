@@ -2,11 +2,11 @@ import { LinearGradient } from "expo-linear-gradient";
 
 import React, { useRef } from "react";
 import {
-  Animated,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  TouchableOpacityProps,
+    Animated,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    TouchableOpacityProps,
 } from "react-native";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import audioService from "../../services/audio";
@@ -14,7 +14,7 @@ import audioService from "../../services/audio";
 interface ButtonProps extends TouchableOpacityProps {
   backgroundColor?: string;
   backgroundGradient?: [string, string, ...string[]];
-  text: string;
+  text: string | React.ReactNode;
   paddingHorizontal?: number;
   paddingVertical?: number;
   textColor?: string;

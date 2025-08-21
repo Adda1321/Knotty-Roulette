@@ -18,7 +18,9 @@ import {
   SIZES,
   THEME_PACKS,
   THEME_PACK_DATA,
+  ThemePackId,
 } from "../../constants/theme";
+import { useTheme } from "../../contexts/ThemeContext"; // Add useTheme hook
 import audioService from "../../services/audio";
 import themePackService from "../../services/themePackService";
 import { getSampleChallenges } from "../../utils/themeHelpers";
@@ -49,6 +51,7 @@ export default function ThemeStore({
   onClose: () => void;
   isGameActive?: boolean;
 }) {
+  const { switchTheme } = useTheme(); // Add theme context hook
   const [showPreview, setShowPreview] = useState(false);
   const [selectedPack, setSelectedPack] = useState<ThemePack | null>(null);
   const [themePacks, setThemePacks] = useState<ThemePack[]>([]);
@@ -160,10 +163,12 @@ export default function ThemeStore({
       setIsPurchasing(false);
     }
   };
-  console.log("isGameActive=>>",isGameActive)
 
   const handlePackSelection = async (pack: ThemePack) => {
     if (!pack.isOwned) return;
+
+    console.log("🎨 ThemeStore: User wants to switch to theme:", pack.id);
+    console.log("🎨 ThemeStore: Pack details:", pack);
 
     // Show confirmation modal instead of direct switch
     setPackToSwitch(pack);
@@ -172,14 +177,19 @@ export default function ThemeStore({
 
   const confirmThemeSwitch = async () => {
     if (!packToSwitch) return;
-
-    const success = await themePackService.setCurrentPack(
-      packToSwitch.id as any
-    );
+    console.log("Pack to switch ID", packToSwitch.id);
+    // Use theme context to switch themes - this will update all components
+    const success = await switchTheme(packToSwitch.id as ThemePackId);
     if (success) {
       loadThemePacks(); // Refresh to show current selection
       audioService.playSound("buttonPress");
       audioService.playHaptic("light");
+      console.log(
+        "🎨 ThemeStore: Theme switched successfully to:",
+        packToSwitch.id
+      );
+    } else {
+      console.log("❌ ThemeStore: Failed to switch theme to:", packToSwitch.id);
     }
 
     setShowSwitchConfirmation(false);
@@ -975,5 +985,4 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
   },
-
 });

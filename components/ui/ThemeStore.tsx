@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -10,7 +10,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import {
   COLORS,
@@ -18,7 +18,9 @@ import {
   SIZES,
   THEME_PACKS,
   THEME_PACK_DATA,
+  ThemePackId,
 } from "../../constants/theme";
+import { useTheme } from "../../contexts/ThemeContext"; // Add useTheme hook
 import audioService from "../../services/audio";
 import themePackService from "../../services/themePackService";
 import { getSampleChallenges } from "../../utils/themeHelpers";
@@ -41,14 +43,11 @@ interface ThemePack {
 }
 
 export default function ThemeStore({
-  visible,
-  onClose,
   isGameActive = false, // Add prop to check if game is active
 }: {
-  visible: boolean;
-  onClose: () => void;
   isGameActive?: boolean;
 }) {
+  const { switchTheme } = useTheme(); // Add theme context hook
   const [showPreview, setShowPreview] = useState(false);
   const [selectedPack, setSelectedPack] = useState<ThemePack | null>(null);
   const [themePacks, setThemePacks] = useState<ThemePack[]>([]);
@@ -61,10 +60,8 @@ export default function ThemeStore({
 
   // Load theme packs with current status
   useEffect(() => {
-    if (visible) {
-      loadThemePacks();
-    }
-  }, [visible]);
+    loadThemePacks();
+  }, []);
 
   const loadThemePacks = () => {
     const packsWithStatus = themePackService.getAllPacksWithStatus();
@@ -160,10 +157,12 @@ export default function ThemeStore({
       setIsPurchasing(false);
     }
   };
-  console.log("isGameActive=>>",isGameActive)
 
   const handlePackSelection = async (pack: ThemePack) => {
     if (!pack.isOwned) return;
+
+    console.log("🎨 ThemeStore: User wants to switch to theme:", pack.id);
+    console.log("🎨 ThemeStore: Pack details:", pack);
 
     // Show confirmation modal instead of direct switch
     setPackToSwitch(pack);
@@ -172,14 +171,19 @@ export default function ThemeStore({
 
   const confirmThemeSwitch = async () => {
     if (!packToSwitch) return;
-
-    const success = await themePackService.setCurrentPack(
-      packToSwitch.id as any
-    );
+    console.log("Pack to switch ID", packToSwitch.id);
+    // Use theme context to switch themes - this will update all components
+    const success = await switchTheme(packToSwitch.id as ThemePackId);
     if (success) {
       loadThemePacks(); // Refresh to show current selection
       audioService.playSound("buttonPress");
       audioService.playHaptic("light");
+      console.log(
+        "🎨 ThemeStore: Theme switched successfully to:",
+        packToSwitch.id
+      );
+    } else {
+      console.log("❌ ThemeStore: Failed to switch theme to:", packToSwitch.id);
     }
 
     setShowSwitchConfirmation(false);
@@ -192,12 +196,6 @@ export default function ThemeStore({
 
     // Mock bundle purchase - replace with actual IAP logic later
     console.log(`Mock bundle purchase initiated for ${bundle.title}`);
-  };
-
-  const closeStore = () => {
-    audioService.playHaptic("light");
-    audioService.playSound("buttonPress");
-    onClose();
   };
 
   const handleResetStore = async () => {
@@ -305,6 +303,8 @@ export default function ThemeStore({
       visible={showPreview}
       animationType="slide"
       transparent={true}
+      // statusBarTranslucent
+      // presentationStyle="overFullScreen"
       onRequestClose={closePreview}
     >
       <View style={styles.previewOverlay}>
@@ -325,12 +325,13 @@ export default function ThemeStore({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.previewScrollContent}
             >
-              <View style={styles.previewImageContainer}>
-                <Image
-                  source={selectedPack?.previewImage}
-                  style={styles.previewImage}
-                  resizeMode="cover"
-                />
+              <View style={styles.previewImageWrapper}>
+                <View style={styles.previewImageContainer}>
+                  <Image
+                    source={selectedPack?.previewImage}
+                    style={styles.previewImage}
+                  />
+                </View>
               </View>
 
               <View style={styles.previewContent}>
@@ -348,33 +349,15 @@ export default function ThemeStore({
                   </Text>
 
                   {getSampleChallenges(selectedPack?.id).map(
-                    (challenge: any, index: number) => {
-                      const text = challenge.challenge_text;
-                      const midPoint = Math.floor(text.length / 2);
-                      const firstHalf = text.substring(0, midPoint);
-                      const secondHalf = text.substring(midPoint);
-
-                      return (
-                        <View key={index} style={styles.sampleChallengeItem}>
-                          <View style={styles.challengeTextContainer}>
-                            <Text style={styles.sampleChallengeText}>
-                              {firstHalf}
-                            </Text>
-                            <View style={styles.blurredTextContainer}>
-                              <BlurView
-                                intensity={30}
-                                tint="light"
-                                style={styles.blurredTextBlur}
-                              >
-                                <Text style={styles.blurredTextContent}>
-                                  {secondHalf}
-                                </Text>
-                              </BlurView>
-                            </View>
-                          </View>
+                    (challenge: any, index: number) => (
+                      <View key={index} style={styles.sampleChallengeItem}>
+                        <View style={styles.challengeTextContainer}>
+                          <Text style={styles.sampleChallengeText}>
+                            {challenge.challenge_text}
+                          </Text>
                         </View>
-                      );
-                    }
+                      </View>
+                    )
                   )}
                 </View>
 
@@ -419,53 +402,46 @@ export default function ThemeStore({
 
   return (
     <>
-      <Modal
-        visible={visible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={closeStore}
-      >
-        <View style={styles.overlay}>
-          <View style={styles.container}>
-            <View style={styles.header}>
-              <Text style={styles.title}>Theme Store</Text>
-              <View style={styles.headerButtons}>
-                <TouchableOpacity
-                  onPress={() => setShowResetConfirmation(true)}
-                  style={styles.resetButton}
-                >
-                  <Ionicons name="refresh" size={20} color={COLORS.YELLOW} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={closeStore}
-                  style={styles.closeButton}
-                >
-                  <Ionicons name="close" size={24} color={COLORS.TEXT_DARK} />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={styles.contentContainer}>
-              <ScrollView
-                style={styles.content}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-              >
-                {/* Bundle Deals at the top */}
-                {renderBundleDeals()}
-
-                {/* Theme Packs */}
-                <View style={styles.themesSection}>
-                  <Text style={styles.sectionTitle}>Theme Packs</Text>
-                  <View style={styles.themesGrid}>
-                    {themePacks.map(renderThemeCard)}
-                  </View>
-                </View>
-              </ScrollView>
-            </View>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => {
+              router.back();
+            }}
+            style={styles.backButton}
+          >
+            <Ionicons name="arrow-back" size={24} color={COLORS.YELLOW} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Theme Store</Text>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              onPress={() => setShowResetConfirmation(true)}
+              style={styles.resetButton}
+            >
+              <Ionicons name="refresh" size={20} color={COLORS.YELLOW} />
+            </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+
+        <View style={styles.contentContainer}>
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Bundle Deals at the top */}
+            {renderBundleDeals()}
+
+            {/* Theme Packs */}
+            <View style={styles.themesSection}>
+              <Text style={styles.sectionTitle}>Theme Packs</Text>
+              <View style={styles.themesGrid}>
+                {themePacks.map(renderThemeCard)}
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </View>
 
       {renderPreviewModal()}
       <CustomModal
@@ -517,30 +493,33 @@ export default function ThemeStore({
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.7)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: SIZES.PADDING_SMALL,
-  },
   container: {
     backgroundColor: COLORS.FIELDS,
-    borderRadius: SIZES.BORDER_RADIUS_LARGE,
-    width: "90%",
-    maxWidth: 500,
-    height: "90%",
-    ...SIZES.SHADOW_LARGE,
+    borderRadius: 0,
+    width: "100%",
+    maxWidth: "100%",
+    height: "100%",
     overflow: "hidden",
   },
   header: {
     backgroundColor: COLORS.DARK_GREEN,
-    borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE,
-    borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE,
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
     padding: SIZES.PADDING_LARGE,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    paddingLeft:0
+  },
+  backButton: {
+    padding: SIZES.PADDING_SMALL,
+    width: 100,
+    height: 44,
+    paddingLeft:SIZES.PADDING_LARGE,
+    alignItems: "flex-start",
+    justifyContent: "center",
+    borderRadius: 8,
+    // backgroundColor:"red"
   },
   title: {
     fontSize: SIZES.TITLE,
@@ -548,6 +527,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
     flex: 1,
     textAlign: "center",
+    marginLeft: -40, // Compensate for back button width to center title
   },
   closeButton: {
     padding: SIZES.PADDING_SMALL,
@@ -566,7 +546,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: SIZES.PADDING_SMALL,
+    padding: SIZES.PADDING_MEDIUM,
     backgroundColor: COLORS.FIELDS,
   },
   scrollContent: {
@@ -669,7 +649,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_MEDIUM,
-    width: (screenWidth - SIZES.PADDING_LARGE * 4 - SIZES.PADDING_SMALL) / 2,
+    width: (screenWidth - SIZES.PADDING_LARGE * 2.7) / 2,
     minHeight: 200,
     maxWidth: 180,
     // borderWidth: 1, // Removed border
@@ -794,30 +774,31 @@ const styles = StyleSheet.create({
   previewContentWrapper: {
     flex: 1, // Take remaining space
   },
-  previewImageContainer: {
+  previewImageWrapper: {
     width: "100%",
-    height: 300, // Fixed height that works well with most image aspect ratios
+    alignItems: "center", // This centers horizontally
+    justifyContent: "center", // This centers vertically
+    marginBottom: SIZES.PADDING_LARGE,
+    paddingHorizontal: SIZES.PADDING_MEDIUM,
+  },
+  previewImageContainer: {
+    width: "90%",
+    height: 300, // Reduced from 300
     backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
-    marginBottom: SIZES.PADDING_LARGE,
-    // marginHorizontal: SIZES.PADDING_SMALL,
-    padding: SIZES.PADDING_MEDIUM,
+    // marginBottom: SIZES.PADDING_LARGE,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
     borderWidth: 1,
     borderColor: COLORS.CARD_BORDER,
     ...SIZES.SHADOW_SMALL,
+    padding: SIZES.PADDING_SMALL, // Reduced padding
   },
   previewImage: {
     width: "100%",
-    height: "100%", // Fill the container
-    resizeMode: "cover", // This will crop the image to fit the container
-    // Alternative resize modes you can try:
-    // "contain" - Shows full image with possible empty space
-    // "stretch" - Stretches image to fill (may distort)
-    // "center" - Centers image without resizing
-    // "repeat" - Repeats image to fill space
+    height: "100%",
+    resizeMode: "contain",
   },
   previewContent: {
     padding: SIZES.PADDING_LARGE,
@@ -870,7 +851,6 @@ const styles = StyleSheet.create({
   challengeTextContainer: {
     position: "relative",
     zIndex: 1,
-    paddingRight: 80, // Leave space for blur effect on the right
   },
   sampleChallengeText: {
     fontSize: SIZES.SMALL,
@@ -878,33 +858,8 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
     lineHeight: 20,
-    position: "relative",
-    zIndex: 2,
   },
-  blurredTextContainer: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 80, // Width of the blur effect
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    overflow: "hidden",
-  },
-  blurredTextBlur: {
-    width: "100%",
-    height: "100%",
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  blurredTextContent: {
-    fontSize: SIZES.SMALL,
-    color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.DOSIS_BOLD,
-    textAlign: "center",
-    lineHeight: 20,
-    paddingHorizontal: SIZES.PADDING_SMALL,
-  },
+
   purchaseSection: {
     alignItems: "center",
     paddingVertical: SIZES.PADDING_MEDIUM,
@@ -975,5 +930,4 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
   },
-
 });

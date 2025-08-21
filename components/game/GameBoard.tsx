@@ -1,21 +1,22 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Surface } from "react-native-paper";
 
+import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  Easing,
-  Image,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
+    Animated,
+    Dimensions,
+    Easing,
+    Image,
+    Platform,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  ANIMATION_CONFIGS,
-  ANIMATION_VALUES,
+    ANIMATION_CONFIGS,
+    ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import adService from "../../services/adService";
@@ -26,7 +27,6 @@ import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
 import StoreButton from "../ui/StoreButton";
-import ThemeStore from "../ui/ThemeStore";
 import ChallengeDisplay from "./ChallengeDisplay";
 import GameRules from "./GameRules";
 import Scoreboard from "./Scoreboard";
@@ -66,7 +66,6 @@ export default function GameBoard({
     points: number;
     action: "complete" | "pass" | "bonus";
   } | null>(null);
-  const [showThemeStore, setShowThemeStore] = useState(false);
   const rotation = useRef(new Animated.Value(0)).current;
   const spinButtonScale = useRef(new Animated.Value(1)).current;
   const wheelScale = useRef(new Animated.Value(1)).current;
@@ -341,7 +340,7 @@ export default function GameBoard({
               onPress={() => {
                 audioService.playSound("buttonPress");
                 audioService.playHaptic("medium");
-                setShowThemeStore(true);
+                router.push("/theme-store?isGameActive=true");
               }}
             />
 
@@ -530,12 +529,8 @@ export default function GameBoard({
         />
       </View>
 
-      {/* Theme Store Modal */}
-      <ThemeStore
-        visible={showThemeStore}
-        onClose={() => setShowThemeStore(false)}
-        isGameActive={true}
-      />
+      {/* Theme Store - Navigate to page instead of modal */}
+      {/* ThemeStore is now a page component, navigation handled by router */}
     </SafeAreaView>
   );
 }

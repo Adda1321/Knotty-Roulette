@@ -1,5 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -7,12 +6,11 @@ import {
   Dimensions,
   Image,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import {
   COLORS,
@@ -351,52 +349,15 @@ export default function ThemeStore({
                   </Text>
 
                   {getSampleChallenges(selectedPack?.id).map(
-                    (challenge: any, index: number) => {
-                      const text = challenge.challenge_text;
-                      const midPoint = Math.floor(text.length / 2);
-                      const firstHalf = text.substring(0, midPoint);
-                      const secondHalf = text.substring(midPoint);
-
-                      return (
-                        <View key={index} style={styles.sampleChallengeItem}>
-                          <View style={styles.challengeTextContainer}>
-                            <Text style={styles.sampleChallengeText}>
-                              {firstHalf}
-                            </Text>
-
-                            {Platform.OS === "ios" ? (
-                              <View style={styles.blurredTextContainer}>
-                                <BlurView
-                                  intensity={10}
-                                  tint="light"
-                                  style={styles.blurredTextBlur}
-                                >
-                                  <Text style={styles.blurredTextContent}>
-                                    {secondHalf}
-                                  </Text>
-                                </BlurView>
-                              </View>
-                            ) : (
-                              <View
-                                style={[
-                                  styles.blurredTextContainer,
-                                  styles.androidBlurSimple,
-                                ]}
-                              >
-                                <Text
-                                  style={[
-                                    styles.blurredTextContent,
-                                    styles.androidBlurSimpleText,
-                                  ]}
-                                >
-                                  {secondHalf}
-                                </Text>
-                              </View>
-                            )}
-                          </View>
+                    (challenge: any, index: number) => (
+                      <View key={index} style={styles.sampleChallengeItem}>
+                        <View style={styles.challengeTextContainer}>
+                          <Text style={styles.sampleChallengeText}>
+                            {challenge.challenge_text}
+                          </Text>
                         </View>
-                      );
-                    }
+                      </View>
+                    )
                   )}
                 </View>
 
@@ -890,7 +851,6 @@ const styles = StyleSheet.create({
   challengeTextContainer: {
     position: "relative",
     zIndex: 1,
-    paddingRight: 80, // Leave space for blur effect on the right
   },
   sampleChallengeText: {
     fontSize: SIZES.SMALL,
@@ -898,43 +858,8 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
     lineHeight: 20,
-    position: "relative",
-    zIndex: 2,
   },
-  blurredTextContainer: {
-    position: "absolute",
-    right: 0,
-    top: 0,
-    bottom: 0,
-    width: 80, // Width of the blur effect
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    overflow: "hidden",
-  },
-  blurredTextBlur: {
-    width: "100%",
-    height: "100%",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: SIZES.PADDING_SMALL,
-  },
-  blurredTextContent: {
-    fontSize: SIZES.SMALL,
-    color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.DOSIS_BOLD,
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  androidBlurSimple: {
-    backgroundColor: "#fff",
-    borderLeftWidth: 0,
-    borderLeftColor: "rgba(255, 255, 255, 0.5)",
-  },
-  androidBlurSimpleText: {
-    opacity: 0.1,
-    textShadowColor: "rgba(190, 37, 37, 0.1)",
-    textShadowOffset: { width: 0.5, height: 0.5 },
-    textShadowRadius: 1,
-  },
+
   purchaseSection: {
     alignItems: "center",
     paddingVertical: SIZES.PADDING_MEDIUM,

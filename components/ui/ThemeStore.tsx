@@ -6,6 +6,7 @@ import {
   Dimensions,
   Image,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -315,6 +316,8 @@ export default function ThemeStore({
       visible={showPreview}
       animationType="slide"
       transparent={true}
+      // statusBarTranslucent
+      // presentationStyle="overFullScreen"
       onRequestClose={closePreview}
     >
       <View style={styles.previewOverlay}>
@@ -335,12 +338,13 @@ export default function ThemeStore({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.previewScrollContent}
             >
-              <View style={styles.previewImageContainer}>
-                <Image
-                  source={selectedPack?.previewImage}
-                  style={styles.previewImage}
-                  resizeMode="cover"
-                />
+              <View style={styles.previewImageWrapper}>
+                <View style={styles.previewImageContainer}>
+                  <Image
+                    source={selectedPack?.previewImage}
+                    style={styles.previewImage}
+                  />
+                </View>
               </View>
 
               <View style={styles.previewContent}>
@@ -370,17 +374,36 @@ export default function ThemeStore({
                             <Text style={styles.sampleChallengeText}>
                               {firstHalf}
                             </Text>
-                            <View style={styles.blurredTextContainer}>
-                              <BlurView
-                                intensity={30}
-                                tint="light"
-                                style={styles.blurredTextBlur}
+
+                            {Platform.OS === "ios" ? (
+                              <View style={styles.blurredTextContainer}>
+                                <BlurView
+                                  intensity={10}
+                                  tint="light"
+                                  style={styles.blurredTextBlur}
+                                >
+                                  <Text style={styles.blurredTextContent}>
+                                    {secondHalf}
+                                  </Text>
+                                </BlurView>
+                              </View>
+                            ) : (
+                              <View
+                                style={[
+                                  styles.blurredTextContainer,
+                                  styles.androidBlurSimple,
+                                ]}
                               >
-                                <Text style={styles.blurredTextContent}>
+                                <Text
+                                  style={[
+                                    styles.blurredTextContent,
+                                    styles.androidBlurSimpleText,
+                                  ]}
+                                >
                                   {secondHalf}
                                 </Text>
-                              </BlurView>
-                            </View>
+                              </View>
+                            )}
                           </View>
                         </View>
                       );
@@ -433,6 +456,8 @@ export default function ThemeStore({
         visible={visible}
         animationType="slide"
         transparent={true}
+        // statusBarTranslucent
+        // presentationStyle="overFullScreen"
         onRequestClose={closeStore}
       >
         <View style={styles.overlay}>
@@ -804,30 +829,31 @@ const styles = StyleSheet.create({
   previewContentWrapper: {
     flex: 1, // Take remaining space
   },
-  previewImageContainer: {
+  previewImageWrapper: {
     width: "100%",
-    height: 300, // Fixed height that works well with most image aspect ratios
+    alignItems: "center", // This centers horizontally
+    justifyContent: "center", // This centers vertically
+    marginBottom: SIZES.PADDING_LARGE,
+    paddingHorizontal: SIZES.PADDING_MEDIUM,
+  },
+  previewImageContainer: {
+    width: "90%",
+    height: 300, // Reduced from 300
     backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
-    marginBottom: SIZES.PADDING_LARGE,
-    // marginHorizontal: SIZES.PADDING_SMALL,
-    padding: SIZES.PADDING_MEDIUM,
+    // marginBottom: SIZES.PADDING_LARGE,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
     borderWidth: 1,
     borderColor: COLORS.CARD_BORDER,
     ...SIZES.SHADOW_SMALL,
+    padding: SIZES.PADDING_SMALL, // Reduced padding
   },
   previewImage: {
     width: "100%",
-    height: "100%", // Fill the container
-    resizeMode: "cover", // This will crop the image to fit the container
-    // Alternative resize modes you can try:
-    // "contain" - Shows full image with possible empty space
-    // "stretch" - Stretches image to fill (may distort)
-    // "center" - Centers image without resizing
-    // "repeat" - Repeats image to fill space
+    height: "100%",
+    resizeMode: "contain",
   },
   previewContent: {
     padding: SIZES.PADDING_LARGE,
@@ -903,9 +929,9 @@ const styles = StyleSheet.create({
   blurredTextBlur: {
     width: "100%",
     height: "100%",
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: SIZES.PADDING_SMALL,
   },
   blurredTextContent: {
     fontSize: SIZES.SMALL,
@@ -913,7 +939,17 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
     lineHeight: 20,
-    paddingHorizontal: SIZES.PADDING_SMALL,
+  },
+  androidBlurSimple: {
+    backgroundColor: "#fff",
+    borderLeftWidth: 0,
+    borderLeftColor: "rgba(255, 255, 255, 0.5)",
+  },
+  androidBlurSimpleText: {
+    opacity: 0.1,
+    textShadowColor: "rgba(190, 37, 37, 0.1)",
+    textShadowOffset: { width: 0.5, height: 0.5 },
+    textShadowRadius: 1,
   },
   purchaseSection: {
     alignItems: "center",

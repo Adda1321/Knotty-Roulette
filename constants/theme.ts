@@ -157,8 +157,12 @@ export const THEME_PACK_DATA: Record<ThemePackId, ThemePackData> = {
 export const THEME_COLORS = {
   [THEME_PACKS.DEFAULT]: {
     // Primary Colors - Use original green colors
-    DARK_GREEN: "#6bc26e",      // Original green || OKAY
-    LIGHT_GREEN: "#def6e2",     // Original light green || OKAY
+    PRIMARY: "#6bc26e",      // Original green || OKAY
+    LIGHT: "#116b20ff",     // Original light green || OKAY
+    DARK:"#3f663f",
+    LIGHTEST: "#63A133",     // Original light green || OKAY
+    BORDER:"#63A133",
+    TEXT:"#F4C614",
     YELLOW: "#F4C614",          // Original yellow || OKAY
     FIELDS: "#F1E9BE",          // Original fields color || OKAY
     
@@ -191,14 +195,17 @@ export const THEME_COLORS = {
   
   [THEME_PACKS.COLLEGE]: {
     // Primary Colors - Blue Theme
-    DARK_GREEN: "#1976D2",      // Blue instead of green
-    LIGHT_GREEN: "#42A5F5",     // Light blue
-    YELLOW: "#FF9800",          // Orange accent
+    PRIMARY: "#0c2f64ff",      // Blue instead of green
+    LIGHT: "#1976D2",
+    THEMEPACKNAME:"#9cbfe2ff",
+    LIGHTEST: "#6598cbff",
+    DARK:"#123f65ff",     // Light blue
+    TEXT:"#ff3b9dff",
+    YELLOW: "#F4C614", 
+             // Orange accent
     FIELDS: "#E3F2FD",          // Light blue fields
     
-    // Background Colors
-    BACKGROUND_DARK: "#0D47A1", // Dark blue
-    
+ 
     
     // Text Colors
     TEXT_PRIMARY: "#ffffff",
@@ -225,13 +232,21 @@ export const THEME_COLORS = {
   
   [THEME_PACKS.COUPLE]: {
     // Primary Colors - Red/Pink Theme
-    DARK_GREEN: "#E91E63",      // Pink/Red instead of green
-    LIGHT_GREEN: "#F8BBD9",     // Light pink
+    PRIMARY: "#BC2538",      // Pink/Red instead of green
+      // Primary Colors - Blue Theme
+    THEMEPACKNAME:"#9cbfe2ff",
+
+    LIGHT: "#E78D90",
+    LIGHTEST:"#EB6051",
+    DARK:"#CB4757", 
+    TEXT:"#FDCA2B",
+    BORDER:"#4292c1ff",
+        // Light blue    // Light pink
     YELLOW: "#FFC107",          // Amber accent
     FIELDS: "#FCE4EC",          // Light pink fields
     
     // Background Colors
-    BACKGROUND_DARK: "#C2185B", // Dark pink
+    BACKGROUND_DARK: "#E14C31", // Dark pink
     
     
     // Text Colors

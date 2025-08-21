@@ -18,7 +18,7 @@ import {
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
-import { FONTS, SIZES } from "../../constants/theme";
+import { FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import audioService from "../../services/audio";
 import Button from "../ui/Button";
@@ -26,7 +26,6 @@ import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
 import StoreButton from "../ui/StoreButton";
 import ThemeStore from "../ui/ThemeStore";
-
 interface PlayerSetupProps {
   onStartGame: (playerNames: string[]) => void;
 }
@@ -41,7 +40,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   useEffect(() => {
     console.log("🎨 PlayerSetup: Theme changed to:", currentTheme);
   }, [currentTheme]);
-
+  
   const [players, setPlayers] = useState<string[]>(["", ""]); // Default two empty players
   const [showNotEnoughPlayersModal, setShowNotEnoughPlayersModal] =
     useState(false);
@@ -115,7 +114,10 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
 
   return (
     <LinearGradient
-      colors={[COLORS.DARK_GREEN, "#116b20ff", "#3f663f"]}
+      colors={[
+        COLORS.PRIMARY, COLORS.LIGHT, COLORS.DARK,
+        
+        ]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -144,15 +146,45 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
             </View>
 
             <View style={styles.mascotContainer}>
-              <Image
-                source={require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs.png")}
+           <Image
+                source={
+                  currentTheme === THEME_PACKS.DEFAULT
+                    ? require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs.png")
+                    : currentTheme === THEME_PACKS.COLLEGE
+                    ? require("../../assets/images/MascotImages/College/College-legs-mascot.png")
+                    : require("../../assets/images/MascotImages/Couple/Couple-legs-mascot.png")
+                }
                 style={styles.mascotImage}
                 resizeMode="contain"
               />
             </View>
-            <Text style={[styles.title, { color: COLORS.YELLOW }]}>
+          {/* Title with conditional rendering for edition text */}
+                     <Text style={[
+              styles.title, 
+              { 
+                color: currentTheme === THEME_PACKS.DEFAULT 
+                  ? COLORS.TEXT 
+                  : currentTheme === THEME_PACKS.COLLEGE 
+                    ? COLORS.TEXT
+                    : COLORS.TEXT 
+              }
+            ]}>
               KNOTTY ROULETTE
             </Text>
+
+            
+            {currentTheme === THEME_PACKS.COLLEGE && (
+              <Text style={[styles.editionText, { color: COLORS.THEMEPACKNAME,
+ }]}>
+                COLLEGE EDITION
+              </Text>
+            )}
+            
+            {currentTheme === THEME_PACKS.COUPLE && (
+              <Text style={[styles.editionText, { color: COLORS.FIELDS }]}>
+                COUPLES PACK
+              </Text>
+            )}
             <Text style={[styles.subtitle, { color: COLORS.TEXT_PRIMARY }]}>
               Add Players to Begin
             </Text>
@@ -321,24 +353,24 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                           style={[
                             styles.doubleBorderOuter,
                             {
-                              borderColor: COLORS.YELLOW,
-                              backgroundColor: COLORS.YELLOW,
-                            },
+      borderColor: currentTheme === THEME_PACKS.DEFAULT ? COLORS.YELLOW : COLORS.LIGHTEST,
+      backgroundColor: currentTheme === THEME_PACKS.DEFAULT ? COLORS.YELLOW : COLORS.LIGHTEST,
+    },
                           ]}
                         >
                           <View
                             style={[
                               styles.doubleBorderInner,
                               {
-                                borderColor: "#BE960C",
+                                borderColor: currentTheme === THEME_PACKS.DEFAULT? "#BE960C" : COLORS.DARK,
                               },
                             ]}
                           >
                             <Button
                               text="+ Add Player"
                               onPress={addPlayer}
-                              backgroundColor={COLORS.YELLOW}
-                              textColor={COLORS.TEXT_DARK}
+                            backgroundColor={currentTheme === THEME_PACKS.DEFAULT ? COLORS.YELLOW : COLORS.LIGHTEST}
+                              textColor={currentTheme === THEME_PACKS.DEFAULT ? COLORS.TEXT_DARK : "#FFFFFF"}
                               fontSize={SIZES.CAPTION}
                               fontFamily={FONTS.DOSIS_BOLD}
                               fontWeight="600"
@@ -358,11 +390,20 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
             <View style={styles.startButtonContainer}>
               <Animated.View style={{ transform: [{ translateY }] }}>
                 <Surface elevation={5} style={{ borderRadius: 8 }}>
-                  <View style={styles.startButtonOuter}>
+                  <View style={[styles.startButtonOuter,
+                    {
+    borderColor: COLORS.LIGHTEST,// They changed it
+
+                    }
+                  ]}>
                     <Button
                       text={
                         <View
-                          style={{ flexDirection: "row", alignItems: "center" }}
+                          style={{ flexDirection: "row", alignItems: "center" ,
+    borderColor: COLORS.LIGHTEST,// They changed it
+
+
+                          }}
                         >
                           <Image
                             source={require("../../assets/images/play-button-arrowhead.png")}
@@ -386,12 +427,14 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                       disabled={players.filter((p) => p.trim()).length < 2}
                       backgroundColor={
                         players.filter((p) => p.trim()).length < 2
-                          ? "#bfa204"
-                          : COLORS.YELLOW
+                         ? COLORS.DARK
+                          : currentTheme === THEME_PACKS.COLLEGE ? COLORS.YELLOW : COLORS.PRIMARY
                       }
-                      textColor={COLORS.TEXT_DARK}
+                      textColor={currentTheme === THEME_PACKS.COLLEGE ? COLORS.TEXT_DARK : COLORS.TEXT_PRIMARY}
                       backgroundGradient={
-                        [COLORS.DARK_GREEN, COLORS.YELLOW] as const
+                        currentTheme === THEME_PACKS.COLLEGE 
+                          ? [COLORS.YELLOW, COLORS.YELLOW] as const 
+                          : [COLORS.LIGHTEST, COLORS.YELLOW] as const
                       }
                       paddingHorizontal={SIZES.PADDING_LARGE}
                       paddingVertical={15}
@@ -452,8 +495,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 40,
     fontFamily: FONTS.DOSIS_BOLD,
-
-    marginBottom: SIZES.PADDING_SMALL,
     textAlign: "center",
     ...SIZES.TEXT_SHADOW_MEDIUM,
     marginTop: -48,
@@ -558,10 +599,7 @@ const styles = StyleSheet.create({
   },
   startButtonOuter: {
     borderWidth: 3,
-    borderColor: "#63A133",// They changed it
     borderRadius: 8,
-    padding: 1, // This creates space between border and button
-    backgroundColor: "#63A133", // They changed it
     elevation: 6,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
@@ -576,5 +614,14 @@ const styles = StyleSheet.create({
 
   buttonSpacer: {
     width: SIZES.PADDING_SMALL, // Space between buttons
+  },
+   editionText: {
+    fontSize: SIZES.EXTRALARGE,
+    fontFamily: FONTS.DOSIS_BOLD,
+    textAlign: "center",
+    marginBottom: SIZES.PADDING_SMALL,
+    letterSpacing: 0,
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
   },
 });

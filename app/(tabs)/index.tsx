@@ -1,5 +1,6 @@
 
 import GameBoard from "@/components/game/GameBoard";
+import UpsellModal from "@/components/ui/UpsellModal";
 import purchaseService from "@/services/purchaseService";
 import { StatusBar } from "expo-status-bar";
 import React, { useEffect, useState } from "react";
@@ -13,6 +14,7 @@ import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import adService from "../../services/adService";
 import { fetchChallenges } from "../../services/api";
 import audioService from "../../services/audio";
+import upsellService, { UpsellOffer, UpsellType } from "../../services/upsellService";
 import userService from "../../services/userService";
 import { Challenge, GameState, Player } from "../../types/game";
 
@@ -26,6 +28,10 @@ export default function HomeScreen() {
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [winner, setWinner] = useState<Player | null>(null);
   const [isNewGame, setIsNewGame] = useState(false);
+  
+  // Upsell state
+  const [showUpsellModal, setShowUpsellModal] = useState(false);
+  const [currentUpsellOffer, setCurrentUpsellOffer] = useState<UpsellOffer | null>(null);
 
   useEffect(() => {
     initializeServices();
@@ -35,6 +41,9 @@ export default function HomeScreen() {
     try {
       // Initialize user service first
       await userService.initialize();
+      
+      // Initialize upsell service
+      await upsellService.initialize();
       
       // Initialize ad service (depends on user service)
       await adService.initialize();
@@ -88,6 +97,30 @@ export default function HomeScreen() {
     setIsNewGame(false); // Reset flag when game is reset
   };
 
+  // Handle upsell display
+  const handleUpsellDisplay = async (upsellType: UpsellType) => {
+    if (upsellType === 'none') return;
+
+    const offer = upsellService.getUpsellOffer(upsellType);
+    if (offer) {
+      setCurrentUpsellOffer(offer);
+      setShowUpsellModal(true);
+      await upsellService.markUpsellShown(upsellType);
+    }
+  };
+
+  // Handle upsell purchase success
+  const handleUpsellPurchaseSuccess = async () => {
+    setShowUpsellModal(false);
+    setCurrentUpsellOffer(null);
+    
+    // Check for next upsell
+    const nextUpsell = await upsellService.checkPostPurchaseUpsell('ad_free');
+    if (nextUpsell !== 'none') {
+      handleUpsellDisplay(nextUpsell);
+    }
+  };
+
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -130,6 +163,7 @@ export default function HomeScreen() {
           }}
           onResetGame={resetGame}
           onRulesShown={() => setIsNewGame(false)} // Reset flag when rules are shown
+          onUpsellTrigger={handleUpsellDisplay}
         />
       )}
 
@@ -150,6 +184,17 @@ export default function HomeScreen() {
         showConfirmButton={false}
         showSparkles={true}
       />
+
+      {/* Upsell Modal */}
+      {currentUpsellOffer && (
+        <UpsellModal
+          visible={showUpsellModal}
+          onClose={() => setShowUpsellModal(false)}
+          onPurchaseSuccess={handleUpsellPurchaseSuccess}
+          offer={currentUpsellOffer}
+        />
+      )}
+
       <Toast />
     </SafeAreaView>
   );

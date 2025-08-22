@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { THEME_PACK_DATA, THEME_PACKS, ThemePackId } from '../constants/theme';
+import upsellService from './upsellService';
 
 const STORAGE_KEYS = {
   PURCHASED_PACKS: 'knotty_roulette_purchased_packs',
@@ -111,6 +112,9 @@ class ThemePackService {
         // Don't auto-switch - user must manually select
         // this.currentPack = packId;
         // await this.saveState();
+        
+        // Initialize upsell service to check for post-purchase upsells
+        await upsellService.initialize();
         
         return true;
       }

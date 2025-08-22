@@ -10,7 +10,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import {
   COLORS,
@@ -22,10 +22,14 @@ import {
 } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext"; // Add useTheme hook
 import audioService from "../../services/audio";
+import purchaseService from "../../services/purchaseService";
 import themePackService from "../../services/themePackService";
+import upsellService from "../../services/upsellService";
+import userService from "../../services/userService";
 import { getSampleChallenges } from "../../utils/themeHelpers";
 import Button from "./Button";
 import CustomModal from "./CustomModal";
+import UpsellModal from "./UpsellModal";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -57,11 +61,37 @@ export default function ThemeStore({
   const [showSwitchConfirmation, setShowSwitchConfirmation] = useState(false);
   const [packToSwitch, setPackToSwitch] = useState<ThemePack | null>(null);
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
+  const [showUpsellModal, setShowUpsellModal] = useState(false);
+  const [currentUpsellOffer, setCurrentUpsellOffer] = useState<any>(null);
+  const [showPurchaseSuccessModal, setShowPurchaseSuccessModal] = useState(false);
+  const [purchaseSuccessData, setPurchaseSuccessData] = useState<{
+    title: string;
+    message: string;
+    action: string;
+  } | null>(null);
+  const [isAdFreePurchasing, setIsAdFreePurchasing] = useState(false);
+  const [purchasingBundleId, setPurchasingBundleId] = useState<string | null>(null);
 
   // Load theme packs with current status
   useEffect(() => {
     loadThemePacks();
+    checkShopEntryUpsell();
   }, []);
+
+  const checkShopEntryUpsell = async () => {
+    try {
+      const upsellType = await upsellService.trackShopEntry();
+      if (upsellType !== "none") {
+        const offer = upsellService.getUpsellOffer(upsellType, "shop_entry");
+        if (offer) {
+          setCurrentUpsellOffer(offer);
+          setShowUpsellModal(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking shop entry upsell:", error);
+    }
+  };
 
   const loadThemePacks = () => {
     const packsWithStatus = themePackService.getAllPacksWithStatus();
@@ -106,17 +136,35 @@ export default function ThemeStore({
     setThemePacks(packs);
   };
 
-  const BUNDLE_DEALS = [
-    {
-      id: "both-themes",
-      title: "Both Theme Packs",
-      description: "Get both College and Couple themes at a discounted price",
-      originalPrice: "$5.98",
-      discountedPrice: "$4.99",
-      savings: "$0.99",
-      themes: ["college", "couple"],
-    },
-  ];
+  const [passiveOffers, setPassiveOffers] = useState<any[]>([]);
+
+  // Load passive offers based on user state
+  useEffect(() => {
+    loadPassiveOffers();
+  }, []);
+
+  const loadPassiveOffers = () => {
+    const offers = upsellService.getPassiveUpsells();
+    setPassiveOffers(offers);
+
+    // Debug: Log user status and passive offers
+    const isPremium = userService.isPremium();
+    const purchasedPacks = themePackService.getPurchasedPacks();
+    console.log("🔍 ThemeStore Debug:", {
+      userStatus: isPremium ? "Premium (Ad-Free)" : "Free User",
+      ownedThemePacks: purchasedPacks.length,
+      totalThemePacks: Object.keys(themePackService.getAllPacksWithStatus())
+        .length,
+      passiveOffersCount: offers.length,
+      passiveOffers: offers.map((o) => ({
+        id: o.id,
+        title: o.title,
+        price: o.primaryButton.price,
+      })),
+      adFreeButtonVisible: !isPremium,
+      adFreeButtonAction: "Direct Ad-Free purchase ($2.99)",
+    });
+  };
 
   const openPreview = (pack: ThemePack) => {
     setSelectedPack(pack);
@@ -144,15 +192,23 @@ export default function ThemeStore({
           audioService.playHaptic("success");
         }, 100);
         loadThemePacks(); // Refresh the list
+        loadPassiveOffers(); // Refresh passive offers
         closePreview();
       } else {
-        Alert.alert(
-          "Purchase Failed",
-          "Unable to complete purchase. Please try again."
-        );
+        setPurchaseSuccessData({
+          title: "❌ Purchase Failed",
+          message: "Unable to complete purchase. Please try again.",
+          action: "OK"
+        });
+        setShowPurchaseSuccessModal(true);
       }
     } catch (error) {
-      Alert.alert("Error", "An error occurred during purchase.");
+      setPurchaseSuccessData({
+        title: "❌ Error",
+        message: "An error occurred during purchase.",
+        action: "OK"
+      });
+      setShowPurchaseSuccessModal(true);
     } finally {
       setIsPurchasing(false);
     }
@@ -190,6 +246,122 @@ export default function ThemeStore({
     setPackToSwitch(null);
   };
 
+  const handleAdFreeOnlyPurchase = async () => {
+    audioService.playHaptic("medium");
+    audioService.playSound("buttonPress");
+
+    setIsAdFreePurchasing(true);
+
+    try {
+      const success = await purchaseService.purchasePremiumPack();
+
+      if (success) {
+        // Refresh passive offers and theme packs
+        loadPassiveOffers();
+        loadThemePacks();
+
+        // Show success feedback
+        audioService.playSound("bonusAchieved");
+        audioService.playHaptic("success");
+
+        // Show custom success modal
+        setPurchaseSuccessData({
+          title: "🎉 Ad-Free Activated!",
+          message: "You're now a premium user! No more ads during gameplay.",
+          action: "Awesome!"
+        });
+        setShowPurchaseSuccessModal(true);
+      } else {
+        setPurchaseSuccessData({
+          title: "❌ Purchase Failed",
+          message: "Unable to complete purchase. Please try again.",
+          action: "OK"
+        });
+        setShowPurchaseSuccessModal(true);
+      }
+    } catch (error) {
+      setPurchaseSuccessData({
+        title: "❌ Error",
+        message: "An error occurred during purchase.",
+        action: "OK"
+      });
+      setShowPurchaseSuccessModal(true);
+    } finally {
+      setIsAdFreePurchasing(false);
+    }
+  };
+
+  const handlePassiveOfferPurchase = async (offer: any) => {
+    // Don't process if this is a completed offer
+    if (offer.isCompleted || offer.primaryButton.action === "none") {
+      return;
+    }
+
+    audioService.playHaptic("medium");
+    audioService.playSound("buttonPress");
+
+    // Set loading state for this specific bundle
+    setPurchasingBundleId(offer.id);
+
+    // Handle passive offer purchase based on action type
+    try {
+      let success = false;
+
+      if (offer.primaryButton.action === "ad_free") {
+        success = await purchaseService.purchasePremiumPack();
+      } else if (offer.primaryButton.action === "theme_packs") {
+        success = await themePackService.purchasePack("college");
+        if (success) {
+          success = await themePackService.purchasePack("couple");
+        }
+      } else if (offer.primaryButton.action === "complete_set") {
+        success = await themePackService.purchasePack("couple");
+      } else if (offer.primaryButton.action === "all_in_bundle") {
+        success = await purchaseService.purchasePremiumPack();
+        if (success) {
+          success = await themePackService.purchasePack("college");
+          if (success) {
+            success = await themePackService.purchasePack("couple");
+          }
+        }
+      }
+
+      if (success) {
+        // Refresh passive offers and theme packs
+        loadPassiveOffers();
+        loadThemePacks();
+
+        // Show success feedback
+        audioService.playSound("bonusAchieved");
+        audioService.playHaptic("success");
+        
+        // Show custom success modal
+        setPurchaseSuccessData({
+          title: "🎉 Purchase Successful!",
+          message: "Your purchase has been completed successfully!",
+          action: "Awesome!"
+        });
+        setShowPurchaseSuccessModal(true);
+      } else {
+        setPurchaseSuccessData({
+          title: "❌ Purchase Failed",
+          message: "Unable to complete purchase. Please try again.",
+          action: "OK"
+        });
+        setShowPurchaseSuccessModal(true);
+      }
+    } catch (error) {
+      setPurchaseSuccessData({
+        title: "❌ Error",
+        message: "An error occurred during purchase.",
+        action: "OK"
+      });
+      setShowPurchaseSuccessModal(true);
+    } finally {
+      setPurchasingBundleId(null);
+    }
+  };
+
   const handleBundlePurchase = (bundle: any) => {
     audioService.playHaptic("medium");
     audioService.playSound("buttonPress");
@@ -200,47 +372,100 @@ export default function ThemeStore({
 
   const handleResetStore = async () => {
     try {
+      // Reset theme pack purchases
       await themePackService.resetPurchases();
-      loadThemePacks(); // Refresh the list
+
+      // Reset user premium status (Ad-Free)
+      await userService.forceResetForTesting();
+
+      // Reset upsell service state
+      await upsellService.resetUpsellState();
+
+      // Refresh all data
+      loadThemePacks();
+      loadPassiveOffers();
+
+      // Show success feedback
       audioService.playSound("buttonPress");
       audioService.playHaptic("medium");
+
+      // Show success message
+      Alert.alert(
+        "🔄 Store Reset Complete!",
+        "All purchases and premium status have been reset. You're now a free user again.",
+        [{ text: "Got it!" }]
+      );
     } catch (error) {
       console.error("Error resetting store:", error);
+      Alert.alert(
+        "Error",
+        "Failed to reset store completely. Please try again."
+      );
     }
   };
 
-  const renderBundleDeals = () => (
-    <View style={styles.bundleSection}>
-      <Text style={styles.sectionTitle}>Bundle Deals</Text>
-      {BUNDLE_DEALS.map((bundle) => (
-        <TouchableOpacity
-          key={bundle.id}
-          style={styles.bundleCard}
-          onPress={() => handleBundlePurchase(bundle)}
-          activeOpacity={0.8}
-        >
-          <View style={styles.bundleHeader}>
-            <Text style={styles.bundleTitle}>{bundle.title}</Text>
-            <View style={styles.bundlePriceContainer}>
-              <Text style={styles.bundleOriginalPrice}>
-                {bundle.originalPrice}
-              </Text>
-              <Text style={styles.bundleDiscountedPrice}>
-                {bundle.discountedPrice}
-              </Text>
+  const renderBundleDeals = () => {
+    return (
+      <View style={styles.bundleSection}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Featured Offers</Text>
+        </View>
+
+        {passiveOffers.length > 0 &&
+          passiveOffers.map((offer) => (
+            <View
+              key={offer.id}
+              style={[
+                styles.bundleCard,
+                offer.isCompleted && styles.bundleCardCompleted
+              ]}
+            >
+              <View style={styles.bundleHeader}>
+                <Text style={styles.bundleTitle}>{offer.title}</Text>
+                {offer.showBestDeal && offer.bestDealText && (
+                  <View style={styles.bundleBestDealBadge}>
+                    <Text style={styles.bundleBestDealText}>
+                      {offer.bestDealText}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.bundleDescription}>{offer.description}</Text>
+                            <View style={styles.bundleFooter}>
+                <View style={[
+                  styles.bundlePriceContainer,
+                  offer.isCompleted && styles.bundlePriceContainerCompleted
+                ]}>
+                  <Text style={styles.bundlePrice}>
+                    {offer.primaryButton.price}
+                  </Text>
+                </View>
+                {!offer.isCompleted ? (
+                  <TouchableOpacity
+                    style={[
+                      styles.bundleButton,
+                      purchasingBundleId === offer.id && styles.bundleButtonDisabled
+                    ]}
+                    onPress={() => handlePassiveOfferPurchase(offer)}
+                    activeOpacity={0.8}
+                    disabled={purchasingBundleId === offer.id}
+                  >
+                    <Text style={styles.bundleButtonText}>
+                      {purchasingBundleId === offer.id 
+                        ? "Purchasing..." 
+                        : offer.primaryButton.text
+                      }
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <></>
+                )}
+              </View>
             </View>
-          </View>
-          <Text style={styles.bundleDescription}>{bundle.description}</Text>
-          <View style={styles.bundleFooter}>
-            <Text style={styles.bundleSavings}>Save {bundle.savings}</Text>
-            <View style={styles.bundleButton}>
-              <Text style={styles.bundleButtonText}>Get Bundle</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      ))}
-    </View>
-  );
+          ))}
+      </View>
+    );
+  };
 
   const renderThemeCard = (pack: ThemePack) => (
     <TouchableOpacity
@@ -422,7 +647,23 @@ export default function ThemeStore({
             </TouchableOpacity>
           </View>
         </View>
-
+        <View>
+          {!userService.isPremium() && (
+            <TouchableOpacity
+              style={[
+                styles.adFreeButton,
+                isAdFreePurchasing && styles.adFreeButtonDisabled
+              ]}
+              onPress={() => handleAdFreeOnlyPurchase()}
+              activeOpacity={0.8}
+              disabled={isAdFreePurchasing}
+            >
+              <Text style={styles.adFreeButtonText}>
+                {isAdFreePurchasing ? "Purchasing..." : "Ad-Free Only"}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
         <View style={styles.contentContainer}>
           <ScrollView
             style={styles.content}
@@ -488,6 +729,33 @@ export default function ThemeStore({
         closeButtonText="Cancel"
         destructive={true}
       />
+
+      {/* Upsell Modal */}
+      {currentUpsellOffer && (
+        <UpsellModal
+          visible={showUpsellModal}
+          onClose={() => setShowUpsellModal(false)}
+          onPurchaseSuccess={() => {
+            setShowUpsellModal(false);
+            loadThemePacks(); // Refresh theme packs after purchase
+          }}
+          offer={currentUpsellOffer}
+        />
+      )}
+
+      {/* Purchase Success/Error Modal */}
+      {purchaseSuccessData && (
+        <CustomModal
+          visible={showPurchaseSuccessModal}
+          onClose={() => setShowPurchaseSuccessModal(false)}
+          title={purchaseSuccessData.title}
+          message={purchaseSuccessData.message}
+          showCloseButton={true}
+          closeButtonText={purchaseSuccessData.action}
+          showConfirmButton={false}
+          showSparkles={purchaseSuccessData.title.includes("🎉")}
+        />
+      )}
     </>
   );
 }
@@ -509,13 +777,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingLeft:0
+    paddingLeft: 0,
   },
   backButton: {
     padding: SIZES.PADDING_SMALL,
     width: 100,
     height: 44,
-    paddingLeft:SIZES.PADDING_LARGE,
+    paddingLeft: SIZES.PADDING_LARGE,
     alignItems: "flex-start",
     justifyContent: "center",
     borderRadius: 8,
@@ -554,9 +822,34 @@ const styles = StyleSheet.create({
   },
   bundleSection: {
     paddingHorizontal: SIZES.PADDING_SMALL,
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    // padding: SIZES.PADDING_MEDIUM,
-    // backgroundColor: "red",
+  },
+  sectionHeader: {
+    position: "relative", // For absolute positioning of Ad-Free button
+    alignItems: "center",
+  },
+  adFreeButton: {
+    position: "absolute",
+    right: 0, // Position on the right side
+    top: 0, // Align with the top of the container
+    backgroundColor: COLORS.YELLOW,
+    paddingHorizontal: SIZES.PADDING_MEDIUM,
+    paddingVertical: SIZES.PADDING_SMALL,
+    borderTopLeftRadius: SIZES.BORDER_RADIUS_SMALL,
+    borderBottomLeftRadius: SIZES.BORDER_RADIUS_SMALL,
+    borderLeftWidth: 2,
+    borderLeftColor: COLORS.CARD_BORDER,
+    marginTop: 15,
+    zIndex: 1, // Ensure button appears above other elements
+  },
+  adFreeButtonDisabled: {
+    opacity: 0.6,
+    backgroundColor: COLORS.TEXT_SECONDARY,
+  },
+  adFreeButtonText: {
+    fontSize: SIZES.SMALL,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.DOSIS_BOLD,
+    textAlign: "center",
   },
   sectionTitle: {
     fontSize: SIZES.SUBTITLE,
@@ -577,6 +870,31 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: COLORS.YELLOW,
   },
+  bundleCardDisabled: {
+    opacity: 0.6,
+    borderColor: COLORS.TEXT_SECONDARY,
+  },
+  bundleCardCompleted: {
+    // Keep original styling, just indicate it's completed
+    borderColor: COLORS.YELLOW,
+  },
+  bundleButtonDisabled: {
+    backgroundColor: COLORS.TEXT_SECONDARY,
+    opacity: 0.6,
+  },
+  bundleCompletedText: {
+    // Simple text display, no button styling
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: SIZES.PADDING_SMALL,
+  },
+  bundleCompletedTextStyle: {
+    fontSize: SIZES.SMALL,
+    color: COLORS.YELLOW,
+    fontFamily: FONTS.DOSIS_BOLD,
+    textAlign: "center",
+    fontStyle: "italic",
+  },
   bundleHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -590,9 +908,26 @@ const styles = StyleSheet.create({
     flex: 1,
     // marginRight: SIZES.PADDING_MEDIUM,
   },
+  bundleBestDealBadge: {
+    backgroundColor: COLORS.YELLOW,
+    paddingHorizontal: SIZES.PADDING_SMALL,
+    paddingVertical: 4,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    marginBottom: SIZES.PADDING_SMALL,
+  },
+  bundleBestDealText: {
+    fontSize: SIZES.CAPTION,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.DOSIS_BOLD,
+    textAlign: "center",
+  },
   bundlePriceContainer: {
     flexDirection: "row",
     alignItems: "baseline",
+  },
+  bundlePriceContainerCompleted: {
+    justifyContent: "center",
+    flex: 1,
   },
   bundleOriginalPrice: {
     fontSize: SIZES.CAPTION,
@@ -601,6 +936,11 @@ const styles = StyleSheet.create({
     marginRight: SIZES.PADDING_SMALL,
   },
   bundleDiscountedPrice: {
+    fontSize: SIZES.SUBTITLE,
+    color: COLORS.YELLOW,
+    fontFamily: FONTS.DOSIS_BOLD,
+  },
+  bundlePrice: {
     fontSize: SIZES.SUBTITLE,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,

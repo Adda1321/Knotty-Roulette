@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import upsellService from "./upsellService";
 
 export interface UserTier {
   tier: "free" | "premium";
@@ -55,6 +56,9 @@ class UserService {
       subscriptionType,
       purchaseDate,
     });
+
+    // Initialize upsell service to check for post-purchase upsells
+    await upsellService.initialize();
   }
 
 
@@ -69,11 +73,18 @@ class UserService {
    * Force reset user tier for testing purposes
    * This bypasses normal downgrade restrictions
    */
-  forceResetForTesting(): void {
+  async forceResetForTesting(): Promise<void> {
     console.log("🧪 Force resetting user tier for testing...");
     this.userTier = { tier: "free" };
+    
+    // Persist the reset to AsyncStorage
+    await AsyncStorage.setItem("userTier", JSON.stringify(this.userTier));
+    
     this.isInitialized = true;
     console.log("✅ User tier force reset to free for testing");
+    
+    // Notify callbacks about tier change
+    this.tierChangeCallbacks.forEach((callback) => callback());
   }
 }
 

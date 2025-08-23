@@ -175,9 +175,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
             </Text>
 
             {currentTheme === THEME_PACKS.COLLEGE && (
-              <Text
-                style={[styles.editionText, { color: COLORS.THEMEPACKNAME }]}
-              >
+              <Text style={[styles.editionText, { color: COLORS.YELLOW }]}>
                 COLLEGE EDITION
               </Text>
             )}
@@ -414,6 +412,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                       styles.startButtonOuter,
                       {
                         borderColor: COLORS.LIGHTEST, // They changed it
+                        backgroundColor: COLORS.LIGHTEST,
                       },
                     ]}
                   >
@@ -423,7 +422,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                           style={{
                             flexDirection: "row",
                             alignItems: "center",
-                            borderColor: COLORS.LIGHTEST, // They changed it
+                            // borderColor: COLORS.LIGHTEST, // They changed it
                           }}
                         >
                           <Image
@@ -620,8 +619,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   startButtonOuter: {
-    borderWidth: 3,
+    // borderWidth: 3,
     borderRadius: 8,
+    padding: 3, // Use padding instead of borderWidth for clean border effect
     elevation: 6,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },

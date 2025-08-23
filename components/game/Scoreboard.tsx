@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
-import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import { Player } from "../../types/game";
+import { COLORS as THEME_COLORS,COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme"; // Fixed import
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface ScoreboardProps {
   players: Player[];
@@ -12,7 +13,15 @@ export default function Scoreboard({
   players,
   currentPlayerIndex,
 }: ScoreboardProps) {
-
+  const { COLORS, currentTheme } = useTheme();
+  
+  // Debug logging
+  console.log("🎨 GameBoard: Current theme:", currentTheme);
+  
+  // Monitor theme changes
+  useEffect(() => {
+    console.log("🎨 GameBoard: Theme changed to:", currentTheme);
+  }, [currentTheme]);
   // Sort players by score (highest first)
   const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
 
@@ -24,15 +33,21 @@ export default function Scoreboard({
     index: number;
   }) => (
     <View
-      style={[
-        styles.playerCard,
-        player.id === currentPlayerIndex && styles.currentPlayerCard,
-      ]}
+         style={[
+    styles.playerCard,
+    player.id === currentPlayerIndex && {
+      backgroundColor: COLORS.PRIMARY,
+      borderWidth: 2,
+    borderColor: COLORS.YELLOW,
+    },
+  ]}
+
     >
       <Text
         style={[
           styles.playerName,
           player.id === currentPlayerIndex && styles.currentPlayerName,
+          // {backgroundColor:COLORS.LIGHTEST}
         ]}
       >
         {player.name}
@@ -41,6 +56,7 @@ export default function Scoreboard({
       <Text
         style={[
           styles.playerScore,
+          {color: COLORS.PRIMARY},
           player.id === currentPlayerIndex && styles.currentPlayerScore,
         ]}
       >
@@ -50,7 +66,9 @@ export default function Scoreboard({
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container,
+      {backgroundColor:COLORS.SCOREBOARD}
+    ]}>
       <Text style={styles.title}>Scoreboard</Text>
 
       <FlatList
@@ -74,7 +92,7 @@ export default function Scoreboard({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#5aad5d", // Darker shade of 6bc26e - more sophisticated
+    // backgroundColor: "#5aad5d", // Darker shade of 6bc26e - more sophisticated
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_SMALL,
     marginTop: 14,
@@ -133,7 +151,7 @@ const styles = StyleSheet.create({
   playerScore: {
     fontSize: SIZES.SUBTITLE,
     fontWeight: "bold",
-    color: COLORS.DARK_GREEN,
+    // color: COLORS.DARK_GREEN,
     fontFamily: FONTS.DOSIS_MEDIUM,
   },
   currentPlayerScore: {

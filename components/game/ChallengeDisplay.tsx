@@ -16,7 +16,8 @@ import {
   ANIMATION_CONFIGS,
   ANIMATION_VALUES,
 } from "../../constants/animations";
-import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import { COLORS, FONTS, SIZES,THEME_PACKS } from "../../constants/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 import { logVote } from "../../services/api";
 import audioService from "../../services/audio";
 import { Challenge } from "../../types/game";
@@ -30,6 +31,7 @@ interface ChallengeDisplayProps {
 }
 
 export default function ChallengeDisplay({
+
   challenge,
   playerName,
   onComplete,
@@ -39,7 +41,15 @@ export default function ChallengeDisplay({
   const [votingType, setVotingType] = useState<"upvote" | "downvote" | null>(
     null
   );
-
+ const { COLORS, currentTheme } = useTheme();
+  
+  // Debug logging
+  console.log("🎨 GameBoard: Current theme:", currentTheme);
+  
+  // Monitor theme changes
+  useEffect(() => {
+    console.log("🎨 GameBoard: Theme changed to:", currentTheme);
+  }, [currentTheme]);
   // Animation values
   const cardScale = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -159,8 +169,17 @@ export default function ChallengeDisplay({
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <Animated.View style={[styles.challengeCard]}>
-          <View style={styles.playerContainer}>
+    <Animated.View
+  style={[
+    styles.challengeCard,
+    {
+      borderColor:
+        currentTheme === THEME_PACKS.DEFAULT ? "#2B7B33" : COLORS.YELLOW,
+    },
+  ]}
+>
+                      <View style={[styles.playerContainer,{backgroundColor:COLORS.PRIMARY}]}>
+            
             <View>
               <Text style={styles.playerName}>{playerName},</Text>
               <Text style={styles.turnText}>YOUR TURN</Text>
@@ -209,7 +228,11 @@ export default function ChallengeDisplay({
                       {
                         borderRadius: 10,
                       },
-                      styles.upvoteButton,
+                      styles.upvoteButton,{
+                        backgroundColor:COLORS.ONLINE,
+                        borderColor:COLORS.PRIMARY
+
+                      },
                       styles.voteButton,
                     ]}
                   >
@@ -246,7 +269,10 @@ export default function ChallengeDisplay({
                       {
                         borderRadius: 10,
                       },
-                      styles.downvoteButton,
+                      styles.downvoteButton,{
+                    backgroundColor: currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :" #EE562B"
+
+                      },
                       styles.voteButton,
                     ]}
                   >
@@ -281,23 +307,29 @@ export default function ChallengeDisplay({
             )}
             <View>
               <View style={styles.actionButtons}>
-                <Surface
-                  elevation={3}
-                  style={{
-                    borderRadius: 11,
-                    borderWidth: 3, // Add border width
-                    borderColor: "#18752A", // Dark green border color
-                    overflow: "hidden", // Ensures border radius clips content
-                  }}
-                >
+            <Surface
+  elevation={3}
+  style={{
+    borderRadius: 11,
+    borderWidth: 3, // Add border width
+    borderColor:
+      currentTheme === THEME_PACKS.DEFAULT
+        ? "#18752A"
+        : COLORS.PRIMARY,
+    overflow: "hidden", // Ensures border radius clips content
+  }}
+>
+
                   <Animated.View
                     style={{ transform: [{ scale: buttonScale }] }}
                   >
                     <Button
                       text="COMPLETE CHALLENGE +1" // Uppercase to match image
                       onPress={handleComplete}
-                      backgroundColor="#3A983D"
-                      textColor={COLORS.YELLOW}
+ backgroundColor=
+    {  currentTheme === THEME_PACKS.DEFAULT
+        ? "#3A983D"
+        : COLORS.ONLINE}                    textColor={COLORS.YELLOW}
                       fontSize={SIZES.SUBTITLE}
                       fontFamily={FONTS.DOSIS_BOLD}
                       // fontWeight="800" // Bolder to match image
@@ -321,7 +353,7 @@ export default function ChallengeDisplay({
                   <Button
                     text="Pass (-1 point)"
                     onPress={handleOnPass}
-                    backgroundColor="#EE562B"
+                    backgroundColor={currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :" #EE562B"}
                     textColor={COLORS.YELLOW}
                     fontSize={SIZES.SUBTITLE}
                     fontFamily={FONTS.DOSIS_BOLD}
@@ -491,7 +523,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   downvoteButton: {
-    backgroundColor: COLORS.OFFLINE,
+    // backgroundColor: COLORS.OFFLINE,
     borderColor: "#DC4016",
     borderWidth: 2,
   },

@@ -9,11 +9,11 @@ import {
   View,
 } from "react-native";
 import { Surface } from "react-native-paper";
-import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import {COLORS, FONTS, SIZES } from "../../constants/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 import audioService from "../../services/audio";
 import backgroundMusic from "../../services/backgroundMusic";
 import Button from "./Button";
-
 interface SoundSettingsProps {
   onPress: () => void;
 }
@@ -63,7 +63,15 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
     audioService.playSound("buttonPress");
     audioService.playHaptic("medium");
   };
-
+  const { COLORS, currentTheme } = useTheme();
+  
+  // Debug logging
+  console.log("🎨 GameBoard: Current theme:", currentTheme);
+  
+  // Monitor theme changes
+  useEffect(() => {
+    console.log("🎨 GameBoard: Theme changed to:", currentTheme);
+  }, [currentTheme]);
   return (
     <>
       <Surface
@@ -90,7 +98,8 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
       >
         <View style={styles.overlay}>
           <View style={styles.container}>
-            <View style={styles.header}>
+                     <View style={[styles.header,{backgroundColor:COLORS.PRIMARY}]}>
+           
               <Text style={styles.title}>Sound Settings</Text>
             </View>
 
@@ -103,7 +112,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                       isMusicMuted ? "musical-notes-outline" : "musical-notes"
                     }
                     size={24}
-                    color={COLORS.DARK_GREEN}
+                    color={COLORS.PRIMARY}
                   />
                   <Text style={styles.settingText}>
                     {isMusicMuted
@@ -114,6 +123,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                 <TouchableOpacity
                   style={[
                     styles.toggleButton,
+                    {backgroundColor:COLORS.ONLINE},
                     isMusicMuted && styles.toggleButtonMuted,
                   ]}
                   onPress={toggleMusicMute}
@@ -131,7 +141,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                   <Ionicons
                     name={isSoundsMuted ? "volume-mute" : "volume-high"}
                     size={24}
-                    color={COLORS.DARK_GREEN}
+                    color={COLORS.PRIMARY}
                   />
                   <Text style={styles.settingText}>
                     {isSoundsMuted
@@ -142,6 +152,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                 <TouchableOpacity
                   style={[
                     styles.toggleButton,
+                    {backgroundColor:COLORS.ONLINE},
                     isSoundsMuted && styles.toggleButtonMuted,
                   ]}
                   onPress={toggleSoundsMute}
@@ -163,7 +174,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                         : "phone-portrait-outline"
                     }
                     size={24}
-                    color={COLORS.DARK_GREEN}
+                    color={COLORS.PRIMARY}
                   />
                   <Text style={styles.settingText}>
                     {isVibrationEnabled
@@ -174,6 +185,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                 <TouchableOpacity
                   style={[
                     styles.toggleButton,
+                    {backgroundColor:COLORS.ONLINE},
                     !isVibrationEnabled && styles.toggleButtonMuted,
                   ]}
                   onPress={toggleVibration}
@@ -246,7 +258,7 @@ const styles = StyleSheet.create({
     ...SIZES.SHADOW_LARGE,
   },
   header: {
-    backgroundColor: COLORS.DARK_GREEN,
+    // backgroundColor: COLORS.DARK_GREEN,
     borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE,
     borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_LARGE,
@@ -280,7 +292,7 @@ const styles = StyleSheet.create({
     marginLeft: SIZES.PADDING_MEDIUM,
   },
   toggleButton: {
-    backgroundColor: COLORS.DARK_GREEN,
+    // backgroundColor: COLORS.ONLINE,
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
     padding: SIZES.PADDING_MEDIUM,
     minWidth: 60,

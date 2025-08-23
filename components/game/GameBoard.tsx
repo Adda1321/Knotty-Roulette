@@ -1,23 +1,25 @@
 import { LinearGradient } from "expo-linear-gradient";
 import { Surface } from "react-native-paper";
 
+import { router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  Easing,
-  Image,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
+    Animated,
+    Dimensions,
+    Easing,
+    Image,
+    Platform,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  ANIMATION_CONFIGS,
-  ANIMATION_VALUES,
+    ANIMATION_CONFIGS,
+    ANIMATION_VALUES,
 } from "../../constants/animations";
-import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import { COLORS as THEME_COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme"; // Fixed import
+import { useTheme } from "../../contexts/ThemeContext";
 import adService from "../../services/adService";
 import audioService from "../../services/audio";
 import { Challenge, Player } from "../../types/game";
@@ -26,7 +28,6 @@ import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
 import StoreButton from "../ui/StoreButton";
-import ThemeStore from "../ui/ThemeStore";
 import ChallengeDisplay from "./ChallengeDisplay";
 import GameRules from "./GameRules";
 import Scoreboard from "./Scoreboard";
@@ -54,10 +55,16 @@ export default function GameBoard({
   onResetGame,
   onRulesShown,
 }: GameBoardProps) {
-  const [isSpinning, setIsSpinning] = useState(false);
-  const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(
-    null
-  );
+  const { COLORS, currentTheme } = useTheme();
+  
+  // Debug logging
+  console.log("🎨 GameBoard: Current theme:", currentTheme);
+  
+  // Monitor theme changes
+  useEffect(() => {
+    console.log("🎨 GameBoard: Theme changed to:", currentTheme);
+  }, [currentTheme]);
+
   const [showChallenge, setShowChallenge] = useState(false);
   const [recentChallenges, setRecentChallenges] = useState<number[]>([]);
   const [showRules, setShowRules] = useState(false);
@@ -66,11 +73,15 @@ export default function GameBoard({
     points: number;
     action: "complete" | "pass" | "bonus";
   } | null>(null);
-  const [showThemeStore, setShowThemeStore] = useState(false);
   const rotation = useRef(new Animated.Value(0)).current;
   const spinButtonScale = useRef(new Animated.Value(1)).current;
   const wheelScale = useRef(new Animated.Value(1)).current;
 
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(
+    null
+  );
+  
   // Auto-show rules for new games
   useEffect(() => {
     if (isNewGame) {
@@ -293,13 +304,28 @@ export default function GameBoard({
     loop.start();
     return () => loop.stop();
   }, []);
+  
   const currentPlayer = players[currentPlayerIndex];
+  
   return (
-    <SafeAreaView style={styles.container} edges={["left", "right"]}>
+    <SafeAreaView style={[styles.container, {
+  backgroundColor:
+    currentTheme === THEME_PACKS.DEFAULT
+      ? COLORS.PRIMARY
+      : currentTheme === THEME_PACKS.COLLEGE
+      ? COLORS.DARK
+      : COLORS.LIGHT
+}]} edges={["left", "right"]}>
       {/* Development: User Tier Toggle */}
       <View style={styles.content}>
         {/* Status Bar */}
-        <View style={styles.statusBar}>
+        <View style={[styles.statusBar, { backgroundColor:
+    currentTheme === THEME_PACKS.DEFAULT
+      ? COLORS.PRIMARY
+      : currentTheme === THEME_PACKS.COLLEGE
+      ? COLORS.DARK
+      : COLORS.LIGHT
+}]}>
           <View style={styles.leftButtons}>
             <Surface
               elevation={Platform.OS === "ios" ? 3 : 5}
@@ -341,15 +367,14 @@ export default function GameBoard({
               onPress={() => {
                 audioService.playSound("buttonPress");
                 audioService.playHaptic("medium");
-                setShowThemeStore(true);
+                router.push("/theme-store?isGameActive=true");
               }}
             />
 
             <SoundSettings
               onPress={() => {
                 audioService.playSound("buttonPress");
-
-                audioService.playHaptic("medium"); // add haptic here
+                audioService.playHaptic("medium");
               }}
             />
           </View>
@@ -361,17 +386,13 @@ export default function GameBoard({
               text="🔄 New Game"
               onPress={() => {
                 audioService.playSound("buttonPress");
-                audioService.playHaptic("medium"); // add haptic here too
+                audioService.playHaptic("medium");
                 onResetGame();
               }}
               backgroundColor={COLORS.YELLOW}
-              // backgroundGradient={[COLORS.DARK_GREEN, COLORS.YELLOW] as const}
               textColor={COLORS.TEXT_DARK}
-              // shadowIntensity={5}
-              // shadowRadius={10}
               fontSize={SIZES.CAPTION}
               fontFamily={FONTS.DOSIS_BOLD}
-              // fontWeight="600"
             />
           </Surface>
         </View>
@@ -380,19 +401,37 @@ export default function GameBoard({
         <View style={styles.mainContent}>
           {/* Header */}
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>KNOTTY ROULETTE</Text>
+            <Text
+  style={[
+    styles.title,
+    {
+      color:
+        currentTheme === THEME_PACKS.COLLEGE
+          ? COLORS.TEXT
+          : COLORS.YELLOW,
+    },
+  ]}
+>
+  KNOTTY ROULETTE
+</Text>
             <View style={styles.mascotContainer}>
-              <Image
-                source={require("../../assets/images/MascotImages/Default/KnottyMascotComplete.png")}
-                style={styles.mascotImage}
-                resizeMode="contain"
-              />
+                <Image
+                              source={
+                                currentTheme === THEME_PACKS.DEFAULT
+                                  ? require("../../assets/images/MascotImages/Default/KnottyMascotComplete.png")
+                                  : currentTheme === THEME_PACKS.COLLEGE
+                                  ? require("../../assets/images/MascotImages/College/College-legs-mascot.png")
+                                  : require("../../assets/images/MascotImages/Couple/Couple-legs-mascot.png")
+                              }
+                              style={styles.mascotImage}
+                              resizeMode="contain"
+                            />
             </View>
           </View>
 
           {/* Game Area */}
           <LinearGradient
-            colors={["#d4f6daff", "#286a19ff"]}
+            colors={[COLORS.GAMEBOARDSECONDARY, COLORS.GAMEBOARDPRIMARY]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.gameArea}
@@ -402,10 +441,10 @@ export default function GameBoard({
             {/* Spinning Wheel */}
             <View style={styles.wheelContainer}>
               <View style={styles.header}>
-                <Text style={styles.currentPlayer}>
+                <Text style={[styles.currentPlayer, { color: COLORS.TEXT_DARK }]}>
                   {`${currentPlayer.name}'s Turn`}
                 </Text>
-                <Text style={styles.passInstruction}>
+                <Text style={[styles.passInstruction, { color: COLORS.TEXT_DARK }]}>
                   Pass Phone to Next Player
                 </Text>
               </View>
@@ -430,7 +469,7 @@ export default function GameBoard({
                           }),
                         },
                       ],
-                      opacity: 0.8, // Make the image less bright
+                      opacity: 0.8,
                     },
                   ]}
                   resizeMode="contain"
@@ -439,7 +478,6 @@ export default function GameBoard({
             </View>
 
             {/* Spin Button */}
-
             <Animated.View style={{ transform: [{ translateY }] }}>
               <Surface
                 elevation={5}
@@ -449,8 +487,6 @@ export default function GameBoard({
                   marginVertical: 4,
                 }}
               >
-                {/* <View style={{ overflow: "hidden" }}> */}
-                {/* Shine Layer 1 */}
                 <Animated.View
                   pointerEvents="none"
                   style={[
@@ -469,14 +505,16 @@ export default function GameBoard({
                   text={isSpinning ? "Spinning..." : "Spin the Wheel"}
                   onPress={spinWheel}
                   disabled={isSpinning}
-                  backgroundGradient={
-                    [COLORS.DARK_GREEN, COLORS.YELLOW] as const
-                  }
+backgroundGradient={
+  currentTheme === THEME_PACKS.DEFAULT
+    ? [COLORS.PRIMARY, COLORS.YELLOW] as const
+    : currentTheme === THEME_PACKS.COLLEGE
+      ? [COLORS.LIGHT, COLORS.YELLOW] as const
+      : [COLORS.LIGHT, COLORS.YELLOW] as const
+}
                   textColor={COLORS.TEXT_DARK}
                   fontSize={SIZES.SUBTITLE}
                   fontFamily={FONTS.DOSIS_BOLD}
-                  shadowIntensity={5}
-                  // shadowRadius={12}
                   paddingHorizontal={SIZES.PADDING_LARGE}
                   paddingVertical={SIZES.PADDING_MEDIUM}
                   style={[
@@ -484,7 +522,6 @@ export default function GameBoard({
                     isSpinning && styles.spinButtonDisabled,
                   ]}
                 />
-                {/* </View> */}
               </Surface>
             </Animated.View>
           </LinearGradient>
@@ -495,6 +532,7 @@ export default function GameBoard({
             currentPlayerIndex={currentPlayerIndex}
           />
         </View>
+        
         {/* Challenge Display - Moved outside game area */}
         {showChallenge && currentChallenge && (
           <ChallengeDisplay
@@ -512,7 +550,7 @@ export default function GameBoard({
           visible={showCompletionModal}
           onClose={() => {
             audioService.playSound("buttonPress");
-            audioService.playHaptic("medium"); // add haptic here
+            audioService.playHaptic("medium");
             setShowCompletionModal(false);
             completeChallenge(completionData?.points || 0);
           }}
@@ -529,13 +567,6 @@ export default function GameBoard({
           }
         />
       </View>
-
-      {/* Theme Store Modal */}
-      <ThemeStore
-        visible={showThemeStore}
-        onClose={() => setShowThemeStore(false)}
-        isGameActive={true}
-      />
     </SafeAreaView>
   );
 }
@@ -543,7 +574,6 @@ export default function GameBoard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#116b20ff",
     paddingVertical: SIZES.PADDING_SMALL,
   },
   content: {
@@ -556,7 +586,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: SIZES.PADDING_LARGE,
     paddingVertical: SIZES.PADDING_SMALL,
-    backgroundColor: "#116b20ff",
   },
   leftButtons: {
     flexDirection: "row",
@@ -582,12 +611,10 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   title: {
-    fontSize:
-      Platform.OS === "android"
-        ? Math.min(SIZES.EXTRALARGE, width * 0.072)
-        : Math.min(SIZES.EXTRALARGE * 1.0, width),
+    fontSize: Platform.OS === "android" 
+      ? Math.min(SIZES.EXTRALARGE, width * 0.072) 
+      : Math.min(SIZES.EXTRALARGE * 1.0, width),
     fontFamily: FONTS.DOSIS_BOLD,
-    color: COLORS.YELLOW,
     marginBottom: SIZES.PADDING_MEDIUM,
     ...SIZES.TEXT_SHADOW_MEDIUM,
     textAlign: "left",
@@ -597,17 +624,11 @@ const styles = StyleSheet.create({
   },
   currentPlayer: {
     fontSize: SIZES.SUBTITLE,
-    color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
-    // fontWeight: "800",
-    // marginBottom: SIZES.PADDING_SMALL,
     paddingTop: 5,
-    ...SIZES.TEXT_SHADOW_SMALL,
   },
   passInstruction: {
     fontSize: SIZES.BODY,
-    color: COLORS.TEXT_DARK,
-    // fontFamily: FONTS.PRIMARY,
     fontStyle: "italic",
   },
   gameArea: {
@@ -615,46 +636,23 @@ const styles = StyleSheet.create({
     position: "relative",
     overflow: "hidden",
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
-    // padding: SIZES.PADDING_MEDIUM,
-    // ...SIZES.SHADOW_SMALL,
     alignItems: "center",
-    // marginBottom: 50,
     marginTop: -45,
     width: "100%",
     maxWidth: 400,
     zIndex: -1,
   },
-  glareOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    overflow: "hidden",
-  },
   wheelContainer: {
     marginBottom: SIZES.PADDING_SMALL,
-    ...SIZES.SHADOW_LARGE,
   },
   wheelShadowContainer: {
-    // Enhanced shadow for wheel depth
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 20,
-    // Make container circular to match wheel shape
-    borderRadius: width * 0.3 + 8, // Half of wheel width + padding (updated for larger wheel)
-    // Add padding to ensure shadow is visible
+    borderRadius: width * 0.3 + 8,
     padding: 12,
-    // Ensure shadow is visible on all sides
     overflow: "visible",
-    // Force shadow rendering
-    // backgroundColor: 'transparent',
   },
   wheel: {
-    width: width * 0.6, // Increased from 0.5 to 0.6 (20% larger)
-    height: 240, // Increased from 200 to 240 (20% larger)
+    width: width * 0.6,
+    height: 240,
   },
   spinButton: {
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
@@ -666,18 +664,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -10,
     left: 0,
-    height: 240, // Updated to match new wheel height
-    width: 50, // Made thinner
-    backgroundColor: "rgba(255, 255, 255, 0.12)", // Slightly more transparent
-    zIndex: 1,
-  },
-  glareLayer2: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    height: "100%",
-    width: 30,
-    backgroundColor: "rgba(255, 255, 255, 0.05)", // More transparent
+    height: 240,
+    width: 50,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
     zIndex: 1,
   },
   mascotContainer: {
@@ -686,7 +675,6 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     minWidth: 100,
   },
-
   mascotImage: {
     width: 130,
     height: 130,

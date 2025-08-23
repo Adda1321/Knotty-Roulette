@@ -160,12 +160,15 @@ export const THEME_COLORS = {
     PRIMARY: "#6bc26e",      // Original green || OKAY
     LIGHT: "#116b20ff",     // Original light green || OKAY
     DARK:"#3f663f",
-    LIGHTEST: "#63A133",     // Original light green || OKAY
+    LIGHTEST: "#63A133", 
+    // BackGround:"#116b20ff" ,   // Original light green || OKAY
     BORDER:"#63A133",
     TEXT:"#F4C614",
     YELLOW: "#F4C614",          // Original yellow || OKAY
     FIELDS: "#F1E9BE",          // Original fields color || OKAY
-    
+    GAMEBOARDPRIMARY:"#286a19ff",
+    GAMEBOARDSECONDARY:"#d4f6daff",
+    SCOREBOARD:"#5aad5d",
     // Background Colors
     BACKGROUND_DARK: "#1a1a1a", // Original dark background || OKAY
      //|| OKAY
@@ -204,7 +207,10 @@ export const THEME_COLORS = {
     YELLOW: "#F4C614", 
              // Orange accent
     FIELDS: "#E3F2FD",          // Light blue fields
+       GAMEBOARDPRIMARY:"#4495bbff",
+    GAMEBOARDSECONDARY:"#bcecf0ff",
     
+    SCOREBOARD:"#639db6ff",
  
     
     // Text Colors
@@ -248,14 +254,17 @@ export const THEME_COLORS = {
     // Background Colors
     BACKGROUND_DARK: "#E14C31", // Dark pink
     
-    
+       GAMEBOARDPRIMARY:"#d7364cff",
+    GAMEBOARDSECONDARY:"#d28c8eff",
+    SCOREBOARD:"#ce5256ff",
+
     // Text Colors
     TEXT_PRIMARY: "#ffffff",
     TEXT_SECONDARY: "#FCE4EC",  // Light pink text
     TEXT_DARK: "#C2185B",       // Dark pink text
     
     // Status Colors
-    ONLINE: "#E91E63",          // Pink
+    ONLINE: "#e95e62ff",          // Pink
     OFFLINE: "#ff6b6b",
     
     // Card Colors

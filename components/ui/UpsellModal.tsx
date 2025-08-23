@@ -12,31 +12,48 @@ interface UpsellModalProps {
   visible: boolean;
   onClose: () => void;
   onPurchaseSuccess: () => void;
+  onPurchaseComplete: (purchaseType: 'ad_free' | 'theme_packs' | 'all_in_bundle' | 'complete_set') => void;
   offer: UpsellOffer;
 }
 
-export default function UpsellModal({ visible, onClose, onPurchaseSuccess, offer }: UpsellModalProps) {
-  const [isPurchasing, setIsPurchasing] = useState(false);
+export default function UpsellModal({ visible, onClose, onPurchaseSuccess, onPurchaseComplete, offer }: UpsellModalProps) {
+  const [isPrimaryPurchasing, setIsPrimaryPurchasing] = useState(false);
+  const [isSecondaryPurchasing, setIsSecondaryPurchasing] = useState(false);
 
   // Don't render if no valid offer
   if (!offer || !offer.primaryButton) {
     return null;
   }
 
+  // Handle "Maybe Later" button with audio and haptic feedback
+  const handleMaybeLater = () => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium");
+    onClose();
+  };
+
   const handlePrimaryPurchase = async () => {
-    setIsPurchasing(true);
+    // Add audio and haptic feedback when button is pressed
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("light");
+    
+    setIsPrimaryPurchasing(true);
     try {
       let success = false;
+      let purchaseType: 'ad_free' | 'theme_packs' | 'all_in_bundle' | 'complete_set' = 'ad_free';
       
       if (offer.primaryButton.action === 'ad_free') {
         success = await purchaseService.purchasePremiumPack();
+        purchaseType = 'ad_free';
       } else if (offer.primaryButton.action === 'theme_packs') {
         success = await themePackService.purchasePack('college');
         if (success) {
           success = await themePackService.purchasePack('couple');
         }
+        purchaseType = 'theme_packs';
       } else if (offer.primaryButton.action === 'complete_set') {
         success = await themePackService.purchasePack('couple');
+        purchaseType = 'complete_set';
       } else if (offer.primaryButton.action === 'all_in_bundle') {
         // Handle all-in bundle purchase
         success = await purchaseService.purchasePremiumPack();
@@ -46,12 +63,14 @@ export default function UpsellModal({ visible, onClose, onPurchaseSuccess, offer
             success = await themePackService.purchasePack('couple');
           }
         }
+        purchaseType = 'all_in_bundle';
       }
 
       if (success) {
         audioService.playSound("bonusAchieved");
         audioService.playHaptic("success");
         onPurchaseSuccess();
+        onPurchaseComplete(purchaseType);
         onClose();
       } else {
         Alert.alert("Purchase Failed", "Unable to complete purchase. Please try again.");
@@ -59,16 +78,21 @@ export default function UpsellModal({ visible, onClose, onPurchaseSuccess, offer
     } catch (error) {
       Alert.alert("Error", "An error occurred during purchase.");
     } finally {
-      setIsPurchasing(false);
+      setIsPrimaryPurchasing(false);
     }
   };
 
   const handleSecondaryPurchase = async () => {
     if (!offer.secondaryButton) return;
     
-    setIsPurchasing(true);
+    // Add audio and haptic feedback when button is pressed
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("light");
+    
+    setIsSecondaryPurchasing(true);
     try {
       let success = false;
+      let purchaseType: 'ad_free' | 'theme_packs' | 'all_in_bundle' | 'complete_set' = 'ad_free';
       
       if (offer.secondaryButton.action === 'all_in_bundle') {
         // Buy all-in bundle
@@ -79,21 +103,25 @@ export default function UpsellModal({ visible, onClose, onPurchaseSuccess, offer
             success = await themePackService.purchasePack('couple');
           }
         }
+        purchaseType = 'all_in_bundle';
       } else if (offer.secondaryButton.action === 'theme_packs') {
         // Buy both theme packs
         success = await themePackService.purchasePack('college');
         if (success) {
           success = await themePackService.purchasePack('couple');
         }
+        purchaseType = 'theme_packs';
       } else if (offer.secondaryButton.action === 'complete_set') {
         // Buy the remaining pack
         success = await themePackService.purchasePack('couple');
+        purchaseType = 'complete_set';
       }
 
       if (success) {
         audioService.playSound("bonusAchieved");
         audioService.playHaptic("success");
         onPurchaseSuccess();
+        onPurchaseComplete(purchaseType);
         onClose();
       } else {
         Alert.alert("Purchase Failed", "Unable to complete purchase. Please try again.");
@@ -101,28 +129,7 @@ export default function UpsellModal({ visible, onClose, onPurchaseSuccess, offer
     } catch (error) {
       Alert.alert("Error", "An error occurred during purchase.");
     } finally {
-      setIsPurchasing(false);
-    }
-  };
-
-  const getBestDealText = () => {
-    if (offer?.showBestDeal && offer?.bestDealText) {
-      return offer.bestDealText;
-    }
-    return "";
-  };
-
-  const getModalTitle = () => {
-    if (!offer?.triggerType) return offer?.title || "Special Offer";
-    
-    switch (offer.triggerType) {
-      case 'game_over':
-        return "🎉 Great Game! Want More?";
-      case 'shop_entry':
-        return "🛍️ Special Offer!";
-      case 'ad_based':
-      default:
-        return offer.title || "Special Offer";
+      setIsSecondaryPurchasing(false);
     }
   };
 
@@ -140,12 +147,26 @@ export default function UpsellModal({ visible, onClose, onPurchaseSuccess, offer
     }
   };
 
+  const getModalTitle = () => {
+    if (!offer?.triggerType) return offer?.title || "Special Offer";
+    
+    switch (offer.triggerType) {
+      case 'game_over':
+        return "🎉 Great Game! Want More?";
+      case 'shop_entry':
+        return "🛍️ Special Offer!";
+      case 'ad_based':
+      default:
+        return offer.title || "Special Offer";
+    }
+  };
+
   return (
     <CustomModal
       visible={visible}
-      onClose={onClose}
+      onClose={handleMaybeLater}
       title={getModalTitle()}
-      message={getModalMessage()}
+      // message={getModalMessage()}
       showCloseButton={true}
       closeButtonText="Maybe Later"
       showConfirmButton={false}
@@ -155,29 +176,29 @@ export default function UpsellModal({ visible, onClose, onPurchaseSuccess, offer
           {/* Primary Offer */}
           <View style={styles.offerCard}>
             <View style={styles.offerHeader}>
-                          <Text style={styles.offerTitle}>{offer.primaryButton.text || "Get Offer"}</Text>
-            {getBestDealText() && (
-              <View style={styles.bestDealBadge}>
-                <Text style={styles.bestDealText}>{getBestDealText()}</Text>
-              </View>
-            )}
-          </View>
-          <Text style={styles.offerDescription}>{offer.description || "Amazing deal for you!"}</Text>
-          <View style={styles.priceContainer}>
-            <Text style={styles.price}>{offer.primaryButton.price || "Free"}</Text>
-          </View>
-          <Button
-            text={isPurchasing ? "Purchasing..." : (offer.primaryButton.text || "Get Offer")}
-            onPress={handlePrimaryPurchase}
-            disabled={isPurchasing}
-            backgroundColor={COLORS.YELLOW}
-            textColor={COLORS.TEXT_DARK}
-            fontSize={SIZES.BODY}
-            fontFamily={FONTS.DOSIS_BOLD}
-            paddingHorizontal={SIZES.PADDING_LARGE}
-            paddingVertical={SIZES.PADDING_MEDIUM}
-            style={styles.primaryButton}
-          />
+              <Text style={styles.offerTitle}>{offer.primaryButton.text || "Get Offer"}</Text>
+              {offer?.showBestDeal && offer?.bestDealButton === 'primary' && (
+                <View style={styles.bestDealBadge}>
+                  <Text style={styles.bestDealText}>{offer.bestDealText}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.offerDescription}>{offer.description || "Amazing deal for you!"}</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.price}>{offer.primaryButton.price || "Free"}</Text>
+            </View>
+            <Button
+              text={isPrimaryPurchasing ? "Purchasing..." : (offer.primaryButton.text || "Get Offer")}
+              onPress={handlePrimaryPurchase}
+              disabled={isPrimaryPurchasing || isSecondaryPurchasing}
+              backgroundColor={COLORS.YELLOW}
+              textColor={COLORS.TEXT_DARK}
+              fontSize={SIZES.BODY}
+              fontFamily={FONTS.DOSIS_BOLD}
+              paddingHorizontal={SIZES.PADDING_LARGE}
+              paddingVertical={SIZES.PADDING_MEDIUM}
+              style={styles.primaryButton}
+            />
           </View>
 
           {/* Secondary Offer */}
@@ -185,16 +206,21 @@ export default function UpsellModal({ visible, onClose, onPurchaseSuccess, offer
             <View style={styles.offerCard}>
               <View style={styles.offerHeader}>
                 <Text style={styles.offerTitle}>{offer.secondaryButton.text || "Alternative Offer"}</Text>
+                {offer?.showBestDeal && offer?.bestDealButton === 'secondary' && (
+                  <View style={styles.bestDealBadge}>
+                    <Text style={styles.bestDealText}>{offer.bestDealText}</Text>
+                  </View>
+                )}
               </View>
               <Text style={styles.offerDescription}>{offer.description || "Another great option for you!"}</Text>
               <View style={styles.priceContainer}>
                 <Text style={styles.price}>{offer.secondaryButton.price || "Free"}</Text>
               </View>
               <Button
-                text={isPurchasing ? "Purchasing..." : (offer.secondaryButton.text || "Alternative Offer")}
+                text={isSecondaryPurchasing ? "Purchasing..." : (offer.secondaryButton.text || "Alternative Offer")}
                 onPress={handleSecondaryPurchase}
-                disabled={isPurchasing}
-                backgroundColor={COLORS.CARD_BACKGROUND}
+                disabled={isSecondaryPurchasing || isPrimaryPurchasing}
+                backgroundColor={COLORS.YELLOW}
                 textColor={COLORS.TEXT_DARK}
                 fontSize={SIZES.BODY}
                 fontFamily={FONTS.DOSIS_BOLD}
@@ -212,7 +238,7 @@ export default function UpsellModal({ visible, onClose, onPurchaseSuccess, offer
 
 const styles = StyleSheet.create({
   content: {
-    maxHeight: 400,
+    maxHeight: 490,
   },
   offerContainer: {
     gap: SIZES.PADDING_MEDIUM,
@@ -257,7 +283,6 @@ const styles = StyleSheet.create({
   priceContainer: {
     flexDirection: "row",
     alignItems: "baseline",
-    marginBottom: SIZES.PADDING_LARGE,
     gap: SIZES.PADDING_SMALL,
   },
   originalPrice: {

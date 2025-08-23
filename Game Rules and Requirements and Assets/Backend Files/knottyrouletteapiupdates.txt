@@ -1,0 +1,182 @@
+Knotty Roulette — Mobile API Integration Guide (v1)
+Base URL: https://www.knottytimes.com
+All routes are public (no login/nonce). CORS: *
+Versioning: /wp-json/krt/v1/... (REST API namespace)
+
+1) Fetch challenges
+GET /wp-json/krt/v1/challenges
+Query params (optional):
+    • deck (string) – card pack name to filter (alias: card_pack)
+        ◦ Example: ?deck=Original%20Pack
+Response 200 (JSON array):
+[
+  {
+    "id": 42,
+    "challenge_text": "Take a sip if you lost the last round – Bonus if you sing a line.",
+    "card_pack": "Original Pack",
+    "has_bonus": 1
+  },
+  {
+    "id": 43,
+    "challenge_text": "Everyone points to the funniest person. They drink.",
+    "card_pack": "Original Pack",
+    "has_bonus": 0
+  }
+]
+    • has_bonus is 0|1 (treat as boolean)
+    • If no rows match, API returns 404 with:
+    • { "success": false, "message": "No challenges found" }
+Caching note: responses are server-cached for ~60s.
+Examples
+# All decks
+curl https://www.knottytimes.com/wp-json/krt/v1/challenges
+
+# Specific deck
+curl "https://www.knottytimes.com/wp-json/krt/v1/challenges?deck=Original%20Pack"
+
+2) Cast a vote (like/dislike)
+POST /wp-json/krt/v1/vote
+Headers: Content-Type: application/json
+Body:
+{ "challenge_id": 42, "vote": "like", "anon_id": "uuid-or-random-id" }
+    • vote: "like" or "dislike" (also accepts "upvote"|"downvote")
+    • anon_id: required device identifier you generate once (see §4)
+Response 200:
+{
+  "success": true,
+  "already_voted": false,
+  "challenge_id": 42,
+  "likes": 12,
+  "dislikes": 1
+}
+    • If the same anon_id tries to vote on the same challenge_id again, you’ll get:
+    • { "success": true, "already_voted": true, "...counts..." }
+Counts won’t change (server enforces one vote per challenge per anon_id).
+Errors
+    • 400 invalid params / vote value
+    • 404 unknown challenge_id
+Examples
+curl -X POST https://www.knottytimes.com/wp-json/krt/v1/vote \
+  -H "Content-Type: application/json" \
+  -d '{"challenge_id":42,"vote":"like","anon_id":"550e8400-e29b-41d4-a716-446655440000"}'
+
+3) Track a play (unique players & total plays)
+Call this when a user starts a game (or when a session begins).
+POST /wp-json/krt/v1/track-play
+Headers: Content-Type: application/json
+Body:
+{ "anon_id": "uuid-or-random-id" }
+Response 200:
+{
+  "success": true,
+  "anon_id": "uuid-or-random-id",
+  "unique_players": 389,
+  "total_plays": 1247
+}
+Errors
+    • 400 if anon_id missing
+Example
+curl -X POST https://www.knottytimes.com/wp-json/krt/v1/track-play \
+  -H "Content-Type: application/json" \
+  -d '{"anon_id":"550e8400-e29b-41d4-a716-446655440000"}'
+
+4) Anonymous device ID (anon_id)
+    • Generate once per install (UUIDv4 recommended).
+    • Persist it securely:
+        ◦ React Native: expo-secure-store or AsyncStorage
+        ◦ iOS: Keychain
+        ◦ Android: EncryptedSharedPreferences
+    • Send the same anon_id with each vote and track-play call.
+    • No personal data is collected.
+
+5) Minimal client flow
+On app start (or first run):
+    1. Load or create persistent anon_id.
+When entering the game / choosing a deck:
+    1. GET /challenges?deck=Original%20Pack (or omit deck for all)
+    2. Display challenges.
+When the user starts a game:
+    1. POST /track-play with anon_id.
+When user likes/dislikes a challenge:
+    1. POST /vote with { challenge_id, vote, anon_id }
+    2. Update UI using returned likes/dislikes.
+    3. If already_voted: true, keep the UI as-is (disable buttons or show a toast).
+
+6) Lightweight client examples
+React Native (TypeScript)
+const BASE = "https://www.knottytimes.com/wp-json/krt/v1";
+
+export async function fetchChallenges(deck?: string) {
+  const url = deck ? `${BASE}/challenges?deck=${encodeURIComponent(deck)}` : `${BASE}/challenges`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+  return (await res.json()) as Array<{
+    id: number; challenge_text: string; card_pack: string; has_bonus: 0|1;
+  }>;
+}
+
+export async function vote(challenge_id: number, vote: "like"|"dislike", anon_id: string) {
+  const res = await fetch(`${BASE}/vote`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ challenge_id, vote, anon_id })
+  });
+  if (!res.ok) throw new Error(`Vote failed: ${res.status}`);
+  return await res.json() as {
+    success: boolean; already_voted: boolean;
+    challenge_id: number; likes: number; dislikes: number;
+  };
+}
+
+export async function trackPlay(anon_id: string) {
+  const res = await fetch(`${BASE}/track-play`, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ anon_id })
+  });
+  if (!res.ok) throw new Error(`Track failed: ${res.status}`);
+  return await res.json() as {
+    success: boolean; anon_id: string; unique_players: number; total_plays: number;
+  };
+}
+Swift (iOS)
+struct VoteReq: Codable { let challenge_id: Int; let vote: String; let anon_id: String }
+struct VoteRes: Codable { let success: Bool; let already_voted: Bool; let challenge_id: Int; let likes: Int; let dislikes: Int }
+
+func postVote(challengeId: Int, vote: String, anonId: String) async throws -> VoteRes {
+    let url = URL(string: "https://www.knottytimes.com/wp-json/krt/v1/vote")!
+    var req = URLRequest(url: url)
+    req.httpMethod = "POST"
+    req.addValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.httpBody = try JSONEncoder().encode(VoteReq(challenge_id: challengeId, vote: vote, anon_id: anonId))
+    let (data, resp) = try await URLSession.shared.data(for: req)
+    guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+        throw URLError(.badServerResponse)
+    }
+    return try JSONDecoder().decode(VoteRes.self, from: data)
+}
+Kotlin (Android)
+data class VoteReq(val challenge_id:Int, val vote:String, val anon_id:String)
+data class VoteRes(val success:Boolean, val already_voted:Boolean, val challenge_id:Int, val likes:Int, val dislikes:Int)
+
+suspend fun vote(challengeId:Int, vote:String, anonId:String): VoteRes {
+    val url = "https://www.knottytimes.com/wp-json/krt/v1/vote"
+    val body = VoteReq(challengeId, vote, anonId)
+    val req = Request.Builder()
+        .url(url)
+        .post("application/json; charset=utf-8".toMediaType().let { Json.encodeToString(body).toRequestBody(it) })
+        .build()
+    OkHttpClient().newCall(req).execute().use { resp ->
+        if (!resp.isSuccessful) throw IOException("HTTP ${resp.code}")
+        return Json.decodeFromString(resp.body!!.string())
+    }
+}
+
+7) UX notes & guardrails
+    • Disable vote buttons after a successful POST (or when already_voted is true).
+    • If offline, queue vote and track-play calls and replay later.
+    • Treat has_bonus === 1 as a boolean true in UI.
+    • Challenges endpoint may return many items; consider client-side shuffle or pagination as needed.
+
+8) Backward compatibility
+The website front end still uses the old, nonce-protected AJAX endpoints. Mobile apps should exclusively use the public REST endpoints above.

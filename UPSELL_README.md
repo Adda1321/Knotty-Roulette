@@ -39,7 +39,7 @@ The upsell system in Knotty Roulette intelligently displays offers based on user
 
 | User State | Default Theme | College Theme | Couple Theme | Ad-Free | Passive Offer |
 |------------|---------------|---------------|---------------|---------|---------------|
-| **Free User** | ✅ Owned (Free) | ❌ Not Owned | ❌ Not Owned | ❌ No | **"🔥 Complete Experience Bundle!" ($6.99, save $2)** |
+| **Free User** | ✅ Owned (Free) | ❌ Not Owned | ❌ Not Owned | ❌ No | **"🔥 Complete Experience Bundle!" ($6.99, save $2)** AND **"🚫 Remove Those Ads!" ($2.99)** |
 | **Free User** | ✅ Owned (Free) | ✅ Purchased | ❌ Not Owned | ❌ No | **"🚫 Remove Those Ads!" ($2.99)** |
 | **Free User** | ✅ Owned (Free) | ✅ Purchased | ✅ Purchased | ❌ No | **"🚫 Remove Those Ads!" ($2.99)** |
 | **Ad-Free User** | ✅ Owned (Free) | ❌ Not Owned | ❌ Not Owned | ✅ Yes | **"🎨 Expand the Fun!" ($4.99, save $1)** |

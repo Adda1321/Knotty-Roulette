@@ -1,22 +1,22 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Animated,
-    Image,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Animated,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Surface } from "react-native-paper";
 import Toast from "react-native-toast-message";
 import {
-    ANIMATION_CONFIGS,
-    ANIMATION_VALUES,
+  ANIMATION_CONFIGS,
+  ANIMATION_VALUES,
 } from "../../constants/animations";
-import { COLORS, FONTS, SIZES,THEME_PACKS } from "../../constants/theme";
+import { FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import { logVote } from "../../services/api";
 import audioService from "../../services/audio";
@@ -52,6 +52,7 @@ export default function ChallengeDisplay({
   const [votingType, setVotingType] = useState<"upvote" | "downvote" | null>(
     null
   );
+
  const { COLORS, currentTheme } = useTheme();
   
   // Debug logging
@@ -206,16 +207,27 @@ export default function ChallengeDisplay({
   style={[
     styles.challengeCard,
     {
+    backgroundColor: COLORS.FIELDS,
       borderColor:
         currentTheme === THEME_PACKS.DEFAULT ? "#2B7B33" : COLORS.YELLOW,
     },
   ]}
 >
-                      <View style={[styles.playerContainer,{backgroundColor:COLORS.PRIMARY}]}>
+                      <View style={[styles.playerContainer,{                      
+                        backgroundColor:COLORS.PRIMARY}]}>
             
             <View>
-              <Text style={styles.playerName}>{playerName},</Text>
-              <Text style={styles.turnText}>YOUR TURN</Text>
+          <Text
+  style={[
+    styles.playerName,
+    { color: COLORS.YELLOW }
+  ]}
+>{playerName},</Text>
+              <Text style={[styles.turnText,
+                {
+    color: COLORS.YELLOW,
+                }]
+              }>YOUR TURN</Text>
             </View>
             <View style={styles.mascotContainer}>
               <Image
@@ -244,7 +256,11 @@ export default function ChallengeDisplay({
             }}
           >
             <View style={styles.challengeTextContainer}>
-              <Text style={styles.challengeText}>
+              <Text style={[styles.challengeText,
+                {
+    color: COLORS.TEXT_DARK,
+                }
+              ]}>
                 {challenge.challenge_text}
               </Text>
             </View>
@@ -292,7 +308,9 @@ export default function ChallengeDisplay({
                           size="small"
                         />
                       ) : (
-                        <Text style={styles.voteButtonText}>👍</Text>
+                        <Text style={[styles.voteButtonText,{
+    color: COLORS.TEXT_PRIMARY,
+                        }]}>👍</Text>
                       )}
                     </TouchableOpacity>
                   </Surface>
@@ -303,7 +321,7 @@ export default function ChallengeDisplay({
                         borderRadius: 10,
                       },
                       styles.downvoteButton,{
-                    backgroundColor: currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :" #EE562B"
+                    backgroundColor: currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :"#EE562B"
 
                       },
                       styles.voteButton,
@@ -386,7 +404,7 @@ export default function ChallengeDisplay({
                   <Button
                     text="Pass (-1 point)"
                     onPress={handleOnPass}
-                    backgroundColor={currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :" #EE562B"}
+                    backgroundColor={currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :"#EE562B"}
                     textColor={COLORS.YELLOW}
                     fontSize={SIZES.SUBTITLE}
                     fontFamily={FONTS.DOSIS_BOLD}
@@ -458,7 +476,6 @@ const styles = StyleSheet.create({
   },
   challengeCard: {
     borderColor: "#2B7B33",
-    backgroundColor: COLORS.FIELDS,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     borderWidth: 3,
     maxWidth: 450,
@@ -474,7 +491,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE - 3, // Account for border width
     borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE - 3, // Account for border width
-    backgroundColor: COLORS.DARK_GREEN,
     paddingVertical: 5,
     paddingLeft: 20,
     width: "100%",
@@ -484,7 +500,6 @@ const styles = StyleSheet.create({
   },
   playerName: {
     fontSize: SIZES.EXTRALARGE,
-    color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
     textShadowColor: "#06540fff", // Border color
@@ -494,7 +509,6 @@ const styles = StyleSheet.create({
   },
   turnText: {
     fontSize: SIZES.TITLE + 4,
-    color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
     letterSpacing: 1,
@@ -517,7 +531,6 @@ const styles = StyleSheet.create({
   },
   challengeText: {
     fontSize: SIZES.BODY,
-    color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     lineHeight: 22,
     textAlign: "center",
@@ -551,7 +564,6 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   upvoteButton: {
-    backgroundColor: COLORS.DARK_GREEN,
     borderColor: "#18752A",
     borderWidth: 2,
   },
@@ -561,7 +573,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   voteButtonText: {
-    color: COLORS.TEXT_PRIMARY,
     fontSize: SIZES.BODY,
     fontFamily: FONTS.PRIMARY,
     fontWeight: "600",

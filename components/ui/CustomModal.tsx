@@ -8,9 +8,9 @@ import {
     View,
 } from "react-native";
 import { Surface } from "react-native-paper";
-import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import { COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
 import ModalSparkles from "./ModalSparkles";
-
+import { useTheme } from "../../contexts/ThemeContext";
 interface CustomModalProps {
   visible: boolean;
   onClose: () => void;
@@ -51,8 +51,9 @@ export default function CustomModal({
   disabled = false,
 }: CustomModalProps) {
   // Don't render anything if modal is not visible
+  const { COLORS, currentTheme } = useTheme();
   if (!visible) return null;
-
+  
   return (
     <Modal
       visible={visible}
@@ -74,7 +75,13 @@ export default function CustomModal({
 
           {/* Header */}
           {title && (
-            <View style={styles.header}>
+            <View style={[styles.header,
+               {
+                  backgroundColor: COLORS.PRIMARY,
+                    borderColor:
+                      currentTheme === THEME_PACKS.DEFAULT ? "#2B7B33" : COLORS.YELLOW,
+                  },
+            ]}>
               <Text style={styles.title}>{title}</Text>
             </View>
           )}
@@ -179,7 +186,7 @@ const styles = StyleSheet.create({
     position: "relative", // Important for sparkle positioning
   },
   header: {
-    backgroundColor: COLORS.DARK_GREEN,
+    // backgroundColor: COLORS.DARK_GREEN,
     borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE,
     borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_LARGE,

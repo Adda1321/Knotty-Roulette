@@ -66,9 +66,17 @@ export default function Scoreboard({
   );
 
   return (
-    <View style={[styles.container,
-      {backgroundColor:COLORS.SCOREBOARD}
-    ]}>
+  <View
+  style={[
+    styles.container,
+    {
+      backgroundColor:
+        currentTheme === THEME_PACKS.COUPLE
+          ? COLORS.GAMEBOARDPRIMARY
+          : COLORS.SCOREBOARD,
+    },
+  ]}
+>
       <Text style={styles.title}>Scoreboard</Text>
 
       <FlatList

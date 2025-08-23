@@ -16,8 +16,8 @@ export const WORDPRESS_CONFIG = {
   
   // Plugin action names
   ACTIONS: {
-    GET_CHALLENGES: 'krt_get_challenges',
-    LOG_RESPONSE: 'krt_log_response',
+    GET_CHALLENGES: 'krt_fetch_challenges', // Fixed: matches backend endpoint
+    LOG_RESPONSE: 'krt_vote', // Fixed: matches backend endpoint
   },
   
   // API timeout in milliseconds

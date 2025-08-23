@@ -29,6 +29,7 @@ import userService from "../../services/userService";
 import { getSampleChallenges } from "../../utils/themeHelpers";
 import Button from "./Button";
 import CustomModal from "./CustomModal";
+import PurchaseCelebrationModal from "./PurchaseCelebrationModal";
 import UpsellModal from "./UpsellModal";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -63,14 +64,20 @@ export default function ThemeStore({
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [currentUpsellOffer, setCurrentUpsellOffer] = useState<any>(null);
-  const [showPurchaseSuccessModal, setShowPurchaseSuccessModal] = useState(false);
+  const [showPurchaseSuccessModal, setShowPurchaseSuccessModal] =
+    useState(false);
   const [purchaseSuccessData, setPurchaseSuccessData] = useState<{
     title: string;
     message: string;
     action: string;
   } | null>(null);
   const [isAdFreePurchasing, setIsAdFreePurchasing] = useState(false);
-  const [purchasingBundleId, setPurchasingBundleId] = useState<string | null>(null);
+  const [purchasingBundleId, setPurchasingBundleId] = useState<string | null>(
+    null
+  );
+  const [passiveOffers, setPassiveOffers] = useState<any[]>([]);
+  const [showPurchaseCelebrationModal, setShowPurchaseCelebrationModal] = useState(false);
+  const [purchaseType, setPurchaseType] = useState<'ad_free' | 'theme_packs' | 'all_in_bundle' | 'complete_set' | null>(null);
 
   // Load theme packs with current status
   useEffect(() => {
@@ -80,13 +87,24 @@ export default function ThemeStore({
 
   const checkShopEntryUpsell = async () => {
     try {
+      console.log('🛍️ ThemeStore: Checking shop entry upsell...');
       const upsellType = await upsellService.trackShopEntry();
+      console.log('🛍️ ThemeStore: Shop entry upsell result:', upsellType);
+      
       if (upsellType !== "none") {
+        console.log('🛍️ ThemeStore: Getting upsell offer for type:', upsellType);
         const offer = upsellService.getUpsellOffer(upsellType, "shop_entry");
+        console.log('🛍️ ThemeStore: Upsell offer result:', offer);
+        
         if (offer) {
+          console.log('🛍️ ThemeStore: Setting upsell modal with offer:', offer.id);
           setCurrentUpsellOffer(offer);
           setShowUpsellModal(true);
+        } else {
+          console.log('🛍️ ThemeStore: No offer returned for upsell type:', upsellType);
         }
+      } else {
+        console.log('🛍️ ThemeStore: No upsell needed (type: none)');
       }
     } catch (error) {
       console.error("Error checking shop entry upsell:", error);
@@ -136,8 +154,6 @@ export default function ThemeStore({
     setThemePacks(packs);
   };
 
-  const [passiveOffers, setPassiveOffers] = useState<any[]>([]);
-
   // Load passive offers based on user state
   useEffect(() => {
     loadPassiveOffers();
@@ -167,11 +183,15 @@ export default function ThemeStore({
   };
 
   const openPreview = (pack: ThemePack) => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("light");
     setSelectedPack(pack);
     setShowPreview(true);
   };
 
   const closePreview = () => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("light");
     setShowPreview(false);
     setSelectedPack(null);
   };
@@ -179,6 +199,8 @@ export default function ThemeStore({
   const handlePurchase = async (pack: ThemePack) => {
     if (pack.isOwned) return;
 
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium");
     setIsPurchasing(true);
     try {
       const success = await themePackService.purchasePack(pack.id as any);
@@ -198,7 +220,7 @@ export default function ThemeStore({
         setPurchaseSuccessData({
           title: "❌ Purchase Failed",
           message: "Unable to complete purchase. Please try again.",
-          action: "OK"
+          action: "OK",
         });
         setShowPurchaseSuccessModal(true);
       }
@@ -206,7 +228,7 @@ export default function ThemeStore({
       setPurchaseSuccessData({
         title: "❌ Error",
         message: "An error occurred during purchase.",
-        action: "OK"
+        action: "OK",
       });
       setShowPurchaseSuccessModal(true);
     } finally {
@@ -217,6 +239,8 @@ export default function ThemeStore({
   const handlePackSelection = async (pack: ThemePack) => {
     if (!pack.isOwned) return;
 
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("light");
     console.log("🎨 ThemeStore: User wants to switch to theme:", pack.id);
     console.log("🎨 ThemeStore: Pack details:", pack);
 
@@ -268,14 +292,14 @@ export default function ThemeStore({
         setPurchaseSuccessData({
           title: "🎉 Ad-Free Activated!",
           message: "You're now a premium user! No more ads during gameplay.",
-          action: "Awesome!"
+          action: "Awesome!",
         });
         setShowPurchaseSuccessModal(true);
       } else {
         setPurchaseSuccessData({
           title: "❌ Purchase Failed",
           message: "Unable to complete purchase. Please try again.",
-          action: "OK"
+          action: "OK",
         });
         setShowPurchaseSuccessModal(true);
       }
@@ -283,7 +307,7 @@ export default function ThemeStore({
       setPurchaseSuccessData({
         title: "❌ Error",
         message: "An error occurred during purchase.",
-        action: "OK"
+        action: "OK",
       });
       setShowPurchaseSuccessModal(true);
     } finally {
@@ -334,19 +358,18 @@ export default function ThemeStore({
         // Show success feedback
         audioService.playSound("bonusAchieved");
         audioService.playHaptic("success");
-        
         // Show custom success modal
         setPurchaseSuccessData({
           title: "🎉 Purchase Successful!",
           message: "Your purchase has been completed successfully!",
-          action: "Awesome!"
+          action: "Awesome!",
         });
         setShowPurchaseSuccessModal(true);
       } else {
         setPurchaseSuccessData({
           title: "❌ Purchase Failed",
           message: "Unable to complete purchase. Please try again.",
-          action: "OK"
+          action: "OK",
         });
         setShowPurchaseSuccessModal(true);
       }
@@ -354,7 +377,7 @@ export default function ThemeStore({
       setPurchaseSuccessData({
         title: "❌ Error",
         message: "An error occurred during purchase.",
-        action: "OK"
+        action: "OK",
       });
       setShowPurchaseSuccessModal(true);
     } finally {
@@ -371,6 +394,9 @@ export default function ThemeStore({
   };
 
   const handleResetStore = async () => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium");
+
     try {
       // Reset theme pack purchases
       await themePackService.resetPurchases();
@@ -417,7 +443,7 @@ export default function ThemeStore({
               key={offer.id}
               style={[
                 styles.bundleCard,
-                offer.isCompleted && styles.bundleCardCompleted
+                offer.isCompleted && styles.bundleCardCompleted,
               ]}
             >
               <View style={styles.bundleHeader}>
@@ -431,11 +457,13 @@ export default function ThemeStore({
                 )}
               </View>
               <Text style={styles.bundleDescription}>{offer.description}</Text>
-                            <View style={styles.bundleFooter}>
-                <View style={[
-                  styles.bundlePriceContainer,
-                  offer.isCompleted && styles.bundlePriceContainerCompleted
-                ]}>
+              <View style={styles.bundleFooter}>
+                <View
+                  style={[
+                    styles.bundlePriceContainer,
+                    offer.isCompleted && styles.bundlePriceContainerCompleted,
+                  ]}
+                >
                   <Text style={styles.bundlePrice}>
                     {offer.primaryButton.price}
                   </Text>
@@ -444,17 +472,17 @@ export default function ThemeStore({
                   <TouchableOpacity
                     style={[
                       styles.bundleButton,
-                      purchasingBundleId === offer.id && styles.bundleButtonDisabled
+                      purchasingBundleId === offer.id &&
+                        styles.bundleButtonDisabled,
                     ]}
                     onPress={() => handlePassiveOfferPurchase(offer)}
                     activeOpacity={0.8}
                     disabled={purchasingBundleId === offer.id}
                   >
                     <Text style={styles.bundleButtonText}>
-                      {purchasingBundleId === offer.id 
-                        ? "Purchasing..." 
-                        : offer.primaryButton.text
-                      }
+                      {purchasingBundleId === offer.id
+                        ? "Purchasing..."
+                        : offer.primaryButton.text}
                     </Text>
                   </TouchableOpacity>
                 ) : (
@@ -537,7 +565,11 @@ export default function ThemeStore({
           <View style={styles.previewHeader}>
             <Text style={styles.previewTitle}>{selectedPack?.name}</Text>
             <TouchableOpacity
-              onPress={closePreview}
+              onPress={() => {
+                audioService.playSound("buttonPress");
+                audioService.playHaptic("light");
+                closePreview();
+              }}
               style={styles.closePreviewButton}
             >
               <Ionicons name="close" size={24} color={COLORS.TEXT_DARK} />
@@ -576,11 +608,19 @@ export default function ThemeStore({
                   {getSampleChallenges(selectedPack?.id).map(
                     (challenge: any, index: number) => (
                       <View key={index} style={styles.sampleChallengeItem}>
-                        <View style={styles.challengeTextContainer}>
-                          <Text style={styles.sampleChallengeText}>
-                            {challenge.challenge_text}
+                        <View style={styles.challengeNumberBadge}>
+                          <Text style={styles.challengeNumberText}>
+                            {index + 1}
                           </Text>
                         </View>
+                        <Text style={styles.sampleChallengeText}>
+                          {challenge.challenge_text}
+                        </Text>
+                        {challenge.has_bonus && (
+                          <View style={styles.bonusBadge}>
+                            <Text style={styles.bonusText}>Bonus</Text>
+                          </View>
+                        )}
                       </View>
                     )
                   )}
@@ -625,12 +665,28 @@ export default function ThemeStore({
     </Modal>
   );
 
+  const handleUpsellPurchaseSuccess = () => {
+    // This function is called when the user successfully purchases the upsell offer.
+    // It can be used to update the UI or trigger other actions.
+    console.log("🛍️ ThemeStore: Upsell purchase successful!");
+    loadThemePacks(); // Refresh theme packs after purchase
+    loadPassiveOffers(); // Refresh passive offers
+    setShowUpsellModal(false);
+  };
+
+  const handlePurchaseComplete = (type: 'ad_free' | 'theme_packs' | 'all_in_bundle' | 'complete_set') => {
+    setPurchaseType(type);
+    setShowPurchaseCelebrationModal(true);
+  };
+
   return (
     <>
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => {
+              audioService.playSound("buttonPress");
+              audioService.playHaptic("light");
               router.back();
             }}
             style={styles.backButton}
@@ -640,7 +696,11 @@ export default function ThemeStore({
           <Text style={styles.title}>Theme Store</Text>
           <View style={styles.headerButtons}>
             <TouchableOpacity
-              onPress={() => setShowResetConfirmation(true)}
+              onPress={() => {
+                audioService.playSound("buttonPress");
+                audioService.playHaptic("light");
+                setShowResetConfirmation(true);
+              }}
               style={styles.resetButton}
             >
               <Ionicons name="refresh" size={20} color={COLORS.YELLOW} />
@@ -652,7 +712,7 @@ export default function ThemeStore({
             <TouchableOpacity
               style={[
                 styles.adFreeButton,
-                isAdFreePurchasing && styles.adFreeButtonDisabled
+                isAdFreePurchasing && styles.adFreeButtonDisabled,
               ]}
               onPress={() => handleAdFreeOnlyPurchase()}
               activeOpacity={0.8}
@@ -687,12 +747,18 @@ export default function ThemeStore({
       {renderPreviewModal()}
       <CustomModal
         visible={showPurchaseSuccess}
-        onClose={() => setShowPurchaseSuccess(false)}
+        onClose={() => {
+          audioService.playSound("buttonPress");
+          audioService.playHaptic("light");
+          setShowPurchaseSuccess(false);
+        }}
         title="Purchase Successful! 🎉"
         message={`You've unlocked the ${purchasedPackName}! You can now use this theme pack. Select it manually when you're ready to switch themes.`}
         showConfirmButton={true}
         confirmButtonText="Awesome!"
         onConfirm={() => {
+          audioService.playSound("buttonPress");
+          audioService.playHaptic("light");
           setShowPurchaseSuccess(false);
           loadThemePacks(); // Refresh the list
         }}
@@ -702,12 +768,20 @@ export default function ThemeStore({
       {/* Theme Switch Confirmation Modal */}
       <CustomModal
         visible={showSwitchConfirmation}
-        onClose={() => setShowSwitchConfirmation(false)}
+        onClose={() => {
+          audioService.playSound("buttonPress");
+          audioService.playHaptic("light");
+          setShowSwitchConfirmation(false);
+        }}
         title="Switch Theme Pack?"
         message={`Are you sure you want to switch to ${packToSwitch?.name}? You can only change themes when not in an active game.`}
         showConfirmButton={true}
         confirmButtonText="Switch Theme"
-        onConfirm={confirmThemeSwitch}
+        onConfirm={() => {
+          audioService.playSound("buttonPress");
+          audioService.playHaptic("light");
+          confirmThemeSwitch();
+        }}
         showCloseButton={true}
         closeButtonText="Cancel"
         disabled={isGameActive}
@@ -716,12 +790,18 @@ export default function ThemeStore({
       {/* Store Reset Confirmation Modal */}
       <CustomModal
         visible={showResetConfirmation}
-        onClose={() => setShowResetConfirmation(false)}
+        onClose={() => {
+          audioService.playSound("buttonPress");
+          audioService.playHaptic("light");
+          setShowResetConfirmation(false);
+        }}
         title="Reset Theme Store?"
         message="This will reset all theme pack purchases and return you to the default theme. This action cannot be undone."
         showConfirmButton={true}
         confirmButtonText="Reset Store"
         onConfirm={() => {
+          audioService.playSound("buttonPress");
+          audioService.playHaptic("light");
           handleResetStore();
           setShowResetConfirmation(false);
         }}
@@ -735,11 +815,18 @@ export default function ThemeStore({
         <UpsellModal
           visible={showUpsellModal}
           onClose={() => setShowUpsellModal(false)}
-          onPurchaseSuccess={() => {
-            setShowUpsellModal(false);
-            loadThemePacks(); // Refresh theme packs after purchase
-          }}
+          onPurchaseSuccess={handleUpsellPurchaseSuccess}
+          onPurchaseComplete={handlePurchaseComplete}
           offer={currentUpsellOffer}
+        />
+      )}
+
+      {/* Purchase Celebration Modal */}
+      {showPurchaseCelebrationModal && purchaseType && (
+        <PurchaseCelebrationModal
+          visible={showPurchaseCelebrationModal}
+          onClose={() => setShowPurchaseCelebrationModal(false)}
+          purchaseType={purchaseType}
         />
       )}
 
@@ -747,7 +834,11 @@ export default function ThemeStore({
       {purchaseSuccessData && (
         <CustomModal
           visible={showPurchaseSuccessModal}
-          onClose={() => setShowPurchaseSuccessModal(false)}
+          onClose={() => {
+            audioService.playSound("buttonPress");
+            audioService.playHaptic("light");
+            setShowPurchaseSuccessModal(false);
+          }}
           title={purchaseSuccessData.title}
           message={purchaseSuccessData.message}
           showCloseButton={true}
@@ -1094,11 +1185,12 @@ const styles = StyleSheet.create({
     flex: 0, // Don't expand header
   },
   previewTitle: {
-    fontSize: SIZES.SUBTITLE,
+    fontSize: SIZES.TITLE,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     flex: 1,
     textAlign: "center",
+    marginLeft: 20,
   },
   closePreviewButton: {
     padding: SIZES.PADDING_SMALL,
@@ -1153,13 +1245,10 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   sampleChallengesSection: {
-    marginBottom: SIZES.PADDING_XLARGE, // More space before purchase section
-    backgroundColor: COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.FIELDS, // Changed from CARD_BACKGROUND to FIELDS for minimal look
     borderRadius: SIZES.BORDER_RADIUS_LARGE, // Larger border radius
-    padding: SIZES.PADDING_LARGE, // More padding inside section
-    borderWidth: 1, // Add border
-    borderColor: COLORS.CARD_BORDER,
-    ...SIZES.SHADOW_SMALL, // Add subtle shadow
+    paddingVertical: SIZES.PADDING_LARGE, // More padding inside section
+    borderWidth: 0, // Remove border for cleaner look
   },
   sampleChallengesTitle: {
     fontSize: SIZES.SUBTITLE,
@@ -1170,27 +1259,36 @@ const styles = StyleSheet.create({
   },
   sampleChallengesSubtitle: {
     fontSize: SIZES.SMALL,
-    color: COLORS.TEXT_SECONDARY,
+    color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS, // Use existing DOSIS font
     marginBottom: SIZES.PADDING_LARGE,
     textAlign: "center",
     lineHeight: 18,
   },
   sampleChallengeItem: {
-    backgroundColor: COLORS.FIELDS,
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    padding: SIZES.PADDING_MEDIUM,
-    marginBottom: SIZES.PADDING_SMALL,
-    borderWidth: 1,
-    borderColor: COLORS.CARD_BORDER,
+    flexDirection: "row", // Horizontal layout
+    alignItems: "flex-start", // Align items to top
+    marginBottom: SIZES.PADDING_MEDIUM, // Space between challenges
+    paddingHorizontal: SIZES.PADDING_SMALL, // Minimal horizontal padding
+    paddingVertical: SIZES.PADDING_SMALL, // Minimal vertical padding
     position: "relative",
-    overflow: "hidden",
-    minHeight: 80, // Increased height for better text display
-    ...SIZES.SHADOW_SMALL,
+    minHeight: 60, // Reduced height since no container
   },
-  challengeTextContainer: {
-    position: "relative",
-    zIndex: 1,
+  challengeNumberBadge: {
+    backgroundColor: COLORS.YELLOW,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    paddingHorizontal: SIZES.PADDING_SMALL,
+    paddingVertical: 2,
+    marginRight: SIZES.PADDING_MEDIUM, // Space between number and text
+    minWidth: 24, // Fixed width for consistent alignment
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  challengeNumberText: {
+    fontSize: SIZES.SMALL,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.DOSIS_BOLD,
+    textAlign: "center",
   },
   sampleChallengeText: {
     fontSize: SIZES.SMALL,
@@ -1198,6 +1296,22 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
     lineHeight: 20,
+    flex: 1, // Take remaining space
+    paddingRight: SIZES.PADDING_LARGE, // Space for bonus badge
+  },
+  bonusBadge: {
+    position: "absolute",
+    top: SIZES.PADDING_SMALL,
+    right: SIZES.PADDING_SMALL,
+    backgroundColor: COLORS.YELLOW,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    paddingHorizontal: SIZES.PADDING_SMALL,
+    paddingVertical: 2,
+  },
+  bonusText: {
+    fontSize: SIZES.CAPTION,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.DOSIS_BOLD,
   },
 
   purchaseSection: {

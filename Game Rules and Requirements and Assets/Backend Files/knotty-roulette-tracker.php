@@ -1,497 +1,801 @@
 <?php
 /*
 Plugin Name: Knotty Roulette Tracker
-Description: Tracks upvote and downvote responses for Knotty Roulette game and manages challenges.
-Version: 1.7
-Author: Your Name
+Description: Simple backend to manage Knotty Roulette challenges and track like/dislike counts. Works with the front-end game.
+Version: 2.6
+Author: Knotty Times
 */
 
-// Prevent direct access
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) { exit; }
 
-// Create responses table on plugin activation
-register_activation_hook(__FILE__, 'krt_create_table');
-function krt_create_table() {
+/* ==========================================================================
+ * Activation: create tables if not exist
+ * ========================================================================== */
+register_activation_hook(__FILE__, 'krt_activate_plugin');
+function krt_activate_plugin() {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_responses';
-    $charset_collate = $wpdb->get_charset_collate();
+    $charset = $wpdb->get_charset_collate();
 
-    $sql = "CREATE TABLE $table_name (
-        id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-        response_type VARCHAR(50) NOT NULL,
-        challenge_id BIGINT(20) UNSIGNED DEFAULT NULL,
-        challenge_text TEXT NOT NULL,
-        response_date DATE NOT NULL,
-        response_time TIME NOT NULL,
-        PRIMARY KEY (id)
-    ) $charset_collate;";
+    $tbl_challenges = $wpdb->prefix . 'knotty_roulette_challenges';
+    $tbl_responses  = $wpdb->prefix . 'knotty_roulette_responses';
 
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
-}
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
-// Create challenges table on plugin activation
-register_activation_hook(__FILE__, 'krt_create_challenges_table');
-function krt_create_challenges_table() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_challenges';
-    $charset_collate = $wpdb->get_charset_collate();
-
-    $sql = "CREATE TABLE $table_name (
+    // Challenges
+    dbDelta("CREATE TABLE {$tbl_challenges} (
         id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         challenge_text TEXT NOT NULL,
         has_bonus TINYINT(1) NOT NULL DEFAULT 0,
-        created_at DATETIME NOT NULL,
-        PRIMARY KEY (id)
-    ) $charset_collate;";
+        card_pack VARCHAR(255) DEFAULT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY idx_card_pack (card_pack)
+    ) {$charset};");
 
-    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-    dbDelta($sql);
+    // Responses (votes)
+    dbDelta("CREATE TABLE {$tbl_responses} (
+        id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        challenge_id BIGINT(20) UNSIGNED NOT NULL,
+        vote_type ENUM('like','dislike') NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY idx_challenge_id (challenge_id)
+    ) {$charset};");
 
-    // Seed challenges if table is empty
-    krt_seed_challenges();
-}
-
-// Seed challenges table with hardcoded challenges
-function krt_seed_challenges() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_challenges';
-
-    // Check if table is empty
-    $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
-    if ($count > 0) {
-        return;
-    }
-
-    // Hardcoded challenges from front-end
-    $challenges = [
-        "Give a flirty compliment to someone in the group or a stranger – Bonus if a stranger!",
-        "Show off your best dance moves! – Bonus if you commit for at least 10 seconds!",
-        "Ask the bartender or a friend for their best flirting advice – Bonus if you actually try it on someone!",
-        "Flirt with someone using only song lyrics – Bonus if they don’t notice!",
-        "Remove your can’s tab and flick it like a football through someone’s goalpost hands – Miss? Take a sip! Bonus if you make it. 🏈🍻",
-        "Do your best celebrity impression – Bonus if they guess who it is!",
-        "Reveal something about yourself that no one in the group knows – Bonus if it's Knotty!",
-        "Make a toast with only eye contact—no words! – Bonus if someone laughs first!",
-        "Ask the group: “Would you rather” and make up a wild scenario – Bonus if everyone answers!",
-        "Say something completely ridiculous with full confidence – Bonus if you get someone to believe it!",
-        "Challenge someone to a dance-off – Loser must finish their drink!",
-        "Challenge someone to a rock-paper-scissors match – Loser takes a sip!",
-        "Buy someone a Knotty Times – Your choice who gets lucky!",
-        "Bottoms up! – Whatever’s left in your drink, finish it now!",
-        "Make a toast to the group – The more ridiculous, the better.",
-        "Blow a kiss to someone in the group – Make it obvious.",
-        "Secretly pick someone in the group until your next turn, copy their drink movements without getting caught – If they catch you, finish your drink!",
-        "Clink glasses with someone in the group - give them a ridiculous compliment.",
-        "Do a fake pickup line on someone in the group – The cheesier, the better!",
-        "Take a sip & stare at someone until they notice – No breaking eye contact!",
-        "Let the group decide if you should take a sip, take a shot, or skip this round - majority rules! 🍻🔥",
-        "Announce another player's drink choice like a sports commentator giving a play-by-play! – Hold your drink like a pretend mic while doing it!",
-        "Start a chant – Even if it’s just 'One more round!'",
-        "Pretend you know a stranger for 30 seconds – Sell it!",
-        "Do an exaggerated sexy walk to the bathroom – Full confidence!",
-        "Take a selfie with someone in the group – Make it extra dramatic.",
-        "Try to get someone in the group to high-five you without asking – Be creative!",
-        "Let the person to your left make up a dare for you – No backing out!",
-        "Start an impromptu karaoke moment – Even if there’s no karaoke.",
-        "Whisper a random word in someone’s ear – Then walk away like nothing happened.",
-        "The group picks three people (real or fictional) and presents them to the chosen player. That player must decide who to Fuck, Marry, or Kill - no backing out!",
-        "Say something spicy in the most innocent voice possible – Keep a straight face!",
-        "Lick your lips & wink at someone in the group – See if they react.",
-        "Make eye contact with someone in the group for 10 seconds – No breaking first!",
-        "Take a sip without using your hands – Get creative!",
-        "Whisper a made-up secret to someone in the group – Make it juicy.",
-        "Tell the group your worst pickup line ever – Then try using it!",
-        "Get a stranger to fist-bump you – No explanation allowed.",
-        "Try to make someone in the group blush – No touching allowed!",
-        "Hold eye contact with someone while slowly sipping your drink – No blinking!",
-        "Tell the group about your most embarrassing night out moment – No holding back.",
-        "Pick a dance move and do it for the next 10 seconds – No stopping!",
-        "Do an over-the-top dramatic reaction to the next thing someone says – Oscar-worthy.",
-        "Ask someone in the group a “truth or dare” question – They must answer!",
-        "Let someone in the group come up with a “new name” for you – Use it for the rest of the game!",
-        "Find out a fun fact about the person sitting next to you – Then share it!",
-        "Make up a wild story about how you and another player met – Sell it like it’s 100% true!",
-        "Fake a phone call and have a dramatic conversation – Keep it entertaining!",
-        "Give an overly dramatic apology to the group for something you didn’t do the more ridiculous the better – No laughing!",
-        "Say a ‘Never Have I Ever’ statement - anyone who’s done it takes a sip! 🍻🔥",
-        "Who is most likely to [do something wild or embarrassing]? – The group votes, and the person with the most votes drinks! 😆",
-        "Balance your drink on the back of your hand and try to take a sip without spilling. – Spill? Drink again! 🍹🎭",
-        "Drink, then flip your empty cup or coaster onto the table - first to land it wins! – Loser drinks! 🔄🍺",
-        "Go around the table counting aloud, but say 'Knotty' instead of any number with a 7 or a multiple of 7! - Mess up? Take a sip! 🔢🍻",
-        "Name a famous person. The next player must say a name that starts with the last letter of yours. – Can't think of one? Drink! 🎤🔥",
-        "Tell the group two truths and one lie about yourself. The group must guess which one is the lie. - Whoever guesses wrong must finish their drink!",
-        "The group picks an accent, and the chosen player must speak in that accent until their next turn - no backing out!",
-        "Say the alphabet backwards - If successful every other player must take a sip. If not, you need to.",
-        "Call someone you know and say “I need to hide a body” – No voice mail",
-        "Act out a charade no talking you have 2 minutes - if the group guesses correctly they drink if not you drink.",
-        "You must only refer to yourself by name for the next two rounds – Forget? drink.",
-        "Swap shirts with the person to your right for two rounds - No shirt, no swap, no excuses…"
-    ];
-
-    foreach ($challenges as $challenge) {
-        $has_bonus = strpos($challenge, 'Bonus') !== false ? 1 : 0;
-        $wpdb->insert(
-            $table_name,
-            [
-                'challenge_text' => $challenge,
-                'has_bonus' => $has_bonus,
-                'created_at' => gmdate('Y-m-d H:i:s', time() - 5 * 3600) // EST
-            ],
-            ['%s', '%d', '%s']
-        );
+    // Ensure default pack option exists
+    if (get_option('krt_default_pack') === false) {
+        add_option('krt_default_pack', 'Original Pack');
     }
 }
 
-// Database migration for responses table
-register_activation_hook(__FILE__, 'krt_update_responses_table_schema');
-function krt_update_responses_table_schema() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_responses';
-
-    if ($wpdb->get_var("SHOW COLUMNS FROM $table_name LIKE 'challenge_id'") != 'challenge_id') {
-        $sql = "ALTER TABLE $table_name ADD COLUMN challenge_id BIGINT(20) UNSIGNED DEFAULT NULL AFTER response_type";
-        $wpdb->query($sql);
-    }
-}
-
-// AJAX handler to log responses
-add_action('wp_ajax_krt_log_response', 'krt_log_response');
-add_action('wp_ajax_nopriv_krt_log_response', 'krt_log_response');
-function krt_log_response() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_responses';
-
-    $response_type = isset($_POST['response_type']) ? sanitize_text_field($_POST['response_type']) : '';
-    $challenge_id = isset($_POST['challenge_id']) ? absint($_POST['challenge_id']) : null;
-    $challenge_text = isset($_POST['challenge_text']) ? sanitize_text_field($_POST['challenge_text']) : '';
-
-    if (in_array($response_type, ['upvote', 'downvote'])) {
-        $wpdb->insert(
-            $table_name,
-            [
-                'response_type' => $response_type,
-                'challenge_id' => $challenge_id,
-                'challenge_text' => $challenge_text,
-                'response_date' => gmdate('Y-m-d', time() - 5 * 3600), // EST
-                'response_time' => gmdate('H:i:s', time() - 5 * 3600) // EST
-            ],
-            ['%s', '%d', '%s', '%s', '%s']
-        );
-        wp_send_json_success('Response logged');
-    } else {
-        wp_send_json_error('Invalid response type');
-    }
-}
-
-// AJAX handler to get challenges
-add_action('wp_ajax_krt_get_challenges', 'krt_get_challenges');
-add_action('wp_ajax_nopriv_krt_get_challenges', 'krt_get_challenges');
-function krt_get_challenges() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_challenges';
-    $challenges = $wpdb->get_results("SELECT id, challenge_text, has_bonus FROM $table_name ORDER BY id DESC", ARRAY_A);
-    wp_send_json_success($challenges);
-}
-
-// AJAX handler to add challenge
-add_action('wp_ajax_krt_add_challenge', 'krt_add_challenge');
-function krt_add_challenge() {
-    check_ajax_referer('krt_challenge_nonce', 'nonce');
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_challenges';
-
-    $challenge_text = isset($_POST['challenge_text']) ? sanitize_textarea_field($_POST['challenge_text']) : '';
-    $has_bonus = isset($_POST['has_bonus']) && $_POST['has_bonus'] == '1' ? 1 : 0;
-
-    if (empty($challenge_text)) {
-        error_log('KRT: Add challenge failed - empty challenge text');
-        wp_send_json_error('Challenge text is required');
-    }
-
-    $result = $wpdb->insert(
-        $table_name,
-        [
-            'challenge_text' => $challenge_text,
-            'has_bonus' => $has_bonus,
-            'created_at' => gmdate('Y-m-d H:i:s', time() - 5 * 3600) // EST
-        ],
-        ['%s', '%d', '%s']
-    );
-
-    if ($result === false) {
-        error_log('KRT: Add challenge failed - database error: ' . $wpdb->last_error);
-        wp_send_json_error('Failed to add challenge');
-    }
-
-    $challenge_id = $wpdb->insert_id;
-    wp_send_json_success([
-        'id' => $challenge_id,
-        'challenge_text' => $challenge_text,
-        'has_bonus' => $has_bonus,
-        'created_at' => gmdate('Y-m-d H:i:s', time() - 5 * 3600) // EST
-    ]);
-}
-
-// AJAX handler to edit challenge
-add_action('wp_ajax_krt_edit_challenge', 'krt_edit_challenge');
-function krt_edit_challenge() {
-    check_ajax_referer('krt_challenge_nonce', 'nonce');
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_challenges';
-
-    $challenge_id = isset($_POST['challenge_id']) ? absint($_POST['challenge_id']) : 0;
-    $challenge_text = isset($_POST['challenge_text']) ? sanitize_textarea_field($_POST['challenge_text']) : '';
-    $has_bonus = isset($_POST['has_bonus']) && $_POST['has_bonus'] == '1' ? 1 : 0;
-
-    if (empty($challenge_text) || $challenge_id <= 0) {
-        error_log('KRT: Edit challenge failed - invalid data: ' . json_encode($_POST));
-        wp_send_json_error('Invalid challenge data');
-    }
-
-    $result = $wpdb->update(
-        $table_name,
-        [
-            'challenge_text' => $challenge_text,
-            'has_bonus' => $has_bonus
-        ],
-        ['id' => $challenge_id],
-        ['%s', '%d'],
-        ['%d']
-    );
-
-    if ($result === false) {
-        error_log('KRT: Edit challenge failed - database error: ' . $wpdb->last_error);
-        wp_send_json_error('Failed to update challenge');
-    }
-
-    wp_send_json_success('Challenge updated');
-}
-
-// AJAX handler to delete challenge
-add_action('wp_ajax_krt_delete_challenge', 'krt_delete_challenge');
-function krt_delete_challenge() {
-    check_ajax_referer('krt_challenge_nonce', 'nonce');
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_challenges';
-
-    $challenge_id = isset($_POST['challenge_id']) ? absint($_POST['challenge_id']) : 0;
-
-    if ($challenge_id <= 0) {
-        error_log('KRT: Delete challenge failed - invalid ID');
-        wp_send_json_error('Invalid challenge ID');
-    }
-
-    $result = $wpdb->delete($table_name, ['id' => $challenge_id], ['%d']);
-    if ($result === false) {
-        error_log('KRT: Delete challenge failed - database error: ' . $wpdb->last_error);
-        wp_send_json_error('Failed to delete challenge');
-    }
-
-    wp_send_json_success('Challenge deleted');
-}
-
-// AJAX handler to clear responses data
-add_action('wp_ajax_krt_clear_data', 'krt_clear_data');
-function krt_clear_data() {
-    check_ajax_referer('krt_clear_nonce', 'nonce');
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_responses';
-    $wpdb->query("TRUNCATE TABLE $table_name");
-    wp_send_json_success('Data cleared');
-}
-
-// Enqueue script with AJAX URL for frontend
+/* ==========================================================================
+ * Enqueue (Front-end): expose ajax_url, nonce, default_pack (+ ?deck override)
+ * ========================================================================== */
 add_action('wp_enqueue_scripts', 'krt_enqueue_scripts');
 function krt_enqueue_scripts() {
-    wp_enqueue_script('krt-ajax', plugin_dir_url(__FILE__) . 'krt-ajax.js', ['jquery'], '1.7', true);
-    wp_localize_script('krt-ajax', 'krt_ajax', [
-        'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce' => wp_create_nonce('krt_nonce'),
-        'challenge_nonce' => wp_create_nonce('krt_challenge_nonce')
-    ]);
-}
+    wp_enqueue_script(
+        'krt-ajax',
+        plugin_dir_url(__FILE__) . 'krt-ajax.js',
+        array('jquery'),
+        gmdate('YmdHis'),
+        true
+    );
 
-// Admin page scripts
-add_action('admin_enqueue_scripts', 'krt_admin_enqueue_scripts');
-function krt_admin_enqueue_scripts($hook) {
-    if ($hook !== 'knotty-roulette_page_knotty-roulette-responses' && $hook !== 'knotty-roulette_page_krt-manage-challenges') {
-        return;
+    // Default pack from option (fallback), allow QA override via ?deck=
+    $default_pack = get_option('krt_default_pack', 'Original Pack');
+    if (isset($_GET['deck']) && $_GET['deck'] !== '') {
+        $default_pack = sanitize_text_field(wp_unslash($_GET['deck']));
     }
-    wp_enqueue_script('krt-admin', plugin_dir_url(__FILE__) . 'krt-admin.js', ['jquery'], '1.7', true);
-    wp_localize_script('krt-admin', 'krt_admin_ajax', [
-        'ajax_url' => admin_url('admin-ajax.php'),
-        'clear_nonce' => wp_create_nonce('krt_clear_nonce'),
-        'challenge_nonce' => wp_create_nonce('krt_challenge_nonce')
-    ]);
+
+    wp_localize_script('krt-ajax', 'krt_ajax', array(
+        'ajax_url'     => admin_url('admin-ajax.php'),
+        'nonce'        => wp_create_nonce('krt_nonce'),
+        'default_pack' => $default_pack,
+    ));
 }
 
-// Admin menu
+/* ==========================================================================
+ * Admin menu: single simple page "Knotty Roulette" (no dead submenu)
+ * ========================================================================== */
 add_action('admin_menu', 'krt_add_admin_menu');
 function krt_add_admin_menu() {
-    // Parent menu (no page, just a container)
     add_menu_page(
         'Knotty Roulette',
         'Knotty Roulette',
         'manage_options',
         'knotty-roulette',
-        null,
-        'dashicons-games',
-        80
+        'krt_render_manage_challenges_page',
+        'dashicons-randomize',
+        26
     );
-
-    // Responses submenu (default page)
-    add_submenu_page(
-        'knotty-roulette',
-        'Roulette Responses',
-        'Responses',
-        'manage_options',
-        'knotty-roulette-responses',
-        'krt_display_responses'
-    );
-
-    // Challenges submenu
-    add_submenu_page(
-        'knotty-roulette',
-        'Manage Challenges',
-        'Manage Challenges',
-        'manage_options',
-        'krt-manage-challenges',
-        'krt_display_challenges'
-    );
-
-    // Remove the parent menu's default page to avoid blank page
+}
+add_action('admin_menu', function () {
+    // Hide the duplicate first submenu item WP auto-adds
     remove_submenu_page('knotty-roulette', 'knotty-roulette');
+}, 999);
+
+/* ==========================================================================
+ * Helpers
+ * ========================================================================== */
+function krt_boolish_to_int($v) {
+    if (is_bool($v)) return $v ? 1 : 0;
+    $v = strtolower(trim((string)$v));
+    return in_array($v, array('1','true','yes','y','on'), true) ? 1 : 0;
 }
 
-// Highlight correct submenu
-add_filter('parent_file', 'krt_highlight_submenu');
-function krt_highlight_submenu($parent_file) {
-    global $submenu_file;
-    if (in_array(get_current_screen()->id, ['knotty-roulette_page_knotty-roulette-responses', 'knotty-roulette_page_krt-manage-challenges'])) {
-        $parent_file = 'knotty-roulette';
-        $submenu_file = get_current_screen()->id === 'knotty-roulette_page_knotty-roulette-responses' ? 'knotty-roulette-responses' : 'krt-manage-challenges';
-    }
-    return $parent_file;
+function krt_current_admin_page_url($args = array()) {
+    $base = admin_url('admin.php?page=knotty-roulette');
+    if (!empty($args)) $base = add_query_arg($args, $base);
+    return $base;
 }
 
-// Display responses admin page
-function krt_display_responses() {
+/* ==========================================================================
+ * Admin page: Manage Challenges (search, sort, import/export, counters)
+ * ========================================================================== */
+function krt_render_manage_challenges_page() {
+    if (!current_user_can('manage_options')) { return; }
     global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_responses';
-    $results = $wpdb->get_results("SELECT * FROM $table_name ORDER BY response_date DESC, response_time DESC");
+    $tbl_challenges = $wpdb->prefix . 'knotty_roulette_challenges';
+    $tbl_responses  = $wpdb->prefix . 'knotty_roulette_responses';
 
-    echo '<div class="wrap"><h1>Knotty Roulette Responses</h1>';
-    echo '<p><button id="krt-clear-data" class="button button-secondary">Clear All Data</button> ';
-    echo '<a href="' . admin_url('admin-ajax.php?action=krt_export_csv') . '" class="button button-primary">Export to CSV</a></p>';
-    echo '<table class="wp-list-table widefat fixed striped">';
-    echo '<thead><tr><th>ID</th><th>Response</th><th>Challenge ID</th><th>Challenge</th><th>Date</th><th>Time</th></tr></thead><tbody>';
-    foreach ($results as $row) {
-        $date = gmdate('Y-m-d', strtotime($row->response_date) - 5 * 3600); // EST
-        $time = gmdate('H:i:s', strtotime($row->response_time) - 5 * 3600); // EST
-        echo "<tr><td>" . esc_html($row->id) . "</td><td>" . esc_html($row->response_type) . "</td><td>" . ($row->challenge_id ? esc_html($row->challenge_id) : 'N/A') . "</td><td>" . esc_html($row->challenge_text) . "</td><td>" . esc_html($date) . "</td><td>" . esc_html($time) . "</td></tr>";
+    // Handle POST actions (server-side)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['krt_action'])) {
+        $action = sanitize_text_field($_POST['krt_action']);
+
+        if ($action === 'add' && check_admin_referer('krt_challenge_nonce', 'krt_challenge_nonce_field')) {
+            $challenge_text = isset($_POST['challenge_text']) ? wp_kses_post($_POST['challenge_text']) : '';
+            $card_pack      = isset($_POST['card_pack']) ? sanitize_text_field($_POST['card_pack']) : '';
+            $has_bonus      = !empty($_POST['has_bonus']) ? 1 : 0;
+            if ($challenge_text !== '' && $card_pack !== '') {
+                $wpdb->insert($tbl_challenges, array(
+                    'challenge_text' => $challenge_text,
+                    'card_pack'      => $card_pack,
+                    'has_bonus'      => $has_bonus
+                ), array('%s','%s','%d'));
+                echo '<div class="updated"><p>Challenge added.</p></div>';
+                unset($_GET['edit']);
+            } else {
+                echo '<div class="error"><p>Challenge Text and Card Pack are required.</p></div>';
+            }
+        }
+
+        if ($action === 'edit' && check_admin_referer('krt_challenge_nonce', 'krt_challenge_nonce_field')) {
+            $id             = isset($_POST['id']) ? intval($_POST['id']) : 0;
+            $challenge_text = isset($_POST['challenge_text']) ? wp_kses_post($_POST['challenge_text']) : '';
+            $card_pack      = isset($_POST['card_pack']) ? sanitize_text_field($_POST['card_pack']) : '';
+            $has_bonus      = !empty($_POST['has_bonus']) ? 1 : 0;
+            if ($id > 0 && $challenge_text !== '' && $card_pack !== '') {
+                $wpdb->update($tbl_challenges, array(
+                    'challenge_text' => $challenge_text,
+                    'card_pack'      => $card_pack,
+                    'has_bonus'      => $has_bonus
+                ), array('id' => $id), array('%s','%s','%d'), array('%d'));
+                echo '<div class="updated"><p>Challenge updated.</p></div>';
+                unset($_GET['edit']);
+            } else {
+                echo '<div class="error"><p>Invalid edit request.</p></div>';
+            }
+        }
+
+        if ($action === 'delete' && check_admin_referer('krt_challenge_nonce', 'krt_challenge_nonce_field')) {
+            $id = isset($_POST['id']) ? intval($_POST['id']) : 0;
+            if ($id > 0) {
+                $wpdb->delete($tbl_challenges, array('id' => $id), array('%d'));
+                // also clear votes for this challenge (keeps counters accurate)
+                $wpdb->delete($tbl_responses, array('challenge_id' => $id), array('%d'));
+                echo '<div class="updated"><p>Challenge deleted.</p></div>';
+            } else {
+                echo '<div class="error"><p>Invalid delete request.</p></div>';
+            }
+        }
+
+        if ($action === 'bulk_assign' && check_admin_referer('krt_bulk_nonce', 'krt_bulk_nonce_field')) {
+            $ids_str   = isset($_POST['ids']) ? sanitize_text_field($_POST['ids']) : '';
+            $card_pack = isset($_POST['card_pack']) ? sanitize_text_field($_POST['card_pack']) : '';
+            $ids = array_filter(array_map('intval', explode(',', $ids_str)));
+            if (!empty($ids) && $card_pack !== '') {
+                $placeholders = implode(',', array_fill(0, count($ids), '%d'));
+                $sql = "UPDATE {$tbl_challenges} SET card_pack=%s WHERE id IN ($placeholders)";
+                $params = array_merge(array($card_pack), $ids);
+                $wpdb->query($wpdb->prepare($sql, $params));
+                echo '<div class="updated"><p>Packs assigned.</p></div>';
+            } else {
+                echo '<div class="error"><p>Provide IDs and a pack name.</p></div>';
+            }
+        }
+
+        if ($action === 'clear_counters' && check_admin_referer('krt_clear_nonce', 'krt_clear_nonce_field')) {
+            $wpdb->query("TRUNCATE TABLE {$tbl_responses}");
+            echo '<div class="updated"><p>All like/dislike counters have been reset.</p></div>';
+        }
+
+        if ($action === 'save_default_pack' && check_admin_referer('krt_default_nonce', 'krt_default_nonce_field')) {
+            $default_pack = isset($_POST['krt_default_pack']) ? sanitize_text_field($_POST['krt_default_pack']) : 'Original Pack';
+            update_option('krt_default_pack', $default_pack);
+            echo '<div class="updated"><p>Default deck saved.</p></div>';
+        }
     }
-    echo '</tbody></table></div>';
-}
 
-// Display challenges admin page
-function krt_display_challenges() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_challenges';
-    $challenges = $wpdb->get_results("SELECT * FROM $table_name ORDER BY id DESC");
+    // Are we editing a specific challenge?
+    $editing = null;
+    if (isset($_GET['edit'])) {
+        $edit_id = absint($_GET['edit']);
+        if ($edit_id) {
+            $editing = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$tbl_challenges} WHERE id=%d", $edit_id), ARRAY_A);
+        }
+    }
+
+    // Search & Sort (GET)
+    $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
+    $sort   = isset($_GET['sort']) ? sanitize_text_field($_GET['sort']) : 'newest'; // newest | likes | dislikes
+
+    // Build query
+    $where = array();
+    $params = array();
+    if ($search !== '') {
+        $like = '%' . $wpdb->esc_like($search) . '%';
+        $where[] = "(c.challenge_text LIKE %s OR c.card_pack LIKE %s)";
+        $params[] = $like; $params[] = $like;
+    }
+
+    $sql = "
+        SELECT 
+            c.id, c.challenge_text, c.card_pack, c.has_bonus, c.created_at,
+            COALESCE(SUM(CASE WHEN r.vote_type='like' THEN 1 ELSE 0 END),0) AS likes,
+            COALESCE(SUM(CASE WHEN r.vote_type='dislike' THEN 1 ELSE 0 END),0) AS dislikes
+        FROM {$tbl_challenges} c
+        LEFT JOIN {$tbl_responses} r ON r.challenge_id = c.id
+    ";
+    if ($where) { $sql .= " WHERE " . implode(' AND ', $where); }
+    $sql .= " GROUP BY c.id ";
+
+    switch ($sort) {
+        case 'likes':
+            $sql .= " ORDER BY likes DESC, c.id DESC ";
+            break;
+        case 'dislikes':
+            $sql .= " ORDER BY dislikes DESC, c.id DESC ";
+            break;
+        case 'newest':
+        default:
+            $sql .= " ORDER BY c.created_at DESC ";
+            break;
+    }
+
+    // Limit for admin table display (export can override)
+    $sql_display = $sql . " LIMIT 500 ";
+
+    $rows = $params ? $wpdb->get_results($wpdb->prepare($sql_display, $params), ARRAY_A)
+                    : $wpdb->get_results($sql_display, ARRAY_A);
+
+    $default_pack = get_option('krt_default_pack', 'Original Pack');
+    $edit_url_base = admin_url('admin.php?page=knotty-roulette');
+    $page_url      = admin_url('admin.php?page=knotty-roulette');
     ?>
     <div class="wrap">
-        <h1>Manage Challenges</h1>
-        <h2>Search Challenges</h2>
-        <form id="krt-search-challenges-form">
-            <input type="text" id="krt-search-input" placeholder="Search by challenge text..." style="width: 300px; padding: 5px;">
-            <button type="button" id="krt-clear-search" class="button button-secondary">Clear</button>
-            <p class="description">Enter a keyword to filter challenges (e.g., "flirt", "dance").</p>
+        <h1>Knotty Roulette — Manage Challenges</h1>
+
+        <!-- Filters: Sort + Search -->
+        <form method="get" style="margin: 0 0 16px;">
+            <input type="hidden" name="page" value="knotty-roulette" />
+            <label for="krt-sort">Sort by:</label>
+            <select name="sort" id="krt-sort">
+                <option value="newest"   <?php selected($sort, 'newest'); ?>>Newest</option>
+                <option value="likes"    <?php selected($sort, 'likes'); ?>>Most Likes</option>
+                <option value="dislikes" <?php selected($sort, 'dislikes'); ?>>Most Dislikes</option>
+            </select>
+            &nbsp;&nbsp;
+            <label for="krt-search">Search (text or pack):</label>
+            <input type="search" name="s" id="krt-search" value="<?php echo esc_attr($search); ?>" class="regular-text" />
+            <button class="button">Apply</button>
+            <a class="button" href="<?php echo esc_url($page_url); ?>">Clear</a>
         </form>
-        <h2>Add New Challenge</h2>
-        <form id="krt-add-challenge-form">
-            <table class="form-table">
+
+        <!-- Tools / Settings -->
+        <h2>Default Deck (Front End)</h2>
+        <form method="post" style="margin-bottom:20px;">
+            <?php wp_nonce_field('krt_default_nonce', 'krt_default_nonce_field'); ?>
+            <input type="hidden" name="krt_action" value="save_default_pack" />
+            <input type="text" name="krt_default_pack" class="regular-text" value="<?php echo esc_attr($default_pack); ?>" />
+            <button class="button button-primary">Save Default</button>
+            <p class="description">Front end loads this deck by default. For QA, you can override via <code>?deck=Your%20Deck</code> on the game URL.</p>
+        </form>
+
+        <!-- Bulk Assign moved to the top -->
+        <h2>Bulk Assign Pack</h2>
+        <form method="post" style="margin:10px 0 30px;">
+            <?php wp_nonce_field('krt_bulk_nonce', 'krt_bulk_nonce_field'); ?>
+            <input type="hidden" name="krt_action" value="bulk_assign" />
+            <p>
+                <label>Challenge IDs (comma separated):</label><br/>
+                <input type="text" name="ids" class="regular-text" placeholder="e.g. 1,2,3" />
+            </p>
+            <p>
+                <label>Card Pack:</label><br/>
+                <input type="text" name="card_pack" class="regular-text" placeholder="Original Pack" />
+            </p>
+            <p><button class="button">Assign Pack</button></p>
+        </form>
+
+        <!-- Export / Import -->
+        <h2>Export / Import</h2>
+        <div style="display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;">
+            <!-- Export -->
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" style="max-width:480px;">
+                <?php wp_nonce_field('krt_export_nonce', 'krt_export_nonce_field'); ?>
+                <input type="hidden" name="action" value="krt_export" />
+                <!-- preserve current filters/sorts -->
+                <input type="hidden" name="s" value="<?php echo esc_attr($search); ?>" />
+                <input type="hidden" name="sort" value="<?php echo esc_attr($sort); ?>" />
+                <p><label><input type="radio" name="scope" value="view" checked /> Export <strong>Current View</strong> (respects search & sort)</label></p>
+                <p><label><input type="radio" name="scope" value="all" /> Export <strong>All Challenges</strong></label></p>
+                <p><button class="button button-primary">Export CSV</button></p>
+                <p class="description">Columns: id, challenge_text, has_bonus, card_pack, created_at, likes, dislikes</p>
+            </form>
+
+            <!-- Import -->
+            <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" enctype="multipart/form-data" style="max-width:520px;">
+                <?php wp_nonce_field('krt_import_nonce', 'krt_import_nonce_field'); ?>
+                <input type="hidden" name="action" value="krt_import" />
+                <p><label>CSV File: <input type="file" name="csv_file" accept=".csv" required></label></p>
+                <p>
+                    <label>Mode:</label><br>
+                    <label><input type="radio" name="mode" value="upsert" checked> Upsert by ID (update if ID exists, insert otherwise)</label><br>
+                    <label><input type="radio" name="mode" value="append"> Append (ignore IDs, add all as new)</label>
+                </p>
+                <p>
+                    <label><input type="checkbox" name="dry_run" value="1" checked> Dry run (preview only, no changes)</label><br>
+                    <label><input type="checkbox" name="seed_votes" value="1"> Seed like/dislike counters from CSV (advanced)</label><br>
+                    <label style="margin-left:24px;"><input type="checkbox" name="seed_reset" value="1"> When seeding, clear existing votes for imported rows first</label>
+                </p>
+                <p><button class="button button-primary">Run Import</button></p>
+                <p class="description">CSV columns accepted (case-insensitive): id, challenge_text, has_bonus (0/1), card_pack, created_at (YYYY-MM-DD HH:MM:SS), likes, dislikes.<br>Leave <em>id</em> blank to insert a new row.</p>
+            </form>
+        </div>
+
+        <?php
+        // Edit form (top)
+        if ($editing): ?>
+        <h2>Edit Challenge #<?php echo esc_html($editing['id']); ?></h2>
+        <form method="post" style="margin-bottom:30px;">
+            <?php wp_nonce_field('krt_challenge_nonce', 'krt_challenge_nonce_field'); ?>
+            <input type="hidden" name="krt_action" value="edit" />
+            <input type="hidden" name="id" value="<?php echo esc_attr($editing['id']); ?>" />
+            <table class="form-table" role="presentation">
                 <tr>
-                    <th><label for="challenge_text">Challenge Text</label></th>
-                    <td>
-                        <textarea name="challenge_text" id="challenge_text" rows="4" style="width: 100%; max-width: 600px;" required></textarea>
-                        <p class="description">Use format: "Action – Bonus if..." for bonus challenges.</p>
-                    </td>
+                    <th scope="row"><label for="challenge_text_edit">Challenge Text</label></th>
+                    <td><textarea id="challenge_text_edit" name="challenge_text" rows="3" class="large-text" required><?php echo esc_textarea($editing['challenge_text']); ?></textarea></td>
                 </tr>
                 <tr>
-                    <th><label for="has_bonus">Has Bonus</label></th>
+                    <th scope="row"><label for="card_pack_edit">Card Pack</label></th>
+                    <td><input id="card_pack_edit" name="card_pack" type="text" class="regular-text" value="<?php echo esc_attr($editing['card_pack']); ?>" required /></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="has_bonus_edit">Bonus?</label></th>
                     <td>
-                        <input type="checkbox" name="has_bonus" id="has_bonus" value="1">
-                        <span class="description">Check if the challenge offers a bonus point opportunity.</span>
+                        <label>
+                            <input type="checkbox" id="has_bonus_edit" name="has_bonus" value="1" class="krt-bonus-toggle" <?php checked(intval($editing['has_bonus']) === 1); ?> />
+                            This is a bonus challenge
+                        </label>
+                        <p class="description krt-bonus-hint" style="display:none;margin-top:8px;">
+                            <strong>Reminder:</strong> add <em>– Bonus if…</em> at the end of your challenge text.
+                        </p>
                     </td>
                 </tr>
             </table>
             <p class="submit">
-                <input type="submit" class="button button-primary" value="Add Challenge">
+                <button class="button button-primary">Save Changes</button>
+                <a class="button" href="<?php echo esc_url($page_url); ?>">Cancel</a>
             </p>
         </form>
+        <?php else: ?>
+        <h2>Add New Challenge</h2>
+        <form id="krt-add-challenge-form" method="post">
+            <?php wp_nonce_field('krt_challenge_nonce', 'krt_challenge_nonce_field'); ?>
+            <input type="hidden" name="krt_action" value="add" />
+            <table class="form-table" role="presentation">
+                <tr>
+                    <th scope="row"><label for="challenge_text">Challenge Text</label></th>
+                    <td><textarea id="challenge_text" name="challenge_text" rows="3" class="large-text" required></textarea></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="card_pack">Card Pack</label></th>
+                    <td><input id="card_pack" name="card_pack" type="text" class="regular-text" placeholder="Original Pack" required /></td>
+                </tr>
+                <tr>
+                    <th scope="row"><label for="has_bonus">Bonus?</label></th>
+                    <td>
+                        <label>
+                            <input type="checkbox" id="has_bonus" name="has_bonus" value="1" class="krt-bonus-toggle" />
+                            This is a bonus challenge
+                        </label>
+                        <p class="description krt-bonus-hint" style="display:none;margin-top:8px;">
+                            <strong>Reminder:</strong> add <em>– Bonus if…</em> at the end of your challenge text.
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            <p class="submit"><button type="submit" class="button button-primary">Add Challenge</button></p>
+        </form>
+        <?php endif; ?>
+
+        <hr/>
+
         <h2>Existing Challenges</h2>
-        <table class="wp-list-table widefat fixed striped" id="krt-challenges-table">
+        <form method="post" style="margin:10px 0;">
+            <?php wp_nonce_field('krt_clear_nonce', 'krt_clear_nonce_field'); ?>
+            <input type="hidden" name="krt_action" value="clear_counters" />
+            <button class="button" onclick="return confirm('Reset ALL like/dislike counters?')">Reset All Counters</button>
+        </form>
+
+        <table class="widefat fixed striped">
             <thead>
                 <tr>
-                    <th style="width: 60px;">ID</th>
-                    <th>Challenge Text</th>
-                    <th style="width: 100px;">Has Bonus</th>
-                    <th style="width: 160px;">Created At</th>
-                    <th style="width: 150px;">Actions</th>
+                    <th style="width:60px;">ID</th>
+                    <th>Challenge</th>
+                    <th style="width:90px;">Bonus</th>
+                    <th style="width:160px;">Pack</th>
+                    <th style="width:90px;">Like</th>
+                    <th style="width:90px;">Dislike</th>
+                    <th style="width:180px;">Created</th>
+                    <th style="width:180px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($challenges as $challenge) : ?>
-                    <tr data-id="<?php echo esc_attr($challenge->id); ?>">
-                        <td><?php echo esc_html($challenge->id); ?></td>
-                        <td><?php echo esc_html($challenge->challenge_text); ?></td>
-                        <td><?php echo $challenge->has_bonus ? 'Yes' : 'No'; ?></td>
-                        <td><?php echo esc_html(gmdate('Y-m-d H:i:s', strtotime($challenge->created_at) - 5 * 3600)); // EST ?></td>
-                        <td>
-                            <button class="button button-secondary krt-edit-challenge" data-id="<?php echo esc_attr($challenge->id); ?>" data-text="<?php echo esc_attr($challenge->challenge_text); ?>" data-has-bonus="<?php echo esc_attr($challenge->has_bonus); ?>">Edit</button>
-                            <button class="button button-secondary krt-delete-challenge" data-id="<?php echo esc_attr($challenge->id); ?>">Delete</button>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
+            <?php if (!empty($rows)): foreach ($rows as $c): ?>
+                <tr>
+                    <td><?php echo esc_html($c['id']); ?></td>
+                    <td><?php echo esc_html($c['challenge_text']); ?></td>
+                    <td><?php echo intval($c['has_bonus']) ? 'Yes' : 'No'; ?></td>
+                    <td><?php echo esc_html($c['card_pack']); ?></td>
+                    <td><strong><?php echo intval($c['likes']); ?></strong></td>
+                    <td><strong><?php echo intval($c['dislikes']); ?></strong></td>
+                    <td><?php echo esc_html($c['created_at']); ?></td>
+                    <td>
+                        <a class="button" href="<?php echo esc_url( add_query_arg(array('page'=>'knotty-roulette','edit'=>$c['id']), admin_url('admin.php')) ); ?>">Edit</a>
+                        <form method="post" style="display:inline-block; margin-left:6px;">
+                            <?php wp_nonce_field('krt_challenge_nonce', 'krt_challenge_nonce_field'); ?>
+                            <input type="hidden" name="krt_action" value="delete" />
+                            <input type="hidden" name="id" value="<?php echo esc_attr($c['id']); ?>" />
+                            <button class="button button-secondary" onclick="return confirm('Delete this challenge?')">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            <?php endforeach; else: ?>
+                <tr><td colspan="8">No challenges found.</td></tr>
+            <?php endif; ?>
             </tbody>
         </table>
     </div>
-    <style>
-        #krt-add-challenge-form textarea { width: 100%; max-width: 600px; }
-        #krt-add-challenge-form .form-table th { width: 150px; }
-        .krt-edit-challenge, .krt-delete-challenge { margin-right: 5px; }
-        .wp-list-table th, .wp-list-table td { vertical-align: middle; }
-        .wp-list-table td { word-break: break-word; }
-        #krt-search-challenges-form { margin-bottom: 20px; }
-        #krt-search-input { margin-right: 10px; }
-        #krt-clear-search { vertical-align: middle; }
-    </style>
+
+    <!-- Tiny inline script to toggle the bonus syntax hint on Add & Edit forms -->
+    <script>
+    (function(){
+        function toggleHint(checkbox, hintEl) {
+            if (!checkbox || !hintEl) return;
+            hintEl.style.display = checkbox.checked ? 'block' : 'none';
+        }
+        document.querySelectorAll('form').forEach(function(form){
+            var chk  = form.querySelector('.krt-bonus-toggle');
+            var hint = form.querySelector('.krt-bonus-hint');
+            if (chk && hint) {
+                toggleHint(chk, hint);
+                chk.addEventListener('change', function(){ toggleHint(chk, hint); });
+            }
+        });
+    })();
+    </script>
     <?php
 }
 
-// AJAX handler to export CSV
-add_action('wp_ajax_krt_export_csv', 'krt_export_csv');
-function krt_export_csv() {
-    global $wpdb;
-    $table_name = $wpdb->prefix . 'knotty_roulette_responses';
-    $results = $wpdb->get_results("SELECT * FROM $table_name ORDER BY response_date DESC, response_time DESC", ARRAY_A);
+/* ==========================================================================
+ * EXPORT (admin-post)
+ * ========================================================================== */
+add_action('admin_post_krt_export', 'krt_handle_export');
+function krt_handle_export() {
+    if (!current_user_can('manage_options')) wp_die('Forbidden');
+    if (!isset($_POST['krt_export_nonce_field']) || !wp_verify_nonce($_POST['krt_export_nonce_field'], 'krt_export_nonce')) {
+        wp_die('Invalid nonce');
+    }
 
-    header('Content-Type: text/csv');
-    header('Content-Disposition: attachment; filename="knotty_roulette_responses_' . date('Y-m-d_H-i-s') . '.csv"');
-    header('Cache-Control: no-cache, no-store, must-revalidate');
+    global $wpdb;
+    $tbl_challenges = $wpdb->prefix . 'knotty_roulette_challenges';
+    $tbl_responses  = $wpdb->prefix . 'knotty_roulette_responses';
+
+    $scope  = isset($_POST['scope']) ? sanitize_text_field($_POST['scope']) : 'view';
+    $search = isset($_POST['s']) ? sanitize_text_field($_POST['s']) : '';
+    $sort   = isset($_POST['sort']) ? sanitize_text_field($_POST['sort']) : 'newest';
+
+    $where = array(); $params = array();
+    if ($search !== '') {
+        $like = '%' . $wpdb->esc_like($search) . '%';
+        $where[] = "(c.challenge_text LIKE %s OR c.card_pack LIKE %s)";
+        $params[] = $like; $params[] = $like;
+    }
+
+    $sql = "
+        SELECT 
+            c.id, c.challenge_text, c.card_pack, c.has_bonus, c.created_at,
+            COALESCE(SUM(CASE WHEN r.vote_type='like' THEN 1 ELSE 0 END),0) AS likes,
+            COALESCE(SUM(CASE WHEN r.vote_type='dislike' THEN 1 ELSE 0 END),0) AS dislikes
+        FROM {$tbl_challenges} c
+        LEFT JOIN {$tbl_responses} r ON r.challenge_id = c.id
+    ";
+    if ($where) $sql .= " WHERE " . implode(' AND ', $where);
+    $sql .= " GROUP BY c.id ";
+
+    switch ($sort) {
+        case 'likes':
+            $sql .= " ORDER BY likes DESC, c.id DESC ";
+            break;
+        case 'dislikes':
+            $sql .= " ORDER BY dislikes DESC, c.id DESC ";
+            break;
+        case 'newest':
+        default:
+            $sql .= " ORDER BY c.created_at DESC ";
+            break;
+    }
+
+    // Limit only if scope=view
+    if ($scope !== 'all') {
+        $sql .= " LIMIT 500 ";
+    }
+
+    $rows = $params ? $wpdb->get_results($wpdb->prepare($sql, $params), ARRAY_A)
+                    : $wpdb->get_results($sql, ARRAY_A);
+
+    // Output CSV
+    $filename = 'knotty_challenges_' . date('Ymd_His') . '.csv';
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename=' . $filename);
     header('Pragma: no-cache');
     header('Expires: 0');
 
-    $output = fopen('php://output', 'w');
-    fputcsv($output, ['ID', 'Response', 'Challenge ID', 'Challenge', 'Date', 'Time']);
-    foreach ($results as $row) {
-        $date = gmdate('Y-m-d', strtotime($row['response_date']) - 5 * 3600); // EST
-        $time = gmdate('H:i:s', strtotime($row['response_time']) - 5 * 3600); // EST
-        fputcsv($output, [$row['id'], $row['response_type'], $row['challenge_id'] ?: 'N/A', $row['challenge_text'], $date, $time]);
+    $out = fopen('php://output', 'w');
+    // UTF-8 BOM for Excel
+    fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+
+    fputcsv($out, array('id','challenge_text','has_bonus','card_pack','created_at','likes','dislikes'));
+    if ($rows) {
+        foreach ($rows as $r) {
+            fputcsv($out, array(
+                $r['id'],
+                $r['challenge_text'],
+                intval($r['has_bonus']) ? 1 : 0,
+                $r['card_pack'],
+                $r['created_at'],
+                intval($r['likes']),
+                intval($r['dislikes']),
+            ));
+        }
     }
-    fclose($output);
+    fclose($out);
     exit;
+}
+
+/* ==========================================================================
+ * IMPORT (admin-post)
+ * ========================================================================== */
+add_action('admin_post_krt_import', 'krt_handle_import');
+function krt_handle_import() {
+    if (!current_user_can('manage_options')) wp_die('Forbidden');
+    if (!isset($_POST['krt_import_nonce_field']) || !wp_verify_nonce($_POST['krt_import_nonce_field'], 'krt_import_nonce')) {
+        wp_die('Invalid nonce');
+    }
+
+    if (empty($_FILES['csv_file']['tmp_name'])) {
+        wp_redirect(add_query_arg(array('page'=>'knotty-roulette','krt_msg'=>'no_file'), admin_url('admin.php')));
+        exit;
+    }
+
+    $mode        = isset($_POST['mode']) ? sanitize_text_field($_POST['mode']) : 'upsert';
+    $dry_run     = !empty($_POST['dry_run']);
+    $seed_votes  = !empty($_POST['seed_votes']);
+    $seed_reset  = !empty($_POST['seed_reset']);
+
+    global $wpdb;
+    $tbl_challenges = $wpdb->prefix . 'knotty_roulette_challenges';
+    $tbl_responses  = $wpdb->prefix . 'knotty_roulette_responses';
+
+    $fh = fopen($_FILES['csv_file']['tmp_name'], 'r');
+    if (!$fh) {
+        wp_redirect(add_query_arg(array('page'=>'knotty-roulette','krt_msg'=>'file_open_error'), admin_url('admin.php')));
+        exit;
+    }
+
+    // Read header, map columns
+    $header = fgetcsv($fh);
+    if (!$header) {
+        fclose($fh);
+        wp_redirect(add_query_arg(array('page'=>'knotty-roulette','krt_msg'=>'bad_header'), admin_url('admin.php')));
+        exit;
+    }
+
+    $map = array(); // normalized name => index
+    foreach ($header as $idx => $name) {
+        $norm = strtolower(trim(preg_replace('/[^a-z0-9]+/i', '_', $name)));
+        $map[$norm] = $idx;
+    }
+    // Helper to get col by normalized key
+    $col = function($row, $key) use ($map) {
+        if (!isset($map[$key])) return '';
+        $val = isset($row[$map[$key]]) ? $row[$map[$key]] : '';
+        return is_string($val) ? trim($val) : $val;
+    };
+
+    $ins = $upd = $skipped = 0;
+    $seeded = 0;
+    $errors = array();
+    $line = 1; // counting from 1 including header
+
+    while (($row = fgetcsv($fh)) !== false) {
+        $line++;
+
+        $id            = trim($col($row, 'id'));
+        $text          = $col($row, 'challenge_text');
+        if ($text === '') $text = $col($row, 'challenge'); // fallback
+        $pack          = $col($row, 'card_pack');
+        $has_bonus_in  = $col($row, 'has_bonus');
+        $has_bonus     = krt_boolish_to_int($has_bonus_in);
+        $created       = $col($row, 'created_at');
+        $likes_csv     = intval($col($row, 'likes'));
+        $dislikes_csv  = intval($col($row, 'dislikes'));
+
+        if ($text === '' || $pack === '') {
+            $skipped++; $errors[] = "Line {$line}: missing challenge_text or card_pack"; continue;
+        }
+
+        $existing = null;
+        $will_update = false;
+
+        if ($mode === 'upsert' && ctype_digit($id) && intval($id) > 0) {
+            $existing = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$tbl_challenges} WHERE id=%d", intval($id)), ARRAY_A);
+            $will_update = (bool)$existing;
+        }
+
+        if ($dry_run) {
+            if ($will_update) $upd++; else $ins++;
+            if ($seed_votes) $seeded += ($likes_csv + $dislikes_csv);
+            continue;
+        }
+
+        // Not dry run: perform DB write
+        if ($will_update) {
+            $wpdb->update($tbl_challenges, array(
+                'challenge_text' => $text,
+                'card_pack'      => $pack,
+                'has_bonus'      => $has_bonus
+            ), array('id' => intval($id)), array('%s','%s','%d'), array('%d'));
+            $upd++;
+            $challenge_id = intval($id);
+        } else {
+            // insert new; ignore provided id for safety
+            $data = array(
+                'challenge_text' => $text,
+                'card_pack'      => $pack,
+                'has_bonus'      => $has_bonus
+            );
+            $fmt  = array('%s','%s','%d');
+            if ($created !== '') {
+                $ts = strtotime($created);
+                if ($ts !== false) { $data['created_at'] = date('Y-m-d H:i:s', $ts); $fmt[] = '%s'; }
+            }
+            $ok = $wpdb->insert($tbl_challenges, $data, $fmt);
+            if ($ok === false) {
+                $skipped++; $errors[] = "Line {$line}: DB insert failed";
+                continue;
+            }
+            $ins++;
+            $challenge_id = intval($wpdb->insert_id);
+        }
+
+        // Seed votes if requested
+        if ($seed_votes) {
+            if ($seed_reset) {
+                $wpdb->delete($tbl_responses, array('challenge_id' => $challenge_id), array('%d'));
+            }
+            // Count current
+            $current = $wpdb->get_row($wpdb->prepare("
+                SELECT 
+                    COALESCE(SUM(CASE WHEN vote_type='like' THEN 1 ELSE 0 END),0) AS likes,
+                    COALESCE(SUM(CASE WHEN vote_type='dislike' THEN 1 ELSE 0 END),0) AS dislikes
+                FROM {$tbl_responses} WHERE challenge_id=%d
+            ", $challenge_id), ARRAY_A);
+
+            $need_like    = max(0, $likes_csv - intval($current['likes']));
+            $need_dislike = max(0, $dislikes_csv - intval($current['dislikes']));
+
+            // Insert the minimal additional rows needed
+            for ($i=0; $i<$need_like; $i++) {
+                $wpdb->insert($tbl_responses, array(
+                    'challenge_id' => $challenge_id,
+                    'vote_type'    => 'like'
+                ), array('%d','%s'));
+            }
+            for ($i=0; $i<$need_dislike; $i++) {
+                $wpdb->insert($tbl_responses, array(
+                    'challenge_id' => $challenge_id,
+                    'vote_type'    => 'dislike'
+                ), array('%d','%s'));
+            }
+            $seeded += ($need_like + $need_dislike);
+        }
+    }
+    fclose($fh);
+
+    $msg = array();
+    if ($dry_run) $msg[] = 'Dry run only.';
+    $msg[] = "Inserted: {$ins}";
+    $msg[] = "Updated: {$upd}";
+    if ($skipped) $msg[] = "Skipped: {$skipped}";
+    if ($seed_votes) $msg[] = "Votes seeded: {$seeded}";
+    if (!empty($errors)) {
+        // store errors in transient for display (5 minutes)
+        $key = 'krt_import_errors_' . get_current_user_id();
+        set_transient($key, $errors, 5 * MINUTE_IN_SECONDS);
+        wp_redirect(add_query_arg(array(
+            'page' => 'knotty-roulette',
+            'krt_msg' => rawurlencode(implode(' | ', $msg)),
+            'krt_errkey' => $key
+        ), admin_url('admin.php')));
+    } else {
+        wp_redirect(add_query_arg(array(
+            'page' => 'knotty-roulette',
+            'krt_msg' => rawurlencode(implode(' | ', $msg))
+        ), admin_url('admin.php')));
+    }
+    exit;
+}
+
+/* Show import messages if any */
+add_action('admin_notices', function() {
+    if (!is_admin() || !isset($_GET['page']) || $_GET['page'] !== 'knotty-roulette') return;
+    if (isset($_GET['krt_msg'])) {
+        echo '<div class="updated"><p>' . esc_html($_GET['krt_msg']) . '</p></div>';
+    }
+    if (isset($_GET['krt_errkey'])) {
+        $errs = get_transient(sanitize_text_field($_GET['krt_errkey']));
+        if ($errs && is_array($errs)) {
+            echo '<div class="error"><p><strong>Import errors:</strong></p><ul style="margin-left:18px;">';
+            foreach ($errs as $e) echo '<li>' . esc_html($e) . '</li>';
+            echo '</ul></div>';
+            delete_transient(sanitize_text_field($_GET['krt_errkey']));
+        }
+    }
+});
+
+/* ==========================================================================
+ * Frontend AJAX: fetch challenges + vote  (GET/POST + strict has_bonus)
+ * ========================================================================== */
+add_action('wp_ajax_nopriv_krt_fetch_challenges', 'krt_fetch_challenges');
+add_action('wp_ajax_krt_fetch_challenges', 'krt_fetch_challenges');
+function krt_fetch_challenges() {
+    // Accept nonce from 'nonce' or '_ajax_nonce' and via GET/POST
+    $nonce = isset($_REQUEST['nonce']) ? $_REQUEST['nonce'] : (isset($_REQUEST['_ajax_nonce']) ? $_REQUEST['_ajax_nonce'] : '');
+    if (!wp_verify_nonce($nonce, 'krt_nonce')) { wp_send_json_error('Invalid nonce', 403); }
+
+    global $wpdb;
+    $tbl_challenges = $wpdb->prefix . 'knotty_roulette_challenges';
+
+    $card_pack = isset($_REQUEST['card_pack']) ? sanitize_text_field(wp_unslash($_REQUEST['card_pack'])) : '';
+
+    $sql = "SELECT id, challenge_text, card_pack, CAST(has_bonus AS UNSIGNED) AS has_bonus FROM {$tbl_challenges}";
+    $params = array();
+    if ($card_pack !== '') { $sql .= " WHERE card_pack = %s"; $params[] = $card_pack; }
+
+    $rows = $params ? $wpdb->get_results($wpdb->prepare($sql, $params)) : $wpdb->get_results($sql);
+    if (!is_array($rows) || empty($rows)) { wp_send_json_error('No challenges found'); }
+
+    foreach ($rows as &$r) { $r->has_bonus = (intval($r->has_bonus) === 1) ? 1 : 0; }
+    wp_send_json_success($rows);
+}
+
+add_action('wp_ajax_nopriv_krt_vote', 'krt_vote');
+add_action('wp_ajax_krt_vote', 'krt_vote');
+function krt_vote() {
+    // Accept nonce from 'nonce' or '_ajax_nonce' and via GET/POST
+    $nonce = isset($_REQUEST['nonce']) ? $_REQUEST['nonce'] : (isset($_REQUEST['_ajax_nonce']) ? $_REQUEST['_ajax_nonce'] : '');
+    if (!wp_verify_nonce($nonce, 'krt_nonce')) { wp_send_json_error('Invalid nonce', 403); }
+
+    $challenge_id = isset($_REQUEST['challenge_id']) ? intval($_REQUEST['challenge_id']) : 0;
+    $vote_type    = isset($_REQUEST['vote_type']) ? sanitize_text_field(wp_unslash($_REQUEST['vote_type'])) : '';
+
+    if ($vote_type === 'upvote') $vote_type = 'like';
+    if ($vote_type === 'downvote') $vote_type = 'dislike';
+
+    if ($challenge_id <= 0 || !in_array($vote_type, array('like','dislike'), true)) {
+        wp_send_json_error('Invalid request', 400);
+    }
+
+    global $wpdb;
+    $tbl_responses = $wpdb->prefix . 'knotty_roulette_responses';
+
+    $ok = $wpdb->insert($tbl_responses, array(
+        'challenge_id' => $challenge_id,
+        'vote_type'    => $vote_type
+    ), array('%d','%s'));
+
+    if ($ok) { wp_send_json_success(true); }
+    else { wp_send_json_error('Failed to record vote'); }
 }

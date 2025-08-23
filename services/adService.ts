@@ -130,9 +130,10 @@ class AdService {
 
   /**
    * Track spin and show ad if needed
+   * @returns {Promise<boolean>} True if an ad was shown, false otherwise
    */
-  async trackSpin(): Promise<void> {
-    if (!InterstitialAd || userService.isPremium()) return;
+  async trackSpin(): Promise<boolean> {
+    if (!InterstitialAd || userService.isPremium()) return false;
 
     this.spinCount++;
     if (this.spinCount >= this.SPINS_BEFORE_AD) {
@@ -141,7 +142,10 @@ class AdService {
       
       // Track ad view for upsell logic
       await upsellService.trackAdView();
+      return true; // Ad was shown
     }
+    
+    return false; // No ad was shown
   }
 
   /**

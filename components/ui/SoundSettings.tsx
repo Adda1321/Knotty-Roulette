@@ -9,11 +9,12 @@ import {
   View,
 } from "react-native";
 import { Surface } from "react-native-paper";
-import {COLORS, FONTS, SIZES } from "../../constants/theme";
+import { COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import audioService from "../../services/audio";
 import backgroundMusic from "../../services/backgroundMusic";
 import Button from "./Button";
+
 interface SoundSettingsProps {
   onPress: () => void;
 }
@@ -124,7 +125,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                   style={[
                     styles.toggleButton,
                     {backgroundColor:COLORS.ONLINE},
-                    isMusicMuted && styles.toggleButtonMuted,
+                    isMusicMuted &&  {backgroundColor:COLORS.PRIMARY},
                   ]}
                   onPress={toggleMusicMute}
                 >
@@ -153,7 +154,8 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                   style={[
                     styles.toggleButton,
                     {backgroundColor:COLORS.ONLINE},
-                    isSoundsMuted && styles.toggleButtonMuted,
+                    isSoundsMuted && {backgroundColor:COLORS.PRIMARY},
+,
                   ]}
                   onPress={toggleSoundsMute}
                 >
@@ -186,7 +188,10 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                   style={[
                     styles.toggleButton,
                     {backgroundColor:COLORS.ONLINE},
-                    !isVibrationEnabled && styles.toggleButtonMuted,
+                   !isVibrationEnabled &&
+    (currentTheme === THEME_PACKS.COUPLE
+      ? { backgroundColor: COLORS.PRIMARY }
+      : styles.toggleButtonMuted),
                   ]}
                   onPress={toggleVibration}
                 >

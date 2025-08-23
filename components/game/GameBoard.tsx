@@ -21,12 +21,14 @@ import {
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import adService from "../../services/adService";
 import audioService from "../../services/audio";
+import upsellService from "../../services/upsellService";
 import { Challenge, Player } from "../../types/game";
 import Button from "../ui/Button";
 
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
 import StoreButton from "../ui/StoreButton";
+import UpsellModal from "../ui/UpsellModal";
 import ChallengeDisplay from "./ChallengeDisplay";
 import GameRules from "./GameRules";
 import Scoreboard from "./Scoreboard";
@@ -40,6 +42,7 @@ interface GameBoardProps {
   onPlayerTurnComplete: (playerIndex: number, points: number) => void;
   onResetGame: () => void;
   onRulesShown: () => void;
+  onUpsellTrigger?: (upsellType: import("../../services/upsellService").UpsellType) => void;
 }
 
 const { width } = Dimensions.get("window");
@@ -53,6 +56,7 @@ export default function GameBoard({
   onPlayerTurnComplete,
   onResetGame,
   onRulesShown,
+  onUpsellTrigger,
 }: GameBoardProps) {
   const [isSpinning, setIsSpinning] = useState(false);
   const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(
@@ -66,6 +70,8 @@ export default function GameBoard({
     points: number;
     action: "complete" | "pass" | "bonus";
   } | null>(null);
+  const [showUpsellModal, setShowUpsellModal] = useState(false);
+  const [currentUpsellOffer, setCurrentUpsellOffer] = useState<any>(null);
   const rotation = useRef(new Animated.Value(0)).current;
   const spinButtonScale = useRef(new Animated.Value(1)).current;
   const wheelScale = useRef(new Animated.Value(1)).current;
@@ -117,6 +123,24 @@ export default function GameBoard({
     setShowChallenge(false);
     setIsSpinning(false); // Ensure spinning state is reset
     onPlayerTurnComplete(currentPlayerIndex, points);
+    
+    // Check for game over upsell (for Ad-Free users)
+    checkGameOverUpsell();
+  };
+
+  const checkGameOverUpsell = async () => {
+    try {
+      const upsellType = await upsellService.trackGameOver();
+      if (upsellType !== 'none') {
+        const offer = upsellService.getUpsellOffer(upsellType, 'game_over');
+        if (offer) {
+          setCurrentUpsellOffer(offer);
+          setShowUpsellModal(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error checking game over upsell:', error);
+    }
   };
 
   const handleChallengeComplete = (
@@ -182,6 +206,12 @@ export default function GameBoard({
 
     // Track spin for ad display (every 3 spins for free users)
     await adService.trackSpin();
+
+    // Check if upsell should be triggered after ad
+    const upsellType = await upsellService.trackAdView();
+    if (upsellType !== 'none' && onUpsellTrigger) {
+      onUpsellTrigger(upsellType);
+    }
 
     setShowChallenge(false);
     setCurrentChallenge(null);
@@ -527,6 +557,19 @@ export default function GameBoard({
             completionData?.action === "bonus"
           }
         />
+
+        {/* Upsell Modal */}
+        {currentUpsellOffer && (
+          <UpsellModal
+            visible={showUpsellModal}
+            onClose={() => setShowUpsellModal(false)}
+            onPurchaseSuccess={() => {
+              setShowUpsellModal(false);
+              // Refresh any necessary data after purchase
+            }}
+            offer={currentUpsellOffer}
+          />
+        )}
       </View>
 
       {/* Theme Store - Navigate to page instead of modal */}

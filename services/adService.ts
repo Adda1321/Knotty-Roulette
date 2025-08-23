@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import upsellService from './upsellService';
 import userService from './userService';
 
 // Debug: Log the environment info
@@ -137,6 +138,9 @@ class AdService {
     if (this.spinCount >= this.SPINS_BEFORE_AD) {
       await this.showInterstitialAd();
       this.spinCount = 0;
+      
+      // Track ad view for upsell logic
+      await upsellService.trackAdView();
     }
   }
 
@@ -172,6 +176,8 @@ class AdService {
 
     if (userService.isPremium()) {
       this.cleanup();
+      // Reset upsell ad count when user becomes premium
+      await upsellService.resetAdCount();
     } else {
       await this.initialize();
     }

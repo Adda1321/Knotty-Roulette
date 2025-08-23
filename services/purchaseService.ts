@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import upsellService from "./upsellService";
 import userService from "./userService";
 
 // Simple check: Are we in production?
@@ -122,10 +123,14 @@ class PurchaseService {
         for (const purchase of purchases) {
           if (purchase.acknowledged) {
             await userService.setPremium("lifetime");
+            // Check for post-purchase upsells
+            await upsellService.checkPostPurchaseUpsell('ad_free');
           } else {
             try {
               await iapService.finishTransactionAsync(purchase, true);
               await userService.setPremium("lifetime");
+              // Check for post-purchase upsells
+              await upsellService.checkPostPurchaseUpsell('ad_free');
             } catch (acknowledgmentError) {
               console.error("❌ Failed to acknowledge purchase:", acknowledgmentError);
             }
@@ -204,6 +209,8 @@ class PurchaseService {
     if (shouldShowMockData()) {
       await new Promise(resolve => setTimeout(resolve, 2000));
       await userService.setPremium("lifetime");
+      // Check for post-purchase upsells
+      await upsellService.checkPostPurchaseUpsell('ad_free');
       return true;
     }
 

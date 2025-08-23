@@ -257,3 +257,10 @@ export const THEME_COLORS = {
     SHADOW_DARK: "#000000",
   },
 } as const;
+
+// Upsell Configuration
+export const UPSELL_CONFIG = {
+  AD_COUNT_BEFORE_UPSELL: 1, // Change this value for testing (e.g., 3, 7, 10)
+  GAME_OVER_UPSELL_FREQUENCY: 3, // Show upsell every N game overs for premium users
+  SHOP_ENTRY_UPSELL_FREQUENCY: 5, // Show upsell every N shop visits for premium users
+};

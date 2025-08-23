@@ -1,23 +1,20 @@
 // WordPress Backend Configuration
-// Update these values with your actual WordPress site details
+// Updated to use the new REST API endpoints
 
 export const WORDPRESS_CONFIG = {
   // Your WordPress site URL (without trailing slash)
   SITE_URL: 'https://www.knottytimes.com',
   
-  // AJAX endpoint - automatically generated from SITE_URL
-  get AJAX_URL() {
-    return `${this.SITE_URL}/wp-admin/admin-ajax.php`;
+  // REST API base URL
+  get REST_API_BASE() {
+    return `${this.SITE_URL}/wp-json/krt/v1`;
   },
   
-  // WordPress nonce for AJAX requests
-  // This should be dynamically generated in a real implementation
-  NONCE: 'placeholder-nonce', // Temporary placeholder
-  
-  // Plugin action names
-  ACTIONS: {
-    GET_CHALLENGES: 'krt_fetch_challenges', // Fixed: matches backend endpoint
-    LOG_RESPONSE: 'krt_vote', // Fixed: matches backend endpoint
+  // REST API endpoints
+  ENDPOINTS: {
+    CHALLENGES: '/challenges',
+    VOTE: '/vote',
+    TRACK_PLAY: '/track-play',
   },
   
   // API timeout in milliseconds

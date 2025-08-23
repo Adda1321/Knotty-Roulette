@@ -1,20 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Animated,
-  Image,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Animated,
+    Image,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { Surface } from "react-native-paper";
 import Toast from "react-native-toast-message";
 import {
-  ANIMATION_CONFIGS,
-  ANIMATION_VALUES,
+    ANIMATION_CONFIGS,
+    ANIMATION_VALUES,
 } from "../../constants/animations";
 import { COLORS, FONTS, SIZES } from "../../constants/theme";
 import { logVote } from "../../services/api";
@@ -34,6 +34,17 @@ export default function ChallengeDisplay({
   playerName,
   onComplete,
 }: ChallengeDisplayProps) {
+  // Debug logging for challenge display
+  useEffect(() => {
+    console.log(`📱 ChallengeDisplay showing challenge:`, {
+      id: challenge.id,
+      text: challenge.challenge_text.substring(0, 60) + "...",
+      card_pack: challenge.card_pack,
+      has_bonus: challenge.has_bonus,
+      playerName: playerName
+    });
+  }, [challenge, playerName]);
+
   const [hasVoted, setHasVoted] = useState(false);
   const [isVoting, setIsVoting] = useState(false);
   const [votingType, setVotingType] = useState<"upvote" | "downvote" | null>(
@@ -74,22 +85,44 @@ export default function ChallengeDisplay({
     setVotingType(voteType);
 
     try {
-      await logVote({
+      const voteResponse = await logVote({
         challengeId: challenge.id,
         challengeText: challenge.challenge_text,
         playerName,
         voteType,
       });
+      
       setHasVoted(true);
 
-      // Show success notification
-      Toast.show({
-        type: "success",
-        text1: "Vote Submitted!",
-        text2: `Your ${voteType} has been recorded`,
-        position: "top",
-        visibilityTime: 2000,
-      });
+      // Handle the response based on the documented API behavior
+      if (voteResponse.already_voted) {
+        // User already voted on this challenge - show appropriate message
+        Toast.show({
+          type: "info",
+          text1: "Already Voted",
+          text2: "You've already voted on this challenge",
+          position: "top",
+          visibilityTime: 2000,
+        });
+        
+        console.log('Vote response - already voted:', voteResponse);
+      } else {
+        // New vote submitted successfully
+        Toast.show({
+          type: "success",
+          text1: "Vote Submitted!",
+          text2: `Your ${voteType} has been recorded`,
+          position: "top",
+          visibilityTime: 2000,
+        });
+        
+        console.log('Vote response - new vote:', voteResponse);
+        console.log('Updated counts - Likes:', voteResponse.likes, 'Dislikes:', voteResponse.dislikes);
+      }
+
+      // Note: The API returns updated like/dislike counts that could be used
+      // to update the UI if you want to show real-time vote counts
+      
     } catch (error) {
       console.error("Error logging vote:", error);
 

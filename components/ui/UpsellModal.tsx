@@ -25,7 +25,18 @@ export default function UpsellModal({ visible, onClose, onPurchaseSuccess, onPur
     return null;
   }
 
+  // Handle "Maybe Later" button with audio and haptic feedback
+  const handleMaybeLater = () => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium");
+    onClose();
+  };
+
   const handlePrimaryPurchase = async () => {
+    // Add audio and haptic feedback when button is pressed
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("light");
+    
     setIsPrimaryPurchasing(true);
     try {
       let success = false;
@@ -73,6 +84,10 @@ export default function UpsellModal({ visible, onClose, onPurchaseSuccess, onPur
 
   const handleSecondaryPurchase = async () => {
     if (!offer.secondaryButton) return;
+    
+    // Add audio and haptic feedback when button is pressed
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("light");
     
     setIsSecondaryPurchasing(true);
     try {
@@ -149,7 +164,7 @@ export default function UpsellModal({ visible, onClose, onPurchaseSuccess, onPur
   return (
     <CustomModal
       visible={visible}
-      onClose={onClose}
+      onClose={handleMaybeLater}
       title={getModalTitle()}
       // message={getModalMessage()}
       showCloseButton={true}

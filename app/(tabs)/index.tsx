@@ -14,7 +14,7 @@ import PurchaseCelebrationModal from "../../components/ui/PurchaseCelebrationMod
 import { COLORS, FONTS, GAME_CONFIG, SIZES } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import adService from "../../services/adService";
-import { fetchChallenges } from "../../services/api";
+import { fetchAllChallenges, fetchChallenges, getChallengesByTheme, trackPlay } from "../../services/api";
 import audioService from "../../services/audio";
 import { themePackService } from "../../services/themePackService";
 import upsellService, { UpsellOffer, UpsellType } from "../../services/upsellService";
@@ -73,6 +73,23 @@ export default function HomeScreen() {
     }
   }, []);
 
+  // New function to refresh challenges when theme changes (much faster)
+  const refreshChallengesForTheme = useCallback((themeId?: string) => {
+    try {
+      const currentTheme = themeId || themePackService.getCurrentPack();
+      console.log("🎨 Refreshing challenges for theme:", currentTheme);
+      
+      // Use cached data for instant theme switching
+      const themeChallenges = getChallengesByTheme(currentTheme);
+      setChallenges(themeChallenges);
+      setIsOnline(true);
+    } catch (error) {
+      console.error("Error refreshing challenges for theme:", error);
+      // Fallback to full reload if needed
+      loadChallenges();
+    }
+  }, [loadChallenges]);
+
   const initializeServices = useCallback(async () => {
     try {
       // Initialize user service first
@@ -82,6 +99,10 @@ export default function HomeScreen() {
       await adService.initialize();
       await purchaseService.initialize();
 
+      // Pre-load all challenges for fast theme switching
+      console.log("🚀 Pre-loading all challenges for fast theme switching...");
+      await fetchAllChallenges();
+      
       // Load challenges with current theme
       await loadChallenges();
     } catch (error) {
@@ -103,12 +124,13 @@ export default function HomeScreen() {
         newThemeId,
         "- refreshing challenges..."
       );
-      await loadChallenges();
+      // Use fast refresh instead of full reload
+      refreshChallengesForTheme(newThemeId);
     });
 
     // Cleanup subscription on unmount
     return unsubscribe;
-  }, [onThemeChange, loadChallenges]);
+  }, [onThemeChange, refreshChallengesForTheme]);
 
   // Refresh challenges when screen comes into focus (e.g., returning from theme store)
   useFocusEffect(
@@ -118,12 +140,18 @@ export default function HomeScreen() {
       );
       // Only refresh if we're not in the middle of a game
       if (gameState === "setup") {
-        loadChallenges();
+        // Use fast refresh if we have cached data, otherwise full reload
+        try {
+          refreshChallengesForTheme();
+        } catch (error) {
+          console.log("Fast refresh failed, falling back to full reload");
+          loadChallenges();
+        }
       }
-    }, [gameState, loadChallenges])
+    }, [gameState, refreshChallengesForTheme, loadChallenges])
   );
 
-  const startGame = (playerNames: string[]) => {
+  const startGame = async (playerNames: string[]) => {
     console.log("Received player names:", playerNames);
     const newPlayers = playerNames.map((name, index) => ({
       id: index,
@@ -138,6 +166,17 @@ export default function HomeScreen() {
 
     // Reset ad service spin counter for new game
     adService.resetSpinCounter();
+    
+    // Track the game start with the backend
+    try {
+      const playStats = await trackPlay();
+      if (playStats) {
+        console.log('🎮 Game play tracked:', playStats);
+      }
+    } catch (error) {
+      console.error('Failed to track game play:', error);
+      // Don't block the game start if tracking fails
+    }
   };
 
   const resetGame = () => {

@@ -76,8 +76,11 @@ export default function ThemeStore({
     null
   );
   const [passiveOffers, setPassiveOffers] = useState<any[]>([]);
-  const [showPurchaseCelebrationModal, setShowPurchaseCelebrationModal] = useState(false);
-  const [purchaseType, setPurchaseType] = useState<'ad_free' | 'theme_packs' | 'all_in_bundle' | 'complete_set' | null>(null);
+  const [showPurchaseCelebrationModal, setShowPurchaseCelebrationModal] =
+    useState(false);
+  const [purchaseType, setPurchaseType] = useState<
+    "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null
+  >(null);
 
   // Load theme packs with current status
   useEffect(() => {
@@ -87,24 +90,33 @@ export default function ThemeStore({
 
   const checkShopEntryUpsell = async () => {
     try {
-      console.log('🛍️ ThemeStore: Checking shop entry upsell...');
+      console.log("🛍️ ThemeStore: Checking shop entry upsell...");
       const upsellType = await upsellService.trackShopEntry();
-      console.log('🛍️ ThemeStore: Shop entry upsell result:', upsellType);
-      
+      console.log("🛍️ ThemeStore: Shop entry upsell result:", upsellType);
+
       if (upsellType !== "none") {
-        console.log('🛍️ ThemeStore: Getting upsell offer for type:', upsellType);
+        console.log(
+          "🛍️ ThemeStore: Getting upsell offer for type:",
+          upsellType
+        );
         const offer = upsellService.getUpsellOffer(upsellType, "shop_entry");
-        console.log('🛍️ ThemeStore: Upsell offer result:', offer);
-        
+        console.log("🛍️ ThemeStore: Upsell offer result:", offer);
+
         if (offer) {
-          console.log('🛍️ ThemeStore: Setting upsell modal with offer:', offer.id);
+          console.log(
+            "🛍️ ThemeStore: Setting upsell modal with offer:",
+            offer.id
+          );
           setCurrentUpsellOffer(offer);
           setShowUpsellModal(true);
         } else {
-          console.log('🛍️ ThemeStore: No offer returned for upsell type:', upsellType);
+          console.log(
+            "🛍️ ThemeStore: No offer returned for upsell type:",
+            upsellType
+          );
         }
       } else {
-        console.log('🛍️ ThemeStore: No upsell needed (type: none)');
+        console.log("🛍️ ThemeStore: No upsell needed (type: none)");
       }
     } catch (error) {
       console.error("Error checking shop entry upsell:", error);
@@ -166,6 +178,10 @@ export default function ThemeStore({
     // Debug: Log user status and passive offers
     const isPremium = userService.isPremium();
     const purchasedPacks = themePackService.getPurchasedPacks();
+    const hasAdFreeBundle = offers.some(
+      (offer) => offer.primaryButton.action === "ad_free"
+    );
+
     console.log("🔍 ThemeStore Debug:", {
       userStatus: isPremium ? "Premium (Ad-Free)" : "Free User",
       ownedThemePacks: purchasedPacks.length,
@@ -176,9 +192,13 @@ export default function ThemeStore({
         id: o.id,
         title: o.title,
         price: o.primaryButton.price,
+        action: o.primaryButton.action,
       })),
-      adFreeButtonVisible: !isPremium,
-      adFreeButtonAction: "Direct Ad-Free purchase ($2.99)",
+      hasAdFreeBundle: hasAdFreeBundle,
+      adFreeButtonVisible: !isPremium && !hasAdFreeBundle,
+      adFreeButtonReason: hasAdFreeBundle
+        ? "Hidden - Ad-Free bundle available"
+        : "Visible - No Ad-Free bundle",
     });
   };
 
@@ -674,7 +694,9 @@ export default function ThemeStore({
     setShowUpsellModal(false);
   };
 
-  const handlePurchaseComplete = (type: 'ad_free' | 'theme_packs' | 'all_in_bundle' | 'complete_set') => {
+  const handlePurchaseComplete = (
+    type: "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set"
+  ) => {
     setPurchaseType(type);
     setShowPurchaseCelebrationModal(true);
   };
@@ -708,21 +730,24 @@ export default function ThemeStore({
           </View>
         </View>
         <View>
-          {!userService.isPremium() && (
-            <TouchableOpacity
-              style={[
-                styles.adFreeButton,
-                isAdFreePurchasing && styles.adFreeButtonDisabled,
-              ]}
-              onPress={() => handleAdFreeOnlyPurchase()}
-              activeOpacity={0.8}
-              disabled={isAdFreePurchasing}
-            >
-              <Text style={styles.adFreeButtonText}>
-                {isAdFreePurchasing ? "Purchasing..." : "Ad-Free Only"}
-              </Text>
-            </TouchableOpacity>
-          )}
+          {!userService.isPremium() &&
+            !passiveOffers.some(
+              (offer) => offer.primaryButton.action === "ad_free"
+            ) && (
+              <TouchableOpacity
+                style={[
+                  styles.adFreeButton,
+                  isAdFreePurchasing && styles.adFreeButtonDisabled,
+                ]}
+                onPress={() => handleAdFreeOnlyPurchase()}
+                activeOpacity={0.8}
+                disabled={isAdFreePurchasing}
+              >
+                <Text style={styles.adFreeButtonText}>
+                  {isAdFreePurchasing ? "Purchasing..." : "Ad-Free Only"}
+                </Text>
+              </TouchableOpacity>
+            )}
         </View>
         <View style={styles.contentContainer}>
           <ScrollView
@@ -1067,7 +1092,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
   },
   themesSection: {
-    marginTop: SIZES.PADDING_LARGE,
+    marginVertical: SIZES.PADDING_LARGE,
   },
   themesGrid: {
     flexDirection: "row",
@@ -1083,8 +1108,6 @@ const styles = StyleSheet.create({
     width: (screenWidth - SIZES.PADDING_LARGE * 2.7) / 2,
     minHeight: 200,
     maxWidth: 180,
-    // borderWidth: 1, // Removed border
-    // borderColor: COLORS.CARD_BORDER, // Removed border
     ...SIZES.SHADOW_SMALL,
     overflow: "hidden", // Ensure content doesn't overflow
   },

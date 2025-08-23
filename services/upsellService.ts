@@ -205,36 +205,80 @@ class UpsellService {
     const actualPurchasedPacks = purchasedPacks.filter(pack => pack !== 'default');
     const actualOwnedPacks = actualPurchasedPacks.length;
 
+    // Debug logging
+    console.log(`🎯 UpsellService: Generating offer for type "${type}", trigger "${triggerType}"`);
+    console.log(`   - User has Ad-Free: ${hasAdFree}`);
+    console.log(`   - Purchased packs: ${purchasedPacks.join(', ')}`);
+    console.log(`   - Actual owned packs (excluding default): ${actualOwnedPacks}`);
+    console.log(`   - Has all theme packs: ${actualOwnedPacks >= 2}`);
+    console.log(`   - Has some theme packs: ${actualOwnedPacks >= 1}`);
+    console.log(`   - Offer logic: ${actualOwnedPacks >= 2 ? 'ad-free only' : actualOwnedPacks >= 1 ? 'ad-free only (no bundle)' : 'both options'}`);
+
     switch (type) {
       case 'initial':
         // Free user after Xth ad or shop entry - allow both triggers
         if (triggerType !== 'ad_based' && triggerType !== 'shop_entry') return null;
         
-        return {
-          id: 'initial_upsell',
-          title: "Tired of ads?",
-          description: "Upgrade for $2.99 or get all-in bundle for $6.99 (Save $2)!",
-          primaryButton: {
-            text: "Go Ad-Free",
-            price: "$2.99",
-            action: 'ad_free',
-          },
-          secondaryButton: {
-            text: "All-In Bundle",
-            price: "$6.99",
-            action: 'all_in_bundle',
-          },
-          showBestDeal: true,
-          bestDealText: "Best Deal - Save $2!",
-          bestDealButton: 'secondary', // Show best deal badge on secondary button
-          triggerType: triggerType === 'shop_entry' ? 'shop_entry' : 'ad_based',
-        };
+        // Check what the user already owns
+        const hasAllThemePacks = actualOwnedPacks >= 2; // 2 purchased packs (excluding DEFAULT)
+        const hasSomeThemePacks = actualOwnedPacks >= 1; // At least 1 purchased pack (excluding DEFAULT)
+        
+        if (hasAllThemePacks) {
+          // User owns all theme packs, only offer ad-free
+          console.log(`🎯 UpsellService: User has all theme packs, offering ad-free only`);
+          return {
+            id: 'ad_free_only_upsell',
+            title: "Remove those ads!",
+            description: "Go ad-free for just $2.99 and enjoy uninterrupted gaming!",
+            primaryButton: {
+              text: "Go Ad-Free",
+              price: "$2.99",
+              action: 'ad_free',
+            },
+            triggerType: triggerType === 'shop_entry' ? 'shop_entry' : 'ad_based',
+          };
+        } else if (hasSomeThemePacks) {
+          // User owns some theme packs, only offer ad-free (don't show bundle for content they already own)
+          console.log(`🎯 UpsellService: User has some theme packs, offering ad-free only (no bundle)`);
+          return {
+            id: 'ad_free_partial_upsell',
+            title: "Remove those ads!",
+            description: "Go ad-free for just $2.99 and enjoy uninterrupted gaming!",
+            primaryButton: {
+              text: "Go Ad-Free",
+              price: "$2.99",
+              action: 'ad_free',
+            },
+            triggerType: triggerType === 'shop_entry' ? 'shop_entry' : 'ad_based',
+          };
+        } else {
+          // User doesn't have any theme packs, offer both options
+          console.log(`🎯 UpsellService: User has no theme packs, offering both ad-free and bundle`);
+          return {
+            id: 'initial_upsell',
+            title: "Tired of ads?",
+            description: "Upgrade for $2.99 or get all-in bundle for $6.99 (Save $2)!",
+            primaryButton: {
+              text: "Go Ad-Free",
+              price: "$2.99",
+              action: 'ad_free',
+            },
+            secondaryButton: {
+              text: "All-In Bundle",
+              price: "$6.99",
+              action: 'all_in_bundle',
+            },
+            showBestDeal: true,
+            bestDealText: "Best Deal - Save $2!",
+            bestDealButton: 'secondary', // Show best deal badge on secondary button
+            triggerType: triggerType === 'shop_entry' ? 'shop_entry' : 'ad_based',
+          };
+        }
 
       case 'theme_packs':
         // User has ad-free, upsell theme packs
         // Exclude DEFAULT theme from the count (it's always free)
-        const actualPurchasedPacks = purchasedPacks.filter(pack => pack !== 'default');
-        const actualOwnedPacks = actualPurchasedPacks.length;
+        // Note: actualPurchasedPacks and actualOwnedPacks are already defined above
         
         if (actualOwnedPacks === 0) {
           // User has no theme packs yet

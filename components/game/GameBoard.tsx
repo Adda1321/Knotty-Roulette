@@ -58,6 +58,21 @@ export default function GameBoard({
   onRulesShown,
   onUpsellTrigger,
 }: GameBoardProps) {
+  // Debug logging for challenges received
+  useEffect(() => {
+    console.log(`🎮 GameBoard received challenges:`, {
+      totalChallenges: challenges.length,
+      firstChallenge: challenges[0] ? {
+        id: challenges[0].id,
+        text: challenges[0].challenge_text.substring(0, 50) + "...",
+        card_pack: challenges[0].card_pack,
+        has_bonus: challenges[0].has_bonus
+      } : null,
+      allCardPacks: [...new Set(challenges.map(c => c.card_pack))],
+      challengeIds: challenges.slice(0, 5).map(c => c.id)
+    });
+  }, [challenges]);
+
   const [isSpinning, setIsSpinning] = useState(false);
   const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(
     null
@@ -74,6 +89,7 @@ export default function GameBoard({
   const [currentUpsellOffer, setCurrentUpsellOffer] = useState<any>(null);
   const [pendingUpsell, setPendingUpsell] = useState<any>(null);
   const [spinCount, setSpinCount] = useState(0);
+  const [showNewGameConfirmation, setShowNewGameConfirmation] = useState(false);
   // Commented out - No congrats modal for bundle purchases on GameBoard
   // const [showPurchaseCelebrationModal, setShowPurchaseCelebrationModal] = useState(false);
   // const [purchaseType, setPurchaseType] = useState<'ad_free' | 'theme_packs' | 'all_in_bundle' | 'complete_set' | null>(null);
@@ -115,6 +131,17 @@ export default function GameBoard({
     const updatedRecent = [...recentChallenges, random.id];
     if (updatedRecent.length > 5) updatedRecent.shift();
     setRecentChallenges(updatedRecent);
+    
+    // Debug logging for challenge selection
+    console.log(`🎲 Selected challenge:`, {
+      id: random.id,
+      text: random.challenge_text.substring(0, 60) + "...",
+      card_pack: random.card_pack,
+      has_bonus: random.has_bonus,
+      totalChallenges: challenges.length,
+      availableChallenges: available.length
+    });
+    
     return random;
   };
 
@@ -379,6 +406,21 @@ export default function GameBoard({
     // Refresh any necessary data after purchase
   };
 
+  // Handle new game with confirmation
+  const handleNewGamePress = () => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium");
+    
+    // Show confirmation dialog
+    setShowNewGameConfirmation(true);
+  };
+
+  // Handle confirmed new game
+  const handleConfirmedNewGame = () => {
+    setShowNewGameConfirmation(false);
+    onResetGame();
+  };
+
   // Commented out - No congrats modal for bundle purchases on GameBoard
   /*
   const handlePurchaseComplete = (type: 'ad_free' | 'theme_packs' | 'all_in_bundle' | 'complete_set') => {
@@ -450,11 +492,7 @@ export default function GameBoard({
           >
             <Button
               text="🔄 New Game"
-              onPress={() => {
-                audioService.playSound("buttonPress");
-                audioService.playHaptic("medium"); // add haptic here too
-                onResetGame();
-              }}
+              onPress={handleNewGamePress}
               backgroundColor={COLORS.YELLOW}
               // backgroundGradient={[COLORS.DARK_GREEN, COLORS.YELLOW] as const}
               textColor={COLORS.TEXT_DARK}
@@ -662,6 +700,24 @@ export default function GameBoard({
             offer={currentUpsellOffer}
           />
         )}
+
+        {/* New Game Confirmation Modal */}
+        <CustomModal
+          visible={showNewGameConfirmation}
+          onClose={() => {
+            audioService.playSound("buttonPress");
+            audioService.playHaptic("medium");
+            setShowNewGameConfirmation(false);
+          }}
+          title="⚠️ Start New Game?"
+          message="Are you sure you want to start a new game? Your current game progress will be lost and cannot be recovered."
+          showCloseButton={true}
+          closeButtonText="Cancel"
+          showConfirmButton={true}
+          confirmButtonText="Start New Game"
+          onConfirm={handleConfirmedNewGame}
+          destructive={true}
+        />
 
         {/* Purchase Celebration Modal */}
         {/* Commented out - No congrats modal for bundle purchases on GameBoard

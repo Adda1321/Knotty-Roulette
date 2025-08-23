@@ -1,19 +1,22 @@
-
 import GameBoard from "@/components/game/GameBoard";
 import UpsellModal from "@/components/ui/UpsellModal";
 import purchaseService from "@/services/purchaseService";
+import { useFocusEffect } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import PlayerSetup from "../../components/game/PlayerSetup";
 import CustomModal from "../../components/ui/CustomModal";
 import Loader from "../../components/ui/Loader";
-import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import PurchaseCelebrationModal from "../../components/ui/PurchaseCelebrationModal";
+import { COLORS, FONTS, GAME_CONFIG, SIZES } from "../../constants/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 import adService from "../../services/adService";
-import { fetchChallenges } from "../../services/api";
+import { fetchAllChallenges, fetchChallenges, getChallengesByTheme, trackPlay } from "../../services/api";
 import audioService from "../../services/audio";
+import { themePackService } from "../../services/themePackService";
 import upsellService, { UpsellOffer, UpsellType } from "../../services/upsellService";
 import userService from "../../services/userService";
 import { Challenge, GameState, Player } from "../../types/game";
@@ -33,35 +36,32 @@ export default function HomeScreen() {
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [currentUpsellOffer, setCurrentUpsellOffer] = useState<UpsellOffer | null>(null);
 
-  useEffect(() => {
-    initializeServices();
-  }, []);
+  // Purchase celebration state
+  const [showPurchaseCelebrationModal, setShowPurchaseCelebrationModal] =
+    useState(false);
+  const [purchaseType, setPurchaseType] = useState<
+    "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null
+  >(null);
 
-  const initializeServices = async () => {
-    try {
-      // Initialize user service first
-      await userService.initialize();
-      
-      // Initialize upsell service
-      await upsellService.initialize();
-      
-      // Initialize ad service (depends on user service)
-      await adService.initialize();
-      await purchaseService.initialize();
-      
-      // Load challenges
-      await loadChallenges();
-    } catch (error) {
-      console.error('Error initializing services:', error);
-      // Still try to load challenges even if services fail
-      await loadChallenges();
-    }
+  // Get theme context
+  const { onThemeChange } = useTheme();
+
+  // Handle purchase completion from upsell modal
+  const handlePurchaseComplete = (
+    type: "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set"
+  ) => {
+    setPurchaseType(type);
+    setShowPurchaseCelebrationModal(true);
   };
 
-  const loadChallenges = async () => {
+  const loadChallenges = useCallback(async () => {
     setIsLoading(true);
     try {
-      const fetchedChallenges = await fetchChallenges();
+      // Get current theme from theme pack service
+      const currentTheme = themePackService.getCurrentPack();
+      console.log("🎨 Loading challenges for theme:", currentTheme);
+
+      const fetchedChallenges = await fetchChallenges(currentTheme);
       setChallenges(fetchedChallenges);
       setIsOnline(true); // Success means we're online
     } catch (error) {
@@ -71,9 +71,87 @@ export default function HomeScreen() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const startGame = (playerNames: string[]) => {
+  // New function to refresh challenges when theme changes (much faster)
+  const refreshChallengesForTheme = useCallback((themeId?: string) => {
+    try {
+      const currentTheme = themeId || themePackService.getCurrentPack();
+      console.log("🎨 Refreshing challenges for theme:", currentTheme);
+      
+      // Use cached data for instant theme switching
+      const themeChallenges = getChallengesByTheme(currentTheme);
+      setChallenges(themeChallenges);
+      setIsOnline(true);
+    } catch (error) {
+      console.error("Error refreshing challenges for theme:", error);
+      // Fallback to full reload if needed
+      loadChallenges();
+    }
+  }, [loadChallenges]);
+
+  const initializeServices = useCallback(async () => {
+    try {
+      // Initialize user service first
+      await userService.initialize();
+
+      // Initialize ad service (depends on user service)
+      await adService.initialize();
+      await purchaseService.initialize();
+
+      // Pre-load all challenges for fast theme switching
+      console.log("🚀 Pre-loading all challenges for fast theme switching...");
+      await fetchAllChallenges();
+      
+      // Load challenges with current theme
+      await loadChallenges();
+    } catch (error) {
+      console.error("Error initializing services:", error);
+      // Still try to load challenges even if services fail
+      await loadChallenges();
+    }
+  }, [loadChallenges]);
+
+  useEffect(() => {
+    initializeServices();
+  }, [initializeServices]);
+
+  // Listen for theme changes and refresh challenges
+  useEffect(() => {
+    const unsubscribe = onThemeChange(async (newThemeId) => {
+      console.log(
+        "🎨 Theme changed to:",
+        newThemeId,
+        "- refreshing challenges..."
+      );
+      // Use fast refresh instead of full reload
+      refreshChallengesForTheme(newThemeId);
+    });
+
+    // Cleanup subscription on unmount
+    return unsubscribe;
+  }, [onThemeChange, refreshChallengesForTheme]);
+
+  // Refresh challenges when screen comes into focus (e.g., returning from theme store)
+  useFocusEffect(
+    useCallback(() => {
+      console.log(
+        "🎯 HomeScreen focused - checking if challenges need refresh..."
+      );
+      // Only refresh if we're not in the middle of a game
+      if (gameState === "setup") {
+        // Use fast refresh if we have cached data, otherwise full reload
+        try {
+          refreshChallengesForTheme();
+        } catch (error) {
+          console.log("Fast refresh failed, falling back to full reload");
+          loadChallenges();
+        }
+      }
+    }, [gameState, refreshChallengesForTheme, loadChallenges])
+  );
+
+  const startGame = async (playerNames: string[]) => {
     console.log("Received player names:", playerNames);
     const newPlayers = playerNames.map((name, index) => ({
       id: index,
@@ -88,6 +166,17 @@ export default function HomeScreen() {
 
     // Reset ad service spin counter for new game
     adService.resetSpinCounter();
+    
+    // Track the game start with the backend
+    try {
+      const playStats = await trackPlay();
+      if (playStats) {
+        console.log('🎮 Game play tracked:', playStats);
+      }
+    } catch (error) {
+      console.error('Failed to track game play:', error);
+      // Don't block the game start if tracking fails
+    }
   };
 
   const resetGame = () => {
@@ -99,9 +188,20 @@ export default function HomeScreen() {
 
   // Handle upsell display
   const handleUpsellDisplay = async (upsellType: UpsellType) => {
-    if (upsellType === 'none') return;
+    if (upsellType === "none") return;
 
-    const offer = upsellService.getUpsellOffer(upsellType);
+    // Determine the correct trigger type based on the upsell type
+    let triggerType: "ad_based" | "game_over" | "shop_entry" | "passive" =
+      "ad_based";
+
+    // If this is coming from the game board after a spin, it's ad-based
+    // If this is coming from game over, it's game_over
+    // We'll determine this based on the current game state
+    if (gameState === "gameOver") {
+      triggerType = "game_over";
+    }
+
+    const offer = upsellService.getUpsellOffer(upsellType, triggerType);
     if (offer) {
       setCurrentUpsellOffer(offer);
       setShowUpsellModal(true);
@@ -113,11 +213,27 @@ export default function HomeScreen() {
   const handleUpsellPurchaseSuccess = async () => {
     setShowUpsellModal(false);
     setCurrentUpsellOffer(null);
-    
+
     // Check for next upsell
-    const nextUpsell = await upsellService.checkPostPurchaseUpsell('ad_free');
-    if (nextUpsell !== 'none') {
+    const nextUpsell = await upsellService.checkPostPurchaseUpsell("ad_free");
+    if (nextUpsell !== "none") {
       handleUpsellDisplay(nextUpsell);
+    }
+  };
+
+  // Function to check and display game over upsell
+  const checkGameOverUpsell = async () => {
+    try {
+      const upsellType = await upsellService.trackGameOver();
+      if (upsellType !== "none") {
+        const offer = upsellService.getUpsellOffer(upsellType, "game_over");
+        if (offer) {
+          setCurrentUpsellOffer(offer);
+          setShowUpsellModal(true);
+        }
+      }
+    } catch (error) {
+      console.error("Error checking game over upsell:", error);
     }
   };
 
@@ -147,11 +263,16 @@ export default function HomeScreen() {
             updatedPlayers[playerIndex].points += points;
             setPlayers(updatedPlayers);
 
-            // Check for winner (first to 10 points)
-            if (updatedPlayers[playerIndex].points >= 10) {
+            // Check for winner (first to reach winning score)
+            if (
+              updatedPlayers[playerIndex].points >= GAME_CONFIG.WINNING_SCORE
+            ) {
               // Play game over sound and haptic
               audioService.playSound("gameOver");
               audioService.playHaptic("success");
+
+              // Check for game over upsell (for Ad-Free users) when game actually ends
+              checkGameOverUpsell();
 
               setGameState("gameOver");
               setWinner(updatedPlayers[playerIndex]);
@@ -169,12 +290,12 @@ export default function HomeScreen() {
 
       {/* Game Over Modal */}
       <CustomModal
-                  visible={showGameOverModal}
-          onClose={() => {
-            audioService.playHaptic("medium");
-            setShowGameOverModal(false);
-            resetGame();
-          }}
+        visible={showGameOverModal}
+        onClose={() => {
+          audioService.playHaptic("medium");
+          setShowGameOverModal(false);
+          resetGame();
+        }}
         title="Game Over!"
         message={
           winner ? `${winner.name} wins with ${winner.points} points!` : ""
@@ -191,7 +312,17 @@ export default function HomeScreen() {
           visible={showUpsellModal}
           onClose={() => setShowUpsellModal(false)}
           onPurchaseSuccess={handleUpsellPurchaseSuccess}
+          onPurchaseComplete={handlePurchaseComplete}
           offer={currentUpsellOffer}
+        />
+      )}
+
+      {/* Purchase Celebration Modal */}
+      {showPurchaseCelebrationModal && purchaseType && (
+        <PurchaseCelebrationModal
+          visible={showPurchaseCelebrationModal}
+          onClose={() => setShowPurchaseCelebrationModal(false)}
+          purchaseType={purchaseType}
         />
       )}
 

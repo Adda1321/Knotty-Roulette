@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { THEME_COLORS, THEME_PACKS, ThemePackId } from '../constants/theme';
 import themePackService from '../services/themePackService';
 
@@ -7,6 +7,7 @@ interface ThemeContextType {
   COLORS: typeof THEME_COLORS[ThemePackId]; // Current theme's colors
   switchTheme: (themeId: ThemePackId) => Promise<boolean>;
   refreshTheme: () => void;
+  onThemeChange: (callback: (themeId: ThemePackId) => void) => () => void; // Add callback system
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -25,6 +26,7 @@ interface ThemeProviderProps {
 
 export const CustomThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [currentTheme, setCurrentTheme] = useState<ThemePackId>(THEME_PACKS.DEFAULT);
+  const [themeChangeCallbacks, setThemeChangeCallbacks] = useState<Set<(themeId: ThemePackId) => void>>(new Set());
 
   // Get current theme colors based on selected theme
   const COLORS = THEME_COLORS[currentTheme];
@@ -32,6 +34,31 @@ export const CustomThemeProvider: React.FC<ThemeProviderProps> = ({ children }) 
   // Debug logging
   console.log('🔧 ThemeContext: Current theme:', currentTheme);
   console.log('🔧 ThemeContext: Current COLORS:', COLORS);
+
+  // Function to register theme change callbacks
+  const onThemeChange = useCallback((callback: (themeId: ThemePackId) => void) => {
+    setThemeChangeCallbacks(prev => new Set(prev).add(callback));
+    
+    // Return unsubscribe function
+    return () => {
+      setThemeChangeCallbacks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(callback);
+        return newSet;
+      });
+    };
+  }, []);
+
+  // Function to notify all callbacks of theme change
+  const notifyThemeChange = useCallback((themeId: ThemePackId) => {
+    themeChangeCallbacks.forEach(callback => {
+      try {
+        callback(themeId);
+      } catch (error) {
+        console.error('Error in theme change callback:', error);
+      }
+    });
+  }, [themeChangeCallbacks]);
 
   const refreshTheme = async () => {
     try {
@@ -55,6 +82,8 @@ export const CustomThemeProvider: React.FC<ThemeProviderProps> = ({ children }) 
         console.log('🔧 ThemeContext: Theme switch successful, updating to:', themeId);
         console.log('🔧 ThemeContext: New colors will be:', THEME_COLORS[themeId]);
         setCurrentTheme(themeId);
+        // Notify all callbacks of theme change
+        notifyThemeChange(themeId);
         return true;
       } else {
         console.log('🔧 ThemeContext: Theme switch failed for:', themeId);
@@ -82,6 +111,7 @@ export const CustomThemeProvider: React.FC<ThemeProviderProps> = ({ children }) 
     COLORS, // This provides the current theme's colors
     switchTheme,
     refreshTheme,
+    onThemeChange, // Add callback system
   };
 
   return (

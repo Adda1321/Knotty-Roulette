@@ -29,6 +29,7 @@ export interface UpsellOffer {
   };
   showBestDeal?: boolean;
   bestDealText?: string;
+  bestDealButton?: 'primary' | 'secondary'; // Which button should show the best deal badge
   triggerType?: 'ad_based' | 'game_over' | 'shop_entry' | 'passive';
   isCompleted?: boolean; // Flag to indicate this is a completion state (no purchase needed)
 }
@@ -136,9 +137,11 @@ class UpsellService {
       // Determine what to upsell based on user's current state
       const purchasedPacks = themePackService.getPurchasedPacks();
       const totalPacks = Object.keys(themePackService.getAllPacksWithStatus()).length;
-      const ownedPacks = purchasedPacks.length;
+      // Exclude DEFAULT theme from the count (it's always free)
+      const actualPurchasedPacks = purchasedPacks.filter(pack => pack !== 'default');
+      const actualOwnedPacks = actualPurchasedPacks.length;
 
-      if (ownedPacks < totalPacks) {
+      if (actualOwnedPacks < (totalPacks - 1)) {
         return 'theme_packs';
       } else {
         return 'none'; // User has everything
@@ -149,21 +152,17 @@ class UpsellService {
   }
 
   /**
-   * Track shop entry and determine if upsell should be shown (for Ad-Free users)
-   * Note: "Premium users" = users who have purchased Ad-Free (no more ads)
+   * Track shop entry and determine if upsell should be shown (for ALL users)
+   * Shows upsell every N shop visits regardless of user tier
    */
   async trackShopEntry(): Promise<UpsellType> {
     if (!this.isInitialized) await this.initialize();
     
-    // Only show shop entry upsells for premium users (Ad-Free users)
-    if (!userService.isPremium()) {
-      return 'none';
-    }
-
+    // Show shop entry upsells for ALL users (not just premium)
     this.shopEntryCount++;
     await this.saveShopEntryCount();
 
-    // Show upsell every N shop entries for premium users (configurable)
+    // Show upsell every N shop entries for all users (configurable)
     const shouldShowUpsell = this.shopEntryCount - this.lastShopUpsell >= UPSELL_CONFIG.SHOP_ENTRY_UPSELL_FREQUENCY;
     
     if (shouldShowUpsell) {
@@ -171,14 +170,22 @@ class UpsellService {
       await this.saveLastShopUpsell();
       
       // Determine what to upsell based on user's current state
+      const hasAdFree = userService.isPremium();
       const purchasedPacks = themePackService.getPurchasedPacks();
       const totalPacks = Object.keys(themePackService.getAllPacksWithStatus()).length;
-      const ownedPacks = purchasedPacks.length;
+      // Exclude DEFAULT theme from the count (it's always free)
+      const actualPurchasedPacks = purchasedPacks.filter(pack => pack !== 'default');
+      const actualOwnedPacks = actualPurchasedPacks.length;
 
-      if (ownedPacks < totalPacks) {
+      if (!hasAdFree) {
+        // Free user - upsell Ad-Free or All-In Bundle
+        return 'initial';
+      } else if (actualOwnedPacks < (totalPacks - 1)) {
+        // Premium user with missing theme packs - upsell theme packs
         return 'theme_packs';
       } else {
-        return 'none'; // User has everything
+        // User has everything - no upsell needed
+        return 'none';
       }
     }
 
@@ -194,35 +201,103 @@ class UpsellService {
     const hasAdFree = userService.isPremium();
     const purchasedPacks = themePackService.getPurchasedPacks();
     const totalPacks = Object.keys(themePackService.getAllPacksWithStatus()).length;
-    const ownedPacks = purchasedPacks.length;
+    // Exclude DEFAULT theme from the count (it's always free)
+    const actualPurchasedPacks = purchasedPacks.filter(pack => pack !== 'default');
+    const actualOwnedPacks = actualPurchasedPacks.length;
+
+    // Debug logging
+    console.log(`🎯 UpsellService: Generating offer for type "${type}", trigger "${triggerType}"`);
+    console.log(`   - User has Ad-Free: ${hasAdFree}`);
+    console.log(`   - Purchased packs: ${purchasedPacks.join(', ')}`);
+    console.log(`   - Actual owned packs (excluding default): ${actualOwnedPacks}`);
+    console.log(`   - Has all theme packs: ${actualOwnedPacks >= 2}`);
+    console.log(`   - Has some theme packs: ${actualOwnedPacks >= 1}`);
+    console.log(`   - Offer logic: ${actualOwnedPacks >= 2 ? 'ad-free only' : actualOwnedPacks >= 1 ? 'ad-free only (no bundle)' : 'both options'}`);
 
     switch (type) {
       case 'initial':
-        // Free user after Xth ad - only for ad-based triggers
-        if (triggerType !== 'ad_based') return null;
+        // Free user after Xth ad or shop entry - allow both triggers
+        if (triggerType !== 'ad_based' && triggerType !== 'shop_entry') return null;
         
-        return {
-          id: 'initial_upsell',
-          title: "Tired of ads?",
-          description: "Upgrade for $2.99 or get all-in bundle for $6.99 (Save $2)!",
-          primaryButton: {
-            text: "Go Ad-Free",
-            price: "$2.99",
-            action: 'ad_free',
-          },
-          secondaryButton: {
-            text: "All-In Bundle",
-            price: "$6.99",
-            action: 'all_in_bundle',
-          },
-          showBestDeal: true,
-          bestDealText: "Best Deal - Save $2!",
-          triggerType: 'ad_based',
-        };
+        // Check what the user already owns
+        const hasAllThemePacks = actualOwnedPacks >= 2; // 2 purchased packs (excluding DEFAULT)
+        const hasSomeThemePacks = actualOwnedPacks >= 1; // At least 1 purchased pack (excluding DEFAULT)
+        
+        if (hasAllThemePacks) {
+          // User owns all theme packs, only offer ad-free
+          console.log(`🎯 UpsellService: User has all theme packs, offering ad-free only`);
+          return {
+            id: 'ad_free_only_upsell',
+            title: "Remove those ads!",
+            description: "Go ad-free for just $2.99 and enjoy uninterrupted gaming!",
+            primaryButton: {
+              text: "Go Ad-Free",
+              price: "$2.99",
+              action: 'ad_free',
+            },
+            triggerType: triggerType === 'shop_entry' ? 'shop_entry' : 'ad_based',
+          };
+        } else if (hasSomeThemePacks) {
+          // User owns some theme packs, only offer ad-free (don't show bundle for content they already own)
+          console.log(`🎯 UpsellService: User has some theme packs, offering ad-free only (no bundle)`);
+          return {
+            id: 'ad_free_partial_upsell',
+            title: "Remove those ads!",
+            description: "Go ad-free for just $2.99 and enjoy uninterrupted gaming!",
+            primaryButton: {
+              text: "Go Ad-Free",
+              price: "$2.99",
+              action: 'ad_free',
+            },
+            triggerType: triggerType === 'shop_entry' ? 'shop_entry' : 'ad_based',
+          };
+        } else {
+          // User doesn't have any theme packs, offer both options
+          console.log(`🎯 UpsellService: User has no theme packs, offering both ad-free and bundle`);
+          return {
+            id: 'initial_upsell',
+            title: "Tired of ads?",
+            description: "Upgrade for $2.99 or get all-in bundle for $6.99 (Save $2)!",
+            primaryButton: {
+              text: "Go Ad-Free",
+              price: "$2.99",
+              action: 'ad_free',
+            },
+            secondaryButton: {
+              text: "All-In Bundle",
+              price: "$6.99",
+              action: 'all_in_bundle',
+            },
+            showBestDeal: true,
+            bestDealText: "Best Deal - Save $2!",
+            bestDealButton: 'secondary', // Show best deal badge on secondary button
+            triggerType: triggerType === 'shop_entry' ? 'shop_entry' : 'ad_based',
+          };
+        }
 
       case 'theme_packs':
         // User has ad-free, upsell theme packs
-        if (ownedPacks === 1) {
+        // Exclude DEFAULT theme from the count (it's always free)
+        // Note: actualPurchasedPacks and actualOwnedPacks are already defined above
+        
+        if (actualOwnedPacks === 0) {
+          // User has no theme packs yet
+          return {
+            id: 'theme_packs_upsell',
+            title: "Expand the fun!",
+            description: "Grab both packs for $4.99 (Save $1)!",
+            primaryButton: {
+              text: "Get Both Packs",
+              price: "$4.99",
+              action: 'theme_packs',
+            },
+            showBestDeal: true,
+            bestDealText: "Best Deal - Save $1!",
+            bestDealButton: 'primary', // Show best deal badge on primary button
+            triggerType,
+          };
+        } else if (actualOwnedPacks === 1) {
+          // User has 1 theme pack, offer the last one
           return {
             id: 'complete_set_upsell',
             title: "Complete your set!",
@@ -235,19 +310,8 @@ class UpsellService {
             triggerType,
           };
         } else {
-          return {
-            id: 'theme_packs_upsell',
-            title: "Expand the fun!",
-            description: "Grab both packs for $4.99 (Save $1)!",
-            primaryButton: {
-              text: "Get Both Packs",
-              price: "$4.99",
-              action: 'theme_packs',
-            },
-            showBestDeal: true,
-            bestDealText: "Best Deal - Save $1!",
-            triggerType,
-          };
+          // User has all theme packs
+          return null;
         }
 
       case 'ad_free':

@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
 import { Surface } from 'react-native-paper';
-import { COLORS, SIZES } from '../../constants/theme';
+import { SIZES } from '../../constants/theme';
+import { useTheme } from '../../contexts/ThemeContext';
 import audioService from '../../services/audio';
 
 interface StoreButtonProps {
@@ -10,6 +11,8 @@ interface StoreButtonProps {
 }
 
 export default function StoreButton({ onPress }: StoreButtonProps) {
+  const { COLORS } = useTheme();
+  
   const handlePress = () => {
     audioService.playHaptic('light');
     audioService.playSound('buttonPress');
@@ -19,7 +22,7 @@ export default function StoreButton({ onPress }: StoreButtonProps) {
   return (
     <Surface elevation={3} style={{ borderRadius: 10 }}>
       <TouchableOpacity
-        style={styles.storeButton}
+        style={[styles.storeButton, { backgroundColor: COLORS.YELLOW }]}
         onPress={handlePress}
         activeOpacity={0.8}
       >
@@ -31,7 +34,6 @@ export default function StoreButton({ onPress }: StoreButtonProps) {
 
 const styles = StyleSheet.create({
   storeButton: {
-    backgroundColor: COLORS.YELLOW,
     borderRadius: SIZES.BORDER_RADIUS_SMALL,
     padding: SIZES.PADDING_SMALL,
     justifyContent: 'center',

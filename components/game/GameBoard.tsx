@@ -13,8 +13,12 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ANIMATION_CONFIGS, ANIMATION_VALUES } from "../../constants/animations";
-import { COLORS, FONTS, GAME_CONFIG, SIZES } from "../../constants/theme";
+import {
+  ANIMATION_CONFIGS,
+  ANIMATION_VALUES,
+} from "../../constants/animations";
+import { FONTS, GAME_CONFIG, SIZES, THEME_PACKS } from "../../constants/theme"; // Fixed import
+import { useTheme } from "../../contexts/ThemeContext";
 import adService from "../../services/adService";
 import audioService from "../../services/audio";
 import upsellService from "../../services/upsellService";
@@ -58,20 +62,7 @@ export default function GameBoard({
   onRulesShown,
   onUpsellTrigger,
 }: GameBoardProps) {
-  // Debug logging for challenges received
-  useEffect(() => {
-    console.log(`🎮 GameBoard received challenges:`, {
-      totalChallenges: challenges.length,
-      firstChallenge: challenges[0] ? {
-        id: challenges[0].id,
-        text: challenges[0].challenge_text.substring(0, 50) + "...",
-        card_pack: challenges[0].card_pack,
-        has_bonus: challenges[0].has_bonus
-      } : null,
-      allCardPacks: [...new Set(challenges.map(c => c.card_pack))],
-      challengeIds: challenges.slice(0, 5).map(c => c.id)
-    });
-  }, [challenges]);
+  const { COLORS, currentTheme } = useTheme();
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [currentChallenge, setCurrentChallenge] = useState<Challenge | null>(
@@ -96,6 +87,31 @@ export default function GameBoard({
   const rotation = useRef(new Animated.Value(0)).current;
   const spinButtonScale = useRef(new Animated.Value(1)).current;
   const wheelScale = useRef(new Animated.Value(1)).current;
+
+  // Debug logging
+  console.log("🎨 GameBoard: Current theme:", currentTheme);
+
+  // Monitor theme changes
+  useEffect(() => {
+    console.log("🎨 GameBoard: Theme changed to:", currentTheme);
+  }, [currentTheme]);
+
+  // Debug logging for challenges received
+  useEffect(() => {
+    console.log(`🎮 GameBoard received challenges:`, {
+      totalChallenges: challenges.length,
+      firstChallenge: challenges[0]
+        ? {
+            id: challenges[0].id,
+            text: challenges[0].challenge_text.substring(0, 50) + "...",
+            card_pack: challenges[0].card_pack,
+            has_bonus: challenges[0].has_bonus,
+          }
+        : null,
+      allCardPacks: [...new Set(challenges.map((c) => c.card_pack))],
+      challengeIds: challenges.slice(0, 5).map((c) => c.id),
+    });
+  }, [challenges]);
 
   // Auto-show rules for new games
   useEffect(() => {
@@ -131,7 +147,7 @@ export default function GameBoard({
     const updatedRecent = [...recentChallenges, random.id];
     if (updatedRecent.length > 5) updatedRecent.shift();
     setRecentChallenges(updatedRecent);
-    
+
     // Debug logging for challenge selection
     console.log(`🎲 Selected challenge:`, {
       id: random.id,
@@ -139,9 +155,9 @@ export default function GameBoard({
       card_pack: random.card_pack,
       has_bonus: random.has_bonus,
       totalChallenges: challenges.length,
-      availableChallenges: available.length
+      availableChallenges: available.length,
     });
-    
+
     return random;
   };
 
@@ -155,24 +171,6 @@ export default function GameBoard({
     setShowChallenge(false);
     setIsSpinning(false); // Ensure spinning state is reset
     onPlayerTurnComplete(currentPlayerIndex, points);
-
-    // Remove this incorrect call - game over upsell should only show when game is actually over
-    // checkGameOverUpsell();
-  };
-
-  const checkGameOverUpsell = async () => {
-    try {
-      const upsellType = await upsellService.trackGameOver();
-      if (upsellType !== "none") {
-        const offer = upsellService.getUpsellOffer(upsellType, "game_over");
-        if (offer) {
-          setCurrentUpsellOffer(offer);
-          setShowUpsellModal(true);
-        }
-      }
-    } catch (error) {
-      console.error("Error checking game over upsell:", error);
-    }
   };
 
   const handleChallengeComplete = (
@@ -243,14 +241,14 @@ export default function GameBoard({
 
     // Check if there's a pending upsell to show first
     if (pendingUpsell) {
-      console.log('🎯 GameBoard: Showing pending upsell:', pendingUpsell);
+      console.log("🎯 GameBoard: Showing pending upsell:", pendingUpsell);
       // Show upsell locally in GameBoard instead of sending to parent
-      const offer = upsellService.getUpsellOffer(pendingUpsell, 'ad_based');
-      console.log('🎯 GameBoard: Upsell offer:', offer);
+      const offer = upsellService.getUpsellOffer(pendingUpsell, "ad_based");
+      console.log("🎯 GameBoard: Upsell offer:", offer);
       if (offer) {
         setCurrentUpsellOffer(offer);
         setShowUpsellModal(true);
-        console.log('🎯 GameBoard: Upsell modal should be visible now');
+        console.log("🎯 GameBoard: Upsell modal should be visible now");
       }
       setPendingUpsell(null);
       return;
@@ -301,31 +299,36 @@ export default function GameBoard({
       ...ANIMATION_CONFIGS.SPIN_WHEEL,
     }).start(async () => {
       rotation.setValue(0);
-      
+
       // Track spin count for upsell logic
       const newSpinCount = spinCount + 1;
       setSpinCount(newSpinCount);
-      
+
       // Debug user status
       const isPremium = userService.isPremium();
-      console.log('🎯 GameBoard: User is premium:', isPremium, 'Spin count:', newSpinCount);
-      
+      console.log(
+        "🎯 GameBoard: User is premium:",
+        isPremium,
+        "Spin count:",
+        newSpinCount
+      );
+
       // Track spin for ad display (every 3 spins for free users)
       const adWasShown = await adService.trackSpin();
-      console.log('🎯 GameBoard: Ad was shown:', adWasShown);
+      console.log("🎯 GameBoard: Ad was shown:", adWasShown);
 
       // Clean logic: Trigger upsell every 3 spins for free users (simulating ad intervals)
       if (!isPremium && newSpinCount % 3 === 0) {
         try {
           const upsellType = await upsellService.trackAdView();
-          console.log('🎯 GameBoard: Upsell type from service:', upsellType);
-          if (upsellType !== 'none') {
+          console.log("🎯 GameBoard: Upsell type from service:", upsellType);
+          if (upsellType !== "none") {
             // Store the upsell for later - don't show immediately
             setPendingUpsell(upsellType);
-            console.log('🎯 GameBoard: Stored pending upsell:', upsellType);
+            console.log("🎯 GameBoard: Stored pending upsell:", upsellType);
           }
         } catch (error) {
-          console.error('Error checking upsell after spin:', error);
+          console.error("Error checking upsell after spin:", error);
         }
       }
 
@@ -399,6 +402,7 @@ export default function GameBoard({
     loop.start();
     return () => loop.stop();
   }, []);
+
   const currentPlayer = players[currentPlayerIndex];
 
   const handleUpsellPurchaseSuccess = () => {
@@ -410,7 +414,7 @@ export default function GameBoard({
   const handleNewGamePress = () => {
     audioService.playSound("buttonPress");
     audioService.playHaptic("medium");
-    
+
     // Show confirmation dialog
     setShowNewGameConfirmation(true);
   };
@@ -430,11 +434,36 @@ export default function GameBoard({
   */
 
   return (
-    <SafeAreaView style={styles.container} edges={["left", "right"]}>
+    <SafeAreaView
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            currentTheme === THEME_PACKS.DEFAULT
+              ? COLORS.PRIMARY
+              : currentTheme === THEME_PACKS.COLLEGE
+              ? COLORS.DARK
+              : COLORS.LIGHT,
+        },
+      ]}
+      edges={["left", "right"]}
+    >
       {/* Development: User Tier Toggle */}
       <View style={styles.content}>
         {/* Status Bar */}
-        <View style={styles.statusBar}>
+        <View
+          style={[
+            styles.statusBar,
+            {
+              backgroundColor:
+                currentTheme === THEME_PACKS.DEFAULT
+                  ? COLORS.PRIMARY
+                  : currentTheme === THEME_PACKS.COLLEGE
+                  ? COLORS.DARK
+                  : COLORS.LIGHT,
+            },
+          ]}
+        >
           <View style={styles.leftButtons}>
             <Surface
               elevation={Platform.OS === "ios" ? 3 : 5}
@@ -442,7 +471,12 @@ export default function GameBoard({
                 borderRadius: 8,
               }}
             >
-              <View style={{ overflow: "hidden" }}>
+              <View
+                style={{
+                  borderRadius: 8,
+                  overflow: "hidden",
+                }}
+              >
                 {/* Shine Layer 1 */}
                 <Animated.View
                   pointerEvents="none"
@@ -494,13 +528,9 @@ export default function GameBoard({
               text="🔄 New Game"
               onPress={handleNewGamePress}
               backgroundColor={COLORS.YELLOW}
-              // backgroundGradient={[COLORS.DARK_GREEN, COLORS.YELLOW] as const}
               textColor={COLORS.TEXT_DARK}
-              // shadowIntensity={5}
-              // shadowRadius={10}
               fontSize={SIZES.CAPTION}
               fontFamily={FONTS.DOSIS_BOLD}
-              // fontWeight="600"
             />
           </Surface>
         </View>
@@ -509,10 +539,28 @@ export default function GameBoard({
         <View style={styles.mainContent}>
           {/* Header */}
           <View style={styles.headerContainer}>
-            <Text style={styles.title}>KNOTTY ROULETTE</Text>
+            <Text
+              style={[
+                styles.title,
+                {
+                  color:
+                    currentTheme === THEME_PACKS.COLLEGE
+                      ? COLORS.TEXT
+                      : COLORS.YELLOW,
+                },
+              ]}
+            >
+              KNOTTY ROULETTE
+            </Text>
             <View style={styles.mascotContainer}>
               <Image
-                source={require("../../assets/images/MascotImages/Default/KnottyMascotComplete.png")}
+                source={
+                  currentTheme === THEME_PACKS.DEFAULT
+                    ? require("../../assets/images/MascotImages/Default/KnottyMascotComplete.png")
+                    : currentTheme === THEME_PACKS.COLLEGE
+                    ? require("../../assets/images/MascotImages/College/College-legs-mascot.png")
+                    : require("../../assets/images/MascotImages/Couple/Couple-legs-mascot.png")
+                }
                 style={styles.mascotImage}
                 resizeMode="contain"
               />
@@ -521,7 +569,7 @@ export default function GameBoard({
 
           {/* Game Area */}
           <LinearGradient
-            colors={["#d4f6daff", "#286a19ff"]}
+            colors={[COLORS.GAMEBOARDSECONDARY, COLORS.GAMEBOARDPRIMARY]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.gameArea}
@@ -531,10 +579,29 @@ export default function GameBoard({
             {/* Spinning Wheel */}
             <View style={styles.wheelContainer}>
               <View style={styles.header}>
-                <Text style={styles.currentPlayer}>
+                <Text
+                  style={[
+                    styles.currentPlayer,
+                    {
+                      color:
+                        currentTheme === THEME_PACKS.COUPLE
+                          ? "#333333"
+                          : COLORS.TEXT_DARK,
+                    },
+                  ]}
+                >
                   {`${currentPlayer.name}'s Turn`}
                 </Text>
-                <Text style={styles.passInstruction}>
+                <Text
+                  style={[styles.passInstruction, 
+                     {
+                      color:
+                        currentTheme === THEME_PACKS.COUPLE
+                          ? "#333333"
+                          : COLORS.TEXT_DARK,
+                    },
+                  ]}
+                >
                   Pass Phone to Next Player
                 </Text>
               </View>
@@ -559,22 +626,13 @@ export default function GameBoard({
                           }),
                         },
                       ],
-                      opacity: 0.8, // Make the image less bright
+                      opacity: 0.8,
                     },
                   ]}
                   resizeMode="contain"
                 />
               </Animated.View>
             </View>
-
- 
-
-            {/* Spin Button */}
-            {pendingUpsell && (
-              <Text style={styles.upsellTooltip}>
-                💡 You have a special offer to check before spinning!
-              </Text>
-            )}
 
             <Animated.View style={{ transform: [{ translateY }] }}>
               <Surface
@@ -584,7 +642,12 @@ export default function GameBoard({
                   marginVertical: 4,
                 }}
               >
-                <View style={{ overflow: "hidden" }}>
+                <View
+                  style={{
+                    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
+                    overflow: "hidden",
+                  }}
+                >
                   {/* Shine Layer 1 */}
                   <Animated.View
                     pointerEvents="none"
@@ -600,44 +663,33 @@ export default function GameBoard({
                       },
                     ]}
                   />
-                  {/* Shine Layer 2 */}
-                  <Animated.View
-                    pointerEvents="none"
-                    style={[
-                      styles.glareLayer2,
-                      {
-                        transform: [
-                          { translateX: shineAnim2 },
-                          Platform.OS === "ios"
-                            ? { skewX: "-15deg" }
-                            : { rotate: "15deg" },
-                        ],
-                      },
-                    ]}
-                  />
+
                   <Button
                     text={
                       isSpinning
                         ? "Spinning..."
                         : pendingUpsell
-                          ? "Check Special Offer!"
-                          : "Spin the Wheel"
+                        ? "Check Special Offer!"
+                        : "Spin the Wheel"
                     }
                     onPress={spinWheel}
                     disabled={isSpinning}
                     backgroundGradient={
-                      pendingUpsell
-                        ? [COLORS.YELLOW, COLORS.YELLOW] as const
-                        : [COLORS.DARK_GREEN, COLORS.YELLOW] as const
+                      currentTheme === THEME_PACKS.DEFAULT
+                        ? ([COLORS.PRIMARY, COLORS.YELLOW] as const)
+                        : currentTheme === THEME_PACKS.COLLEGE
+                        ? ([COLORS.LIGHT, COLORS.YELLOW] as const)
+                        : ([COLORS.LIGHT, COLORS.YELLOW] as const)
                     }
                     textColor={COLORS.TEXT_DARK}
                     fontSize={SIZES.SUBTITLE}
                     fontFamily={FONTS.DOSIS_BOLD}
-                    shadowIntensity={5}
-                    // shadowRadius={12}
                     paddingHorizontal={SIZES.PADDING_LARGE}
                     paddingVertical={SIZES.PADDING_MEDIUM}
-                    style={styles.spinButton}
+                    style={[
+                      styles.spinButton,
+                      isSpinning && styles.spinButtonDisabled,
+                    ]}
                   />
                 </View>
               </Surface>
@@ -650,6 +702,7 @@ export default function GameBoard({
             currentPlayerIndex={currentPlayerIndex}
           />
         </View>
+
         {/* Challenge Display - Moved outside game area */}
         {showChallenge && currentChallenge && (
           <ChallengeDisplay
@@ -667,7 +720,7 @@ export default function GameBoard({
           visible={showCompletionModal}
           onClose={() => {
             audioService.playSound("buttonPress");
-            audioService.playHaptic("medium"); // add haptic here
+            audioService.playHaptic("medium");
             setShowCompletionModal(false);
             completeChallenge(completionData?.points || 0);
           }}
@@ -730,9 +783,6 @@ export default function GameBoard({
         )}
         */}
       </View>
-
-      {/* Theme Store - Navigate to page instead of modal */}
-      {/* ThemeStore is now a page component, navigation handled by router */}
     </SafeAreaView>
   );
 }
@@ -740,7 +790,6 @@ export default function GameBoard({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#116b20ff",
     paddingVertical: SIZES.PADDING_SMALL,
   },
   content: {
@@ -753,7 +802,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: SIZES.PADDING_LARGE,
     paddingVertical: SIZES.PADDING_SMALL,
-    backgroundColor: "#116b20ff",
   },
   leftButtons: {
     flexDirection: "row",
@@ -784,7 +832,6 @@ const styles = StyleSheet.create({
         ? Math.min(SIZES.EXTRALARGE, width * 0.072)
         : Math.min(SIZES.EXTRALARGE * 1.0, width),
     fontFamily: FONTS.DOSIS_BOLD,
-    color: COLORS.YELLOW,
     marginBottom: SIZES.PADDING_MEDIUM,
     ...SIZES.TEXT_SHADOW_MEDIUM,
     textAlign: "left",
@@ -794,17 +841,11 @@ const styles = StyleSheet.create({
   },
   currentPlayer: {
     fontSize: SIZES.SUBTITLE,
-    color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
-    // fontWeight: "800",
-    // marginBottom: SIZES.PADDING_SMALL,
     paddingTop: 5,
-    ...SIZES.TEXT_SHADOW_SMALL,
   },
   passInstruction: {
     fontSize: SIZES.BODY,
-    color: COLORS.TEXT_DARK,
-    // fontFamily: FONTS.PRIMARY,
     fontStyle: "italic",
   },
   gameArea: {
@@ -812,46 +853,23 @@ const styles = StyleSheet.create({
     position: "relative",
     overflow: "hidden",
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
-    // padding: SIZES.PADDING_MEDIUM,
-    // ...SIZES.SHADOW_SMALL,
     alignItems: "center",
-    // marginBottom: 50,
     marginTop: -45,
     width: "100%",
     maxWidth: 400,
     zIndex: -1,
   },
-  glareOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    overflow: "hidden",
-  },
   wheelContainer: {
     marginBottom: SIZES.PADDING_SMALL,
-    ...SIZES.SHADOW_LARGE,
   },
   wheelShadowContainer: {
-    // Enhanced shadow for wheel depth
-    shadowColor: "#000000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    elevation: 20,
-    // Make container circular to match wheel shape
-    borderRadius: width * 0.3 + 8, // Half of wheel width + padding (updated for larger wheel)
-    // Add padding to ensure shadow is visible
+    borderRadius: width * 0.3 + 8,
     padding: 12,
-    // Ensure shadow is visible on all sides
     overflow: "visible",
-    // Force shadow rendering
-    // backgroundColor: 'transparent',
   },
   wheel: {
-    width: width * 0.6, // Increased from 0.5 to 0.6 (20% larger)
-    height: 240, // Increased from 200 to 240 (20% larger)
+    width: width * 0.6,
+    height: 240,
   },
   spinButton: {
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
@@ -863,18 +881,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -10,
     left: 0,
-    height: 240, // Updated to match new wheel height
-    width: 50, // Made thinner
-    backgroundColor: "rgba(255, 255, 255, 0.12)", // Slightly more transparent
-    zIndex: 1,
-  },
-  glareLayer2: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    height: "100%",
-    width: 30,
-    backgroundColor: "rgba(255, 255, 255, 0.05)", // More transparent
+    height: 240,
+    width: 50,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
     zIndex: 1,
   },
   mascotContainer: {
@@ -883,27 +892,13 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     minWidth: 100,
   },
-
   mascotImage: {
     width: 130,
     height: 130,
     zIndex: 1,
     transform: [{ rotate: "5deg" }],
   },
-  upsellTooltip: {
-    position: "absolute",
-    top: -40, // Adjust as needed
-    backgroundColor: COLORS.YELLOW,
-    color: COLORS.TEXT_DARK,
-    paddingVertical: SIZES.PADDING_SMALL,
-    paddingHorizontal: SIZES.PADDING_MEDIUM,
-    borderRadius: 8,
-    zIndex: 10,
-    ...SIZES.TEXT_SHADOW_SMALL,
-    fontFamily: FONTS.DOSIS_BOLD,
-    fontSize: SIZES.CAPTION,
-    textAlign: "center",
-  },
+
   debugInfo: {
     position: "absolute",
     top: 0,
@@ -912,10 +907,5 @@ const styles = StyleSheet.create({
     padding: SIZES.PADDING_SMALL,
     borderRadius: 8,
     zIndex: 10,
-  },
-  debugText: {
-    color: COLORS.TEXT_PRIMARY,
-    fontSize: SIZES.CAPTION,
-    fontFamily: FONTS.DOSIS_BOLD,
   },
 });

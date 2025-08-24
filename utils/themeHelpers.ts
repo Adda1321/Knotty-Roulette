@@ -6,7 +6,41 @@ export interface SampleChallenge {
 }
 
 export function getSampleChallenges(themeId?: string): SampleChallenge[] {
-  const defaultChallenges = [
+  // Return different challenges based on theme using actual API data
+  if (themeId === "college") {
+    return [
+      {
+        challenge_text: "Swap shirts with the person to your left – 👕 Keep it on for one round.",
+        has_bonus: false,
+      },
+      {
+        challenge_text: "Read the last DM you sent out loud – 📱 No skipping.",
+        has_bonus: false,
+      },
+      {
+        challenge_text: "Post a random selfie in your story – 🤳 Delete after the game if you want.",
+        has_bonus: false,
+      },
+    ];
+  } else if (themeId === "couple") {
+    return [
+      {
+        challenge_text: "Make a toast to your partner – The more ridiculous, the better.",
+        has_bonus: false,
+      },
+      {
+        challenge_text: "Share the story of your very first crush – Be honest.",
+        has_bonus: false,
+      },
+      {
+        challenge_text: "Serenade your partner with any song line – 🎤 Bonus if if it's off-key.",
+        has_bonus: true,
+      },
+    ];
+  }
+
+  // Default theme challenges
+  return [
     {
       challenge_text: "Give a flirty compliment to someone in the group or a stranger – Bonus if a stranger!",
       has_bonus: true,
@@ -20,41 +54,6 @@ export function getSampleChallenges(themeId?: string): SampleChallenge[] {
       has_bonus: true,
     },
   ];
-
-  // Return different challenges based on theme
-  if (themeId === "college") {
-    return [
-      {
-        challenge_text: "Challenge someone to a dance-off – Loser must finish their drink!",
-        has_bonus: false,
-      },
-      {
-        challenge_text: 'Start a chant – Even if it\'s just "One more round!"',
-        has_bonus: false,
-      },
-      {
-        challenge_text: "Pretend you know a stranger for 30 seconds – Sell it!",
-        has_bonus: false,
-      },
-    ];
-  } else if (themeId === "couple") {
-    return [
-      {
-        challenge_text: "Make eye contact with someone in the group for 10 seconds – No breaking first!",
-        has_bonus: false,
-      },
-      {
-        challenge_text: "Whisper a made-up secret to someone in the group – Make it juicy.",
-        has_bonus: false,
-      },
-      {
-        challenge_text: "Try to make someone in the group blush – No touching allowed!",
-        has_bonus: false,
-      },
-    ];
-  }
-
-  return defaultChallenges;
 }
 
 export function getThemePackDisplayName(themeId: string): string {

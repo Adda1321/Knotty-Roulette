@@ -17,7 +17,7 @@ function getThemeBackendName(themeId: string): string {
         return "Original Pack";
     }
   })();
-  
+
   console.log(`🎨 Theme mapping: "${themeId}" -> "${backendName}"`);
   return backendName;
 }
@@ -100,7 +100,7 @@ export async function fetchAllChallenges(): Promise<Challenge[]> {
           id: challenge.id,
           card_pack: challenge.card_pack,
           card_pack_type: typeof challenge.card_pack,
-          text_preview: challenge.challenge_text.substring(0, 40) + "..."
+          text_preview: challenge.challenge_text.substring(0, 40) + "...",
         });
       });
 
@@ -473,7 +473,7 @@ function getFallbackChallenges(themeId?: string): Challenge[] {
       },
       {
         id: 23,
-        challenge_text: 'Start a chant – Even if it\'s just "One more round!"',
+        challenge_text: "Start a chant – Even if it's just 'One more round!'",
         has_bonus: false,
       },
       {
@@ -712,243 +712,262 @@ function getFallbackChallenges(themeId?: string): Challenge[] {
   } else if (backendThemeName === "College Pack") {
     challenges.push(
       {
+        id: 98,
+        challenge_text:
+          "Swap shirts with the person to your left – 👕 Keep it on for one round.",
+        has_bonus: false,
+      },
+      {
+        id: 99,
+        challenge_text: "Read the last DM you sent out loud – 📱 No skipping.",
+        has_bonus: false,
+      },
+      {
+        id: 100,
+        challenge_text:
+          "Post a random selfie in your story – 🤳 Delete after the game if you want.",
+        has_bonus: false,
+      },
+      {
         id: 101,
         challenge_text:
-          "Challenge someone to a dance-off – Loser must finish their drink!",
+          "Pretend you're giving a TED Talk on how to survive finals – 🎤 The more ridiculous, the better.",
         has_bonus: false,
       },
       {
         id: 102,
-        challenge_text: 'Start a chant – Even if it\'s just "One more round!"',
+        challenge_text:
+          "Try to moonwalk across the room – 🕺 Effort matters more than skill.",
         has_bonus: false,
       },
       {
         id: 103,
-        challenge_text: "Pretend you know a stranger for 30 seconds – Sell it!",
+        challenge_text:
+          "Share your most embarrassing freshman year moment – 🙈 Blushing encouraged.",
         has_bonus: false,
       },
       {
         id: 104,
         challenge_text:
-          "Do an exaggerated sexy walk to the bathroom – Full confidence!",
+          "Show the group your go-to dance move – 💃 Repeat it every time someone laughs.",
         has_bonus: false,
       },
       {
         id: 105,
         challenge_text:
-          "Take a selfie with someone in the group – Make it extra dramatic.",
+          "Let the group come up with a new ringtone for you – 🎵 You must set it for the rest of the game.",
         has_bonus: false,
       },
       {
         id: 106,
         challenge_text:
-          "Try to get someone in the group to high-five you without asking – Be creative!",
+          "Act like a bartender and take drink orders – 🍹 The group decides your tip.",
         has_bonus: false,
       },
       {
         id: 107,
         challenge_text:
-          "Let the person to your left make up a dare for you – No backing out!",
-        has_bonus: false,
+          "Tell the group about your worst date – 💔 Bonus if they're still in your contacts.",
+        has_bonus: true,
       },
       {
         id: 108,
         challenge_text:
-          "Start an impromptu karaoke moment – Even if there's no karaoke.",
-        has_bonus: false,
+          "Walk up to a stranger and give them a cheesy pickup line – 😏 Bonus if it works!",
+        has_bonus: true,
       },
       {
         id: 109,
         challenge_text:
-          "Whisper a random word in someone's ear – Then walk away like nothing happened.",
-        has_bonus: false,
+          "Share the most embarrassing song on your playlist – 🎶 Bonus if you play 10 seconds.",
+        has_bonus: true,
       },
       {
         id: 110,
         challenge_text:
-          "The group picks three people (real or fictional) and presents them to the chosen player. That player must decide who to Fuck, Marry, or Kill - no backing out!",
-        has_bonus: false,
+          "Take a selfie making your ugliest face – 🤡 Bonus if you post it.",
+        has_bonus: true,
       },
       {
         id: 111,
         challenge_text:
-          "Say something spicy in the most innocent voice possible – Keep a straight face!",
+          "Do 10 jumping jacks while yelling your crush's name – 🏋️ The louder, the better.",
         has_bonus: false,
       },
       {
         id: 112,
         challenge_text:
-          "Lick your lips & wink at someone in the group – See if they react.",
+          "Share the most questionable food combo you've ever eaten – 🥒 Defend your choice.",
         has_bonus: false,
       },
       {
         id: 113,
         challenge_text:
-          "Make eye contact with someone in the group for 10 seconds – No breaking first!",
+          "Rap your order as if you're in the cafeteria line – 🎤 No excuses.",
         has_bonus: false,
       },
       {
         id: 114,
-        challenge_text: "Take a sip without using your hands – Get creative!",
+        challenge_text:
+          "Let the group check your most used emoji – 😂 No hiding.",
         has_bonus: false,
       },
       {
         id: 115,
         challenge_text:
-          "Whisper a made-up secret to someone in the group – Make it juicy.",
+          "Show the oldest photo on your phone – 📸 Explain why you still have it.",
         has_bonus: false,
       },
       {
         id: 116,
         challenge_text:
-          "Tell the group your worst pickup line ever – Then try using it!",
+          "Give a foot rub to the person on your right – 🦶 No backing out!",
         has_bonus: false,
       },
       {
         id: 117,
         challenge_text:
-          "Get a stranger to fist-bump you – No explanation allowed.",
+          "Give a 30-second shoulder massage to the person on your left – 💆 No excuses.",
         has_bonus: false,
       },
       {
         id: 118,
         challenge_text:
-          "Try to make someone in the group blush – No touching allowed!",
+          "Paint invisible shapes on the person next to you's back with your finger – ✏️ They must guess what it is.",
         has_bonus: false,
       },
       {
         id: 119,
         challenge_text:
-          "Hold eye contact with someone while slowly sipping your drink – No blinking!",
-        has_bonus: false,
-      },
-      {
-        id: 120,
-        challenge_text:
-          "Tell the group about your most embarrassing night out moment – No holding back.",
+          "Hold hands with the person across from you for one full round – 🤝 No letting go.",
         has_bonus: false,
       }
     );
   } else if (backendThemeName === "Romantic Pack") {
     challenges.push(
       {
-        id: 201,
+        id: 77,
         challenge_text:
-          "Make eye contact with someone in the group for 10 seconds – No breaking first!",
+          "Make a toast to your partner – The more ridiculous, the better.",
         has_bonus: false,
       },
       {
-        id: 202,
-        challenge_text:
-          "Whisper a made-up secret to someone in the group – Make it juicy.",
+        id: 78,
+        challenge_text: "Share the story of your very first crush – Be honest.",
         has_bonus: false,
       },
       {
-        id: 203,
+        id: 79,
         challenge_text:
-          "Try to make someone in the group blush – No touching allowed!",
+          "Serenade your partner with any song line – 🎤 Bonus if if it's off-key.",
+        has_bonus: true,
+      },
+      {
+        id: 80,
+        challenge_text:
+          "Whisper one thing you secretly find attractive about your partner – 😏 The sexier, the better.",
         has_bonus: false,
       },
       {
-        id: 204,
+        id: 81,
         challenge_text:
-          "Hold eye contact with someone while slowly sipping your drink – No blinking!",
+          "Do your best impression of your partner on your first date – 🎭 Partner judges accuracy.",
         has_bonus: false,
       },
       {
-        id: 205,
+        id: 82,
         challenge_text:
-          "Tell the group about your most embarrassing night out moment – No holding back.",
+          "Scroll to the 11th photo on your phone and explain it – 📸 Embarrassment encouraged.",
         has_bonus: false,
       },
       {
-        id: 206,
+        id: 83,
         challenge_text:
-          "Pick a dance move and do it for the next 10 seconds – No stopping!",
+          "Stare into your partner's eyes for 20 seconds – 👀 First to laugh loses.",
         has_bonus: false,
       },
       {
-        id: 207,
+        id: 84,
         challenge_text:
-          "Do an over-the-top dramatic reaction to the next thing someone says – Oscar-worthy.",
+          "Give your partner a silly new pet name – 🐰 Use it for the rest of the game.",
         has_bonus: false,
       },
       {
-        id: 208,
+        id: 85,
         challenge_text:
-          'Ask someone in the group a "truth or dare" question – They must answer!',
+          "Share what romantic movie best describes your relationship – 🎬 sell your choice.",
         has_bonus: false,
       },
       {
-        id: 209,
+        id: 86,
         challenge_text:
-          'Let someone in the group come up with a "new name" for you – Use it for the rest of the game!',
+          "Give your partner a two-minute shoulder rub – 💆 Knotty tension release optional.",
         has_bonus: false,
       },
       {
-        id: 210,
+        id: 87,
         challenge_text:
-          "Find out a fun fact about the person sitting next to you – Then share it!",
+          "Whisper a secret fantasy to your partner – 🤫 Bonus if they blush!",
+        has_bonus: true,
+      },
+      {
+        id: 88,
+        challenge_text:
+          "Share what you think is your partner's biggest turn-on – ❤️ Bonus if you're right!",
+        has_bonus: true,
+      },
+      {
+        id: 89,
+        challenge_text:
+          "Give your partner a flirty compliment – 💋 Bonus if it makes them laugh!",
+        has_bonus: true,
+      },
+      {
+        id: 90,
+        challenge_text:
+          "Describe one thing your partner does that always turns you on – 🔥 Bonus if you act it out.",
+        has_bonus: true,
+      },
+      {
+        id: 91,
+        challenge_text:
+          "Reveal the most adventurous place around you where you'd like to kiss your partner – 🌍 Bonus if you try it tonight!",
+        has_bonus: true,
+      },
+      {
+        id: 92,
+        challenge_text:
+          "Describe your first kiss with your partner in slow motion – 💏 Oscar-worthy performance required.",
         has_bonus: false,
       },
       {
-        id: 211,
+        id: 93,
         challenge_text:
-          "Make up a wild story about how you and another player met – Sell it like it's 100% true!",
+          'Sing one line of a song you think should be "your song" – 🎶 Partner must rate it.',
         has_bonus: false,
       },
       {
-        id: 212,
+        id: 94,
         challenge_text:
-          "Fake a phone call and have a dramatic conversation – Keep it entertaining!",
+          "Send a flirty text to your partner right now – 📱 Read it out loud as sexy as possible.",
         has_bonus: false,
       },
       {
-        id: 213,
+        id: 95,
         challenge_text:
-          "Give an overly dramatic apology to the group for something you didn't do the more ridiculous the better – No laughing!",
+          "Compliment your partner using only three words – 🥰 Sweet or silly, you decide.",
         has_bonus: false,
       },
       {
-        id: 214,
+        id: 96,
         challenge_text:
-          "Say a 'Never Have I Ever' statement - anyone who's done it takes a sip! 🍻🔥",
+          "Let your partner ask you any question – 🙋 You must answer honestly.",
         has_bonus: false,
       },
       {
-        id: 215,
+        id: 97,
         challenge_text:
-          "Who is most likely to [do something wild or embarrassing]? – The group votes, and the person with the most votes drinks! 😆",
-        has_bonus: false,
-      },
-      {
-        id: 216,
-        challenge_text:
-          "Balance your drink on the back of your hand and try to take a sip without spilling. – Spill? Drink again! 🍹🎭",
-        has_bonus: false,
-      },
-      {
-        id: 217,
-        challenge_text:
-          "Drink, then flip your empty cup or coaster onto the table - first to land it wins! – Loser drinks! 🔄🍺",
-        has_bonus: false,
-      },
-      {
-        id: 218,
-        challenge_text:
-          "Go around the table counting aloud, but say 'Knotty' instead of any number with a 7 or a multiple of 7! - Mess up? Take a sip! 🔢🍻",
-        has_bonus: false,
-      },
-      {
-        id: 219,
-        challenge_text:
-          "Name a famous person. The next player must say a name that starts with the last letter of yours. – Can't think of one? Drink! 🎤🔥",
-        has_bonus: false,
-      },
-      {
-        id: 220,
-        challenge_text:
-          "Tell the group two truths and one lie about yourself. The group must guess which one is the lie. - Whoever guesses wrong must finish their drink!",
+          "Do your best impression of your professor – 📚 The group decides if it's accurate.",
         has_bonus: false,
       }
     );

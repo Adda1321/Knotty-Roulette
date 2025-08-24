@@ -1,22 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    Animated,
-    Image,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Animated,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Surface } from "react-native-paper";
 import Toast from "react-native-toast-message";
 import {
-    ANIMATION_CONFIGS,
-    ANIMATION_VALUES,
+  ANIMATION_CONFIGS,
+  ANIMATION_VALUES,
 } from "../../constants/animations";
-import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import { FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 import { logVote } from "../../services/api";
 import audioService from "../../services/audio";
 import { Challenge } from "../../types/game";
@@ -30,6 +31,7 @@ interface ChallengeDisplayProps {
 }
 
 export default function ChallengeDisplay({
+
   challenge,
   playerName,
   onComplete,
@@ -51,6 +53,15 @@ export default function ChallengeDisplay({
     null
   );
 
+ const { COLORS, currentTheme } = useTheme();
+  
+  // Debug logging
+  console.log("🎨 GameBoard: Current theme:", currentTheme);
+  
+  // Monitor theme changes
+  useEffect(() => {
+    console.log("🎨 GameBoard: Theme changed to:", currentTheme);
+  }, [currentTheme]);
   // Animation values
   const cardScale = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -192,11 +203,31 @@ export default function ChallengeDisplay({
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        <Animated.View style={[styles.challengeCard]}>
-          <View style={styles.playerContainer}>
+    <Animated.View
+  style={[
+    styles.challengeCard,
+    {
+    backgroundColor: COLORS.FIELDS,
+      borderColor:
+        currentTheme === THEME_PACKS.DEFAULT ? "#2B7B33" : COLORS.YELLOW,
+    },
+  ]}
+>
+                      <View style={[styles.playerContainer,{                      
+                        backgroundColor:COLORS.PRIMARY}]}>
+            
             <View>
-              <Text style={styles.playerName}>{playerName},</Text>
-              <Text style={styles.turnText}>YOUR TURN</Text>
+          <Text
+  style={[
+    styles.playerName,
+    { color: COLORS.YELLOW }
+  ]}
+>{playerName},</Text>
+              <Text style={[styles.turnText,
+                {
+    color: COLORS.YELLOW,
+                }]
+              }>YOUR TURN</Text>
             </View>
             <View style={styles.mascotContainer}>
               <Image
@@ -225,7 +256,11 @@ export default function ChallengeDisplay({
             }}
           >
             <View style={styles.challengeTextContainer}>
-              <Text style={styles.challengeText}>
+              <Text style={[styles.challengeText,
+                {
+    color: COLORS.TEXT_DARK,
+                }
+              ]}>
                 {challenge.challenge_text}
               </Text>
             </View>
@@ -242,7 +277,11 @@ export default function ChallengeDisplay({
                       {
                         borderRadius: 10,
                       },
-                      styles.upvoteButton,
+                      styles.upvoteButton,{
+                        backgroundColor:COLORS.ONLINE,
+                        borderColor:COLORS.PRIMARY
+
+                      },
                       styles.voteButton,
                     ]}
                   >
@@ -269,7 +308,9 @@ export default function ChallengeDisplay({
                           size="small"
                         />
                       ) : (
-                        <Text style={styles.voteButtonText}>👍</Text>
+                        <Text style={[styles.voteButtonText,{
+    color: COLORS.TEXT_PRIMARY,
+                        }]}>👍</Text>
                       )}
                     </TouchableOpacity>
                   </Surface>
@@ -279,7 +320,10 @@ export default function ChallengeDisplay({
                       {
                         borderRadius: 10,
                       },
-                      styles.downvoteButton,
+                      styles.downvoteButton,{
+                    backgroundColor: currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :"#EE562B"
+
+                      },
                       styles.voteButton,
                     ]}
                   >
@@ -314,23 +358,29 @@ export default function ChallengeDisplay({
             )}
             <View>
               <View style={styles.actionButtons}>
-                <Surface
-                  elevation={3}
-                  style={{
-                    borderRadius: 11,
-                    borderWidth: 3, // Add border width
-                    borderColor: "#18752A", // Dark green border color
-                    overflow: "hidden", // Ensures border radius clips content
-                  }}
-                >
+            <Surface
+  elevation={3}
+  style={{
+    borderRadius: 11,
+    borderWidth: 3, // Add border width
+    borderColor:
+      currentTheme === THEME_PACKS.DEFAULT
+        ? "#18752A"
+        : COLORS.PRIMARY,
+    overflow: "hidden", // Ensures border radius clips content
+  }}
+>
+
                   <Animated.View
                     style={{ transform: [{ scale: buttonScale }] }}
                   >
                     <Button
                       text="COMPLETE CHALLENGE +1" // Uppercase to match image
                       onPress={handleComplete}
-                      backgroundColor="#3A983D"
-                      textColor={COLORS.YELLOW}
+ backgroundColor=
+    {  currentTheme === THEME_PACKS.DEFAULT
+        ? "#3A983D"
+        : COLORS.ONLINE}                    textColor={COLORS.YELLOW}
                       fontSize={SIZES.SUBTITLE}
                       fontFamily={FONTS.DOSIS_BOLD}
                       // fontWeight="800" // Bolder to match image
@@ -354,7 +404,7 @@ export default function ChallengeDisplay({
                   <Button
                     text="Pass (-1 point)"
                     onPress={handleOnPass}
-                    backgroundColor="#EE562B"
+                    backgroundColor={currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :"#EE562B"}
                     textColor={COLORS.YELLOW}
                     fontSize={SIZES.SUBTITLE}
                     fontFamily={FONTS.DOSIS_BOLD}
@@ -426,7 +476,6 @@ const styles = StyleSheet.create({
   },
   challengeCard: {
     borderColor: "#2B7B33",
-    backgroundColor: COLORS.FIELDS,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     borderWidth: 3,
     maxWidth: 450,
@@ -442,7 +491,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE - 3, // Account for border width
     borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE - 3, // Account for border width
-    backgroundColor: COLORS.DARK_GREEN,
     paddingVertical: 5,
     paddingLeft: 20,
     width: "100%",
@@ -452,7 +500,6 @@ const styles = StyleSheet.create({
   },
   playerName: {
     fontSize: SIZES.EXTRALARGE,
-    color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
     textShadowColor: "#06540fff", // Border color
@@ -462,7 +509,6 @@ const styles = StyleSheet.create({
   },
   turnText: {
     fontSize: SIZES.TITLE + 4,
-    color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
     letterSpacing: 1,
@@ -485,7 +531,6 @@ const styles = StyleSheet.create({
   },
   challengeText: {
     fontSize: SIZES.BODY,
-    color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     lineHeight: 22,
     textAlign: "center",
@@ -519,17 +564,15 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   upvoteButton: {
-    backgroundColor: COLORS.DARK_GREEN,
     borderColor: "#18752A",
     borderWidth: 2,
   },
   downvoteButton: {
-    backgroundColor: COLORS.OFFLINE,
+    // backgroundColor: COLORS.OFFLINE,
     borderColor: "#DC4016",
     borderWidth: 2,
   },
   voteButtonText: {
-    color: COLORS.TEXT_PRIMARY,
     fontSize: SIZES.BODY,
     fontFamily: FONTS.PRIMARY,
     fontWeight: "600",

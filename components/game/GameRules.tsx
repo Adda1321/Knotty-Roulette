@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Modal,
   Platform,
@@ -7,10 +7,10 @@ import {
   Text,
   View,
 } from "react-native";
-import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import { COLORS, FONTS, SIZES } from "../../constants/theme"; // Fixed import
+import { useTheme } from "../../contexts/ThemeContext";
 import audioService from "../../services/audio";
 import Button from "../ui/Button";
-
 interface GameRulesProps {
   visible: boolean;
   onClose: () => void;
@@ -46,7 +46,15 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
       text: "Pass the phone - Next player spins, and the game rolls on!",
     },
   ];
-
+  const { COLORS, currentTheme } = useTheme();
+  
+  // Debug logging
+  console.log("🎨 GameBoard: Current theme:", currentTheme);
+  
+  // Monitor theme changes
+  useEffect(() => {
+    console.log("🎨 GameBoard: Theme changed to:", currentTheme);
+  }, [currentTheme]);
   return (
     <Modal
       visible={visible}
@@ -57,7 +65,7 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
       <View style={styles.overlay}>
         <View style={styles.container}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header,{backgroundColor:COLORS.PRIMARY}]}>
             <Text style={styles.title}>Knotty Roulette</Text>
             <Text style={styles.subtitle}>(Party Game)</Text>
           </View>
@@ -121,7 +129,7 @@ const styles = StyleSheet.create({
     ...SIZES.SHADOW_LARGE,
   },
   header: {
-    backgroundColor: COLORS.DARK_GREEN,
+    // backgroundColor: COLORS.DARK_GREEN,
     borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE,
     borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE,
     alignItems: "center",

@@ -157,11 +157,18 @@ export const THEME_PACK_DATA: Record<ThemePackId, ThemePackData> = {
 export const THEME_COLORS = {
   [THEME_PACKS.DEFAULT]: {
     // Primary Colors - Use original green colors
-    DARK_GREEN: "#6bc26e",      // Original green || OKAY
-    LIGHT_GREEN: "#def6e2",     // Original light green || OKAY
+    PRIMARY: "#6bc26e",      // Original green || OKAY
+    LIGHT: "#116b20ff",     // Original light green || OKAY
+    DARK:"#3f663f",
+    LIGHTEST: "#63A133", 
+    // BackGround:"#116b20ff" ,   // Original light green || OKAY
+    BORDER:"#63A133",
+    TEXT:"#F4C614",
     YELLOW: "#F4C614",          // Original yellow || OKAY
     FIELDS: "#F1E9BE",          // Original fields color || OKAY
-    
+    GAMEBOARDPRIMARY:"#286a19ff",
+    GAMEBOARDSECONDARY:"#d4f6daff",
+    SCOREBOARD:"#5aad5d",
     // Background Colors
     BACKGROUND_DARK: "#1a1a1a", // Original dark background || OKAY
      //|| OKAY
@@ -191,14 +198,20 @@ export const THEME_COLORS = {
   
   [THEME_PACKS.COLLEGE]: {
     // Primary Colors - Blue Theme
-    DARK_GREEN: "#1976D2",      // Blue instead of green
-    LIGHT_GREEN: "#42A5F5",     // Light blue
-    YELLOW: "#FF9800",          // Orange accent
+    PRIMARY: "#0c2f64ff",      // Blue instead of green
+    LIGHT: "#1976D2",
+    THEMEPACKNAME:"#9cbfe2ff",
+    LIGHTEST: "#6598cbff",
+    DARK:"#123f65ff",     // Light blue
+    TEXT:"#ff3b9dff",
+    YELLOW: "#F4C614", 
+             // Orange accent
     FIELDS: "#E3F2FD",          // Light blue fields
+       GAMEBOARDPRIMARY:"#4495bbff",
+    GAMEBOARDSECONDARY:"#bcecf0ff",
     
-    // Background Colors
-    BACKGROUND_DARK: "#0D47A1", // Dark blue
-    
+    SCOREBOARD:"#639db6ff",
+ 
     
     // Text Colors
     TEXT_PRIMARY: "#ffffff",
@@ -225,22 +238,33 @@ export const THEME_COLORS = {
   
   [THEME_PACKS.COUPLE]: {
     // Primary Colors - Red/Pink Theme
-    DARK_GREEN: "#E91E63",      // Pink/Red instead of green
-    LIGHT_GREEN: "#F8BBD9",     // Light pink
+    PRIMARY: "#BC2538",      // Pink/Red instead of green
+      // Primary Colors - Blue Theme
+    THEMEPACKNAME:"#9cbfe2ff",
+
+    LIGHT: "#E78D90",
+    LIGHTEST:"#EB6051",
+    DARK:"#CB4757", 
+    TEXT:"#FDCA2B",
+    BORDER:"#4292c1ff",
+        // Light blue    // Light pink
     YELLOW: "#FFC107",          // Amber accent
     FIELDS: "#FCE4EC",          // Light pink fields
     
     // Background Colors
-    BACKGROUND_DARK: "#C2185B", // Dark pink
+    BACKGROUND_DARK: "#E14C31", // Dark pink
     
-    
+       GAMEBOARDPRIMARY:"#d7364cff",
+    GAMEBOARDSECONDARY:"#d28c8eff",
+    SCOREBOARD:"#ce5256ff",
+
     // Text Colors
     TEXT_PRIMARY: "#ffffff",
     TEXT_SECONDARY: "#FCE4EC",  // Light pink text
     TEXT_DARK: "#C2185B",       // Dark pink text
     
     // Status Colors
-    ONLINE: "#E91E63",          // Pink
+    ONLINE: "#e95e62ff",          // Pink
     OFFLINE: "#ff6b6b",
     
     // Card Colors
@@ -260,12 +284,12 @@ export const THEME_COLORS = {
 
 // Upsell Configuration
 export const UPSELL_CONFIG = {
-  AD_COUNT_BEFORE_UPSELL: 5, //5 Change this value for testing (e.g., 3, 7, 10)
-  GAME_OVER_UPSELL_FREQUENCY: 3, //3 Show upsell every N game overs for premium users
+  AD_COUNT_BEFORE_UPSELL: 1, //5 Change this value for testing (e.g., 3, 7, 10)
+  GAME_OVER_UPSELL_FREQUENCY: 1, //3 Show upsell every N game overs for premium users
   SHOP_ENTRY_UPSELL_FREQUENCY: 5, //5 Show upsell every N shop visits for ALL users
 };
 
 // Game Configuration
 export const GAME_CONFIG = {
-  WINNING_SCORE: 10, //10 First player to reach this score wins the game
+  WINNING_SCORE: 4, //10 First player to reach this score wins the game
 };

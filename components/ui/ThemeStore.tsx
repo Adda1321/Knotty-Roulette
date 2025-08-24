@@ -52,7 +52,6 @@ export default function ThemeStore({
 }: {
   isGameActive?: boolean;
 }) {
-  const { switchTheme } = useTheme(); // Add theme context hook
   const [showPreview, setShowPreview] = useState(false);
   const [selectedPack, setSelectedPack] = useState<ThemePack | null>(null);
   const [themePacks, setThemePacks] = useState<ThemePack[]>([]);
@@ -62,6 +61,7 @@ export default function ThemeStore({
   const [showSwitchConfirmation, setShowSwitchConfirmation] = useState(false);
   const [packToSwitch, setPackToSwitch] = useState<ThemePack | null>(null);
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
+  const { COLORS, switchTheme, currentTheme, refreshTheme } = useTheme();
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [currentUpsellOffer, setCurrentUpsellOffer] = useState<any>(null);
   const [showPurchaseSuccessModal, setShowPurchaseSuccessModal] =
@@ -81,7 +81,7 @@ export default function ThemeStore({
   const [purchaseType, setPurchaseType] = useState<
     "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null
   >(null);
-
+console.log("isGameActive=>>",isGameActive)
   // Load theme packs with current status
   useEffect(() => {
     loadThemePacks();
@@ -427,6 +427,12 @@ export default function ThemeStore({
       // Reset upsell service state
       await upsellService.resetUpsellState();
 
+      // Force theme refresh to ensure context updates
+      await refreshTheme();
+
+      // Small delay to ensure theme context updates
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       // Refresh all data
       loadThemePacks();
       loadPassiveOffers();
@@ -438,11 +444,11 @@ export default function ThemeStore({
       // Show success message
       Alert.alert(
         "🔄 Store Reset Complete!",
-        "All purchases and premium status have been reset. You're now a free user again.",
+        "All purchases and premium status have been reset. You're now a free user again and back to the default theme.",
         [{ text: "Got it!" }]
       );
     } catch (error) {
-      console.error("Error resetting store:", error);
+      console.error("❌ ThemeStore: Error resetting store:", error);
       Alert.alert(
         "Error",
         "Failed to reset store completely. Please try again."
@@ -527,7 +533,7 @@ export default function ThemeStore({
         <Text style={styles.themeEmoji}>{pack.emoji}</Text>
         {/* </View> */}
         {pack.isOwned && (
-          <View style={styles.ownedBadge}>
+          <View style={[styles.ownedBadge, { backgroundColor: COLORS.ONLINE }]}>
             <Text style={styles.ownedBadgeText}>Owned</Text>
           </View>
         )}
@@ -550,7 +556,7 @@ export default function ThemeStore({
             style={[
               styles.selectButton,
               {
-                backgroundColor: COLORS.DARK_GREEN,
+                backgroundColor: COLORS.ONLINE,
               },
             ]}
             disabled={true}
@@ -582,7 +588,9 @@ export default function ThemeStore({
     >
       <View style={styles.previewOverlay}>
         <View style={styles.previewContainer}>
-          <View style={styles.previewHeader}>
+          <View
+            style={[styles.previewHeader, { backgroundColor: COLORS.PRIMARY }]}
+          >
             <Text style={styles.previewTitle}>{selectedPack?.name}</Text>
             <TouchableOpacity
               onPress={() => {
@@ -592,7 +600,7 @@ export default function ThemeStore({
               }}
               style={styles.closePreviewButton}
             >
-              <Ionicons name="close" size={24} color={COLORS.TEXT_DARK} />
+              <Ionicons name="close" size={24} color={COLORS.YELLOW} />
             </TouchableOpacity>
           </View>
 
@@ -636,11 +644,6 @@ export default function ThemeStore({
                         <Text style={styles.sampleChallengeText}>
                           {challenge.challenge_text}
                         </Text>
-                        {challenge.has_bonus && (
-                          <View style={styles.bonusBadge}>
-                            <Text style={styles.bonusText}>Bonus</Text>
-                          </View>
-                        )}
                       </View>
                     )
                   )}
@@ -704,7 +707,7 @@ export default function ThemeStore({
   return (
     <>
       <View style={styles.container}>
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: COLORS.PRIMARY }]}>
           <TouchableOpacity
             onPress={() => {
               audioService.playSound("buttonPress");
@@ -886,7 +889,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   header: {
-    backgroundColor: COLORS.DARK_GREEN,
+    // backgroundColor: COLORS.DARK_GREEN,
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
     padding: SIZES.PADDING_LARGE,
@@ -1125,7 +1128,7 @@ const styles = StyleSheet.create({
     fontSize: 20, // Slightly smaller to ensure it fits
   },
   ownedBadge: {
-    backgroundColor: COLORS.ONLINE,
+    // backgroundColor: COLORS.ONLINE,
     paddingHorizontal: SIZES.PADDING_SMALL,
     paddingVertical: 2,
     borderRadius: SIZES.BORDER_RADIUS_SMALL - 2,
@@ -1196,7 +1199,6 @@ const styles = StyleSheet.create({
     overflow: "hidden", // Ensure content doesn't leak out
   },
   previewHeader: {
-    backgroundColor: COLORS.DARK_GREEN,
     borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE,
     borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_LARGE,
@@ -1237,8 +1239,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.PADDING_MEDIUM,
   },
   previewImageContainer: {
-    width: "90%",
-    height: 300, // Reduced from 300
+    width: "80%",
+    height: 400, // Reduced from 300
     backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     // marginBottom: SIZES.PADDING_LARGE,
@@ -1390,7 +1392,7 @@ const styles = StyleSheet.create({
   },
   selectButtonText: {
     fontSize: SIZES.SMALL,
-    color: COLORS.TEXT_DARK,
+    color: COLORS.TEXT_PRIMARY,
     fontFamily: FONTS.DOSIS_BOLD,
   },
   previewButton: {

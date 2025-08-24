@@ -6,7 +6,7 @@ interface ThemeContextType {
   currentTheme: ThemePackId;
   COLORS: typeof THEME_COLORS[ThemePackId]; // Current theme's colors
   switchTheme: (themeId: ThemePackId) => Promise<boolean>;
-  refreshTheme: () => void;
+  refreshTheme: () => Promise<void>;
   onThemeChange: (callback: (themeId: ThemePackId) => void) => () => void; // Add callback system
 }
 

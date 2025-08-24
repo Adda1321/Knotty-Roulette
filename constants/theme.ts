@@ -291,5 +291,5 @@ export const UPSELL_CONFIG = {
 
 // Game Configuration
 export const GAME_CONFIG = {
-  WINNING_SCORE: 2, //10 First player to reach this score wins the game
+  WINNING_SCORE: 4, //10 First player to reach this score wins the game
 };

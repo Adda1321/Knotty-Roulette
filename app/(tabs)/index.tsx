@@ -35,6 +35,7 @@ export default function HomeScreen() {
   // Upsell state
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [currentUpsellOffer, setCurrentUpsellOffer] = useState<UpsellOffer | null>(null);
+  const [isGameOverUpsell, setIsGameOverUpsell] = useState(false);
 
   // Purchase celebration state
   const [showPurchaseCelebrationModal, setShowPurchaseCelebrationModal] =
@@ -218,6 +219,13 @@ export default function HomeScreen() {
     const nextUpsell = await upsellService.checkPostPurchaseUpsell("ad_free");
     if (nextUpsell !== "none") {
       handleUpsellDisplay(nextUpsell);
+    } else {
+      // No more upsells, safe to reset game
+      // If this was a game over upsell, reset the game
+      if (isGameOverUpsell) {
+        setIsGameOverUpsell(false);
+        resetGame();
+      }
     }
   };
 
@@ -229,11 +237,43 @@ export default function HomeScreen() {
         const offer = upsellService.getUpsellOffer(upsellType, "game_over");
         if (offer) {
           setCurrentUpsellOffer(offer);
+          setIsGameOverUpsell(true); // Mark this as a game over upsell
           setShowUpsellModal(true);
         }
+      } else {
+        // No upsell shown, safe to reset game
+        resetGame();
       }
     } catch (error) {
       console.error("Error checking game over upsell:", error);
+      // On error, reset game to prevent getting stuck
+      resetGame();
+    }
+  };
+
+  // Handle game over modal close with proper upsell flow
+  const handleGameOverModalClose = async () => {
+    audioService.playHaptic("medium");
+    setShowGameOverModal(false);
+    
+    // Check for game over upsell AFTER modal is closed
+    // This prevents modal-over-modal issues on iOS
+    setTimeout(async () => {
+      await checkGameOverUpsell();
+    }, 100); // Small delay to ensure modal is fully closed
+    
+    // Don't reset game immediately - wait for upsell flow to complete
+  };
+
+  // Handle upsell modal close - then reset game if it was a game over upsell
+  const handleUpsellModalClose = () => {
+    setShowUpsellModal(false);
+    setCurrentUpsellOffer(null);
+    
+    // If this was a game over upsell, reset the game
+    if (isGameOverUpsell) {
+      setIsGameOverUpsell(false);
+      resetGame();
     }
   };
 
@@ -271,8 +311,8 @@ export default function HomeScreen() {
               audioService.playSound("gameOver");
               audioService.playHaptic("success");
 
-              // Check for game over upsell (for Ad-Free users) when game actually ends
-              checkGameOverUpsell();
+              // Don't check for upsell here - let the game over modal handle it
+              // The new logic in handleGameOverModalClose will check for upsell after modal closes
 
               setGameState("gameOver");
               setWinner(updatedPlayers[playerIndex]);
@@ -291,11 +331,7 @@ export default function HomeScreen() {
       {/* Game Over Modal */}
       <CustomModal
         visible={showGameOverModal}
-        onClose={() => {
-          audioService.playHaptic("medium");
-          setShowGameOverModal(false);
-          resetGame();
-        }}
+        onClose={handleGameOverModalClose}
         title="Game Over!"
         message={
           winner ? `${winner.name} wins with ${winner.points} points!` : ""
@@ -310,7 +346,7 @@ export default function HomeScreen() {
       {currentUpsellOffer && (
         <UpsellModal
           visible={showUpsellModal}
-          onClose={() => setShowUpsellModal(false)}
+          onClose={handleUpsellModalClose}
           onPurchaseSuccess={handleUpsellPurchaseSuccess}
           onPurchaseComplete={handlePurchaseComplete}
           offer={currentUpsellOffer}

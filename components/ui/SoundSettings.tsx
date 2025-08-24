@@ -65,10 +65,10 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
     audioService.playHaptic("medium");
   };
   const { COLORS, currentTheme } = useTheme();
-  
+
   // Debug logging
   console.log("🎨 GameBoard: Current theme:", currentTheme);
-  
+
   // Monitor theme changes
   useEffect(() => {
     console.log("🎨 GameBoard: Theme changed to:", currentTheme);
@@ -99,8 +99,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
       >
         <View style={styles.overlay}>
           <View style={styles.container}>
-                     <View style={[styles.header,{backgroundColor:COLORS.PRIMARY}]}>
-           
+            <View style={[styles.header, { backgroundColor: COLORS.PRIMARY }]}>
               <Text style={styles.title}>Sound Settings</Text>
             </View>
 
@@ -124,8 +123,13 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                 <TouchableOpacity
                   style={[
                     styles.toggleButton,
-                    {backgroundColor:COLORS.ONLINE},
-                    isMusicMuted &&  {backgroundColor:COLORS.PRIMARY},
+                    { backgroundColor: COLORS.ONLINE },
+                    isMusicMuted && {
+                      backgroundColor:
+                        currentTheme === THEME_PACKS.DEFAULT
+                          ? COLORS.DARK
+                          : COLORS.PRIMARY,
+                    },
                   ]}
                   onPress={toggleMusicMute}
                 >
@@ -153,9 +157,14 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                 <TouchableOpacity
                   style={[
                     styles.toggleButton,
-                    {backgroundColor:COLORS.ONLINE},
-                    isSoundsMuted && {backgroundColor:COLORS.PRIMARY},
-,
+                    { backgroundColor: COLORS.ONLINE },
+                    isSoundsMuted && {
+                      backgroundColor:
+                        currentTheme === THEME_PACKS.DEFAULT
+                          ? COLORS.DARK
+                          : COLORS.PRIMARY,
+                    },
+                    ,
                   ]}
                   onPress={toggleSoundsMute}
                 >
@@ -187,11 +196,16 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                 <TouchableOpacity
                   style={[
                     styles.toggleButton,
-                    {backgroundColor:COLORS.ONLINE},
-                   !isVibrationEnabled &&
-    (currentTheme === THEME_PACKS.COUPLE
-      ? { backgroundColor: COLORS.PRIMARY }
-      : styles.toggleButtonMuted),
+                    { backgroundColor: COLORS.ONLINE },
+                    !isVibrationEnabled &&
+                      (currentTheme === THEME_PACKS.COUPLE
+                        ? { backgroundColor: COLORS.PRIMARY }
+                        : styles.toggleButtonMuted && {
+                            backgroundColor:
+                              currentTheme === THEME_PACKS.DEFAULT
+                                ? COLORS.DARK
+                                : COLORS.PRIMARY,
+                          }),
                   ]}
                   onPress={toggleVibration}
                 >
@@ -309,8 +323,6 @@ const styles = StyleSheet.create({
   toggleText: {
     fontSize: 20,
   },
-
-
 
   buttonContainer: {
     padding: SIZES.PADDING_LARGE,

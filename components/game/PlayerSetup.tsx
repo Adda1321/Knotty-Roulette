@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
@@ -26,6 +27,7 @@ import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
 import StoreButton from "../ui/StoreButton";
+
 interface PlayerSetupProps {
   onStartGame: (playerNames: string[]) => void;
 }
@@ -141,47 +143,68 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
               />
             </View>
 
-            <View style={styles.mascotContainer}>
-              <Image
-                source={
-                  currentTheme === THEME_PACKS.DEFAULT
-                    ? require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs.png")
-                    : currentTheme === THEME_PACKS.COLLEGE
-                    ? require("../../assets/images/MascotImages/College/College-legs-mascot.png")
-                    : require("../../assets/images/MascotImages/Couple/Couple-legs-mascot.png")
-                }
-                style={styles.mascotImage}
-                resizeMode="contain"
-              />
-            </View>
-            {/* Title with conditional rendering for edition text */}
-            <Text
-              style={[
-                styles.title,
-                {
-                  color:
-                    currentTheme === THEME_PACKS.DEFAULT
-                      ? COLORS.TEXT
-                      : currentTheme === THEME_PACKS.COLLEGE
-                      ? COLORS.TEXT
-                      : COLORS.TEXT,
-                },
-              ]}
-            >
-              KNOTTY ROULETTE
-            </Text>
-
-            {currentTheme === THEME_PACKS.COLLEGE && (
-              <Text style={[styles.editionText, { color: COLORS.THEMEPACKNAME }]}>
-                COLLEGE EDITION
-              </Text>
+            {/* Conditional layout based on theme */}
+            {currentTheme === THEME_PACKS.DEFAULT ? (
+              // Default theme: keep original layout
+              <>
+                <View style={styles.mascotContainer}>
+                  <Image
+                    source={require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs.png")}
+                    style={styles.mascotImage}
+                    resizeMode="contain"
+                  />
+                </View>
+                <Text style={[styles.title, { color: COLORS.TEXT }]}>
+                  KNOTTY ROULETTE
+                </Text>
+              </>
+            ) : (
+              // College and Couple themes: centered title with absolute positioned mascot
+              <View style={styles.themeHeaderContainer}>
+                <View style={styles.titleContainer}>
+                  <Text style={[styles.themeTitle, { color: COLORS.TEXT }]}>
+                    KNOTTY ROULETTE
+                  </Text>
+                  {currentTheme === THEME_PACKS.COLLEGE && (
+                    <Text
+                      style={[
+                        styles.editionText,
+                        {
+                          color:
+                            (COLORS as any).THEMEPACKNAME ||
+                            COLORS.TEXT_SECONDARY,
+                          textAlign: "center",
+                        },
+                      ]}
+                    >
+                      COLLEGE EDITION
+                    </Text>
+                  )}
+                  {currentTheme === THEME_PACKS.COUPLE && (
+                    <Text
+                      style={[
+                        styles.editionText,
+                        { color: COLORS.FIELDS, textAlign: "center" },
+                      ]}
+                    >
+                      COUPLES PACK
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.themeMascotContainer}>
+                  <Image
+                    source={
+                      currentTheme === THEME_PACKS.COLLEGE
+                        ? require("../../assets/images/MascotImages/College/College-legs-mascot.png")
+                        : require("../../assets/images/MascotImages/Couple/Couple-legs-mascot.png")
+                    }
+                    style={styles.themeMascotImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              </View>
             )}
 
-            {currentTheme === THEME_PACKS.COUPLE && (
-              <Text style={[styles.editionText, { color: COLORS.FIELDS }]}>
-                COUPLES PACK
-              </Text>
-            )}
             <Text style={[styles.subtitle, { color: COLORS.TEXT_PRIMARY }]}>
               Add Players to Begin
             </Text>
@@ -422,9 +445,17 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                             // borderColor: COLORS.LIGHTEST, // They changed it
                           }}
                         >
-                          <Image
-                            source={require("../../assets/images/play-button-arrowhead.png")}
-                            style={{ width: 14, height: 14, marginRight: 8 }}
+                          <Ionicons
+                            name="play"
+                            size={18}
+                            color={
+                              currentTheme === THEME_PACKS.DEFAULT
+                                ? "#000000"
+                                : currentTheme === THEME_PACKS.COLLEGE
+                                ? COLORS.TEXT_DARK
+                                : COLORS.PRIMARY
+                            }
+                            style={{ marginRight: 4 }}
                           />
                           <Text
                             style={{
@@ -521,7 +552,7 @@ const styles = StyleSheet.create({
     fontSize: SIZES.BODY,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
-    marginBottom: SIZES.PADDING_LARGE,
+    marginBottom: SIZES.PADDING_SMALL,
   },
   content: {
     flex: 1,
@@ -637,10 +668,46 @@ const styles = StyleSheet.create({
   editionText: {
     fontSize: SIZES.EXTRALARGE,
     fontFamily: FONTS.DOSIS_BOLD,
-    textAlign: "center",
+    textAlign: "left",
     marginBottom: SIZES.PADDING_SMALL,
     letterSpacing: 0,
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 1,
+  },
+  themeHeaderContainer: {
+    position: "relative",
+    alignItems: "center",
+    width: "100%",
+    // paddingTop: SIZES.PADDING_MEDIUM,
+    paddingHorizontal: SIZES.PADDING_SMALL,
+    marginBottom: SIZES.PADDING_SMALL,
+    marginTop: SIZES.PADDING_LARGE,
+  },
+  titleContainer: {
+    alignItems: "flex-start",
+    width: "100%",
+    paddingHorizontal: 15,
+  },
+  themeMascotContainer: {
+    position: "absolute",
+    right: -5,
+    top: -30,
+    zIndex: 10,
+  },
+  themeMascotImage: {
+    width: 150,
+    height: 150,
+    zIndex: 1,
+    transform: [{ rotate: "5deg" }],
+    marginBottom: Platform.OS === "ios" ? 0 : -5,
+  },
+  themeTitle: {
+    fontSize: 50,
+    fontFamily: FONTS.DOSIS_BOLD,
+    textAlign: "left",
+    ...SIZES.TEXT_SHADOW_MEDIUM,
+    lineHeight: 45,
+    maxWidth: "80%",
+    paddingTop: 8,
   },
 });

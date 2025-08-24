@@ -18,7 +18,7 @@ import {
   SIZES,
   THEME_PACKS,
   THEME_PACK_DATA,
-  ThemePackId
+  ThemePackId,
 } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext"; // Add useTheme hook
 import audioService from "../../services/audio";
@@ -81,7 +81,7 @@ export default function ThemeStore({
   const [purchaseType, setPurchaseType] = useState<
     "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null
   >(null);
-
+console.log("isGameActive=>>",isGameActive)
   // Load theme packs with current status
   useEffect(() => {
     loadThemePacks();
@@ -426,12 +426,12 @@ export default function ThemeStore({
 
       // Reset upsell service state
       await upsellService.resetUpsellState();
-     
+
       // Force theme refresh to ensure context updates
       await refreshTheme();
 
       // Small delay to ensure theme context updates
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Refresh all data
       loadThemePacks();
@@ -588,7 +588,9 @@ export default function ThemeStore({
     >
       <View style={styles.previewOverlay}>
         <View style={styles.previewContainer}>
-          <View style={styles.previewHeader}>
+          <View
+            style={[styles.previewHeader, { backgroundColor: COLORS.PRIMARY }]}
+          >
             <Text style={styles.previewTitle}>{selectedPack?.name}</Text>
             <TouchableOpacity
               onPress={() => {
@@ -598,7 +600,7 @@ export default function ThemeStore({
               }}
               style={styles.closePreviewButton}
             >
-              <Ionicons name="close" size={24} color={COLORS.TEXT_DARK} />
+              <Ionicons name="close" size={24} color={COLORS.YELLOW} />
             </TouchableOpacity>
           </View>
 
@@ -1197,7 +1199,6 @@ const styles = StyleSheet.create({
     overflow: "hidden", // Ensure content doesn't leak out
   },
   previewHeader: {
-    backgroundColor: COLORS.DARK_GREEN,
     borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE,
     borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_LARGE,
@@ -1238,8 +1239,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.PADDING_MEDIUM,
   },
   previewImageContainer: {
-    width: "90%",
-    height: 300, // Reduced from 300
+    width: "80%",
+    height: 400, // Reduced from 300
     backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     // marginBottom: SIZES.PADDING_LARGE,

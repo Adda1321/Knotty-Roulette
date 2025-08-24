@@ -580,12 +580,27 @@ export default function GameBoard({
             <View style={styles.wheelContainer}>
               <View style={styles.header}>
                 <Text
-                  style={[styles.currentPlayer, { color: COLORS.TEXT_DARK }]}
+                  style={[
+                    styles.currentPlayer,
+                    {
+                      color:
+                        currentTheme === THEME_PACKS.COUPLE
+                          ? "#333333"
+                          : COLORS.TEXT_DARK,
+                    },
+                  ]}
                 >
                   {`${currentPlayer.name}'s Turn`}
                 </Text>
                 <Text
-                  style={[styles.passInstruction, { color: COLORS.TEXT_DARK }]}
+                  style={[styles.passInstruction, 
+                     {
+                      color:
+                        currentTheme === THEME_PACKS.COUPLE
+                          ? "#333333"
+                          : COLORS.TEXT_DARK,
+                    },
+                  ]}
                 >
                   Pass Phone to Next Player
                 </Text>

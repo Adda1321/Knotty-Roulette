@@ -33,9 +33,6 @@ interface PlayerSetupProps {
 export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   const { COLORS, currentTheme } = useTheme();
 
-  // Debug logging
-  console.log("🎨 PlayerSetup: Current theme:", currentTheme);
-
   // Monitor theme changes
   useEffect(() => {
     console.log("🎨 PlayerSetup: Theme changed to:", currentTheme);
@@ -175,7 +172,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
             </Text>
 
             {currentTheme === THEME_PACKS.COLLEGE && (
-              <Text style={[styles.editionText, { color: COLORS.YELLOW }]}>
+              <Text style={[styles.editionText, { color: COLORS.THEMEPACKNAME }]}>
                 COLLEGE EDITION
               </Text>
             )}

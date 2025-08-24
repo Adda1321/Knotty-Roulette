@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knotty Roulette - Knotty Times</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <?php wp_head(); ?>
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #1a1a1a;
+            color: #fff;
+            text-align: center;
+            margin: 0 !important;
+            padding: 20px 0 !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            justify-content: center;
+            font-weight: 400;
+            overflow-x: hidden;
+            box-sizing: border-box;
+            width: 100vw;
+        }
+
+        /* Game Content Container */
+        #game-content {
+            position: relative;
+            width: 100%;
+            max-width: 100vw;
+        }
+
+        /* Splash Screen Styles */
+        .splash-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .splash-image {
+            max-width: 90%;
+            max-height: 80%;
+            object-fit: contain;
+        }
+
+        .start-btn {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #ffcc00;
+            color: #000;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            transition: background-color 0.3s;
+        }
+
+        .start-btn:hover {
+            background-color: #e6b800;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 50px;
+            color: #ffcc00;
+            font-weight: 700;
+            width: 100%;
+        }
+        p {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+            font-weight: 400;
+        }
+        #wheelContainer {
+            position: relative;
+            width: 90vw;
+            height: 90vw;
+            max-width: 350px;
+            max-height: 350px;
+            display: none;
+            margin: 0 auto !important;
+            padding: 0;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            background-color: #fff;
+            box-sizing: border-box;
+        }
+        #wheel {
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(
+                #FF0080 0deg 27.69deg,
+                #FF0000 27.69deg 55.38deg,
+                #FF8000 55.38deg 83.07deg,
+                #FFFF00 83.07deg 110.76deg,
+                #80FF00 110.76deg 138.45deg,
+                #00FF00 138.45deg 166.14deg,
+                #00FF80 166.14deg 193.83deg,
+                #00FFFF 193.83deg 221.52deg,
+                #0080FF 221.52deg 249.21deg,
+                #0000FF 249.21deg 276.90deg,
+                #8000FF 276.90deg 304.59deg,
+                #FF00FF 304.59deg 332.28deg,
+                #FF0080 332.28deg 360deg
+            );
+            border-radius: 50%;
+            border: 5px solid #fff;
+            position: absolute;
+            top: 0;
+            left: 0;
+            box-sizing: border-box;
+            z-index: 1;
+            transition: transform 0s;
+        }
+        #arrow {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 60px;
+            color: #000000;
+            z-index: 2;
+        }
+        .spinning-wheel {
+            animation: spin 3s linear forwards;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(var(--final-rotation)); }
+        }
+        #spinButton, #passButton, #bonusButton {
+            width: 40vw;
+            max-width: 150px;
+            height: 50px;
+            padding: 0;
+            font-size: 1em;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            box-sizing: border-box;
+        }
+        #spinButton {
+            background-color: #00ff00;
+            color: #000;
+            top: 35%;
+        }
+        #spinButton:hover:not(:disabled) { background-color: #00cc00; }
+        #spinButton:disabled {
+            background-color: #ff0000;
+            cursor: not-allowed;
+        }
+        #passButton {
+            background-color: #ff6666;
+            color: #fff;
+            top: 55%;
+            display: none;
+        }
+        #passButton:hover:not(:disabled) { background-color: #cc3333; }
+        #bonusButton {
+            background-color: #00ff00;
+            color: #000;
+            top: 75%;
+            display: none;
+        }
+        #bonusButton:hover:not(:disabled) { background-color: #00cc00; }
+        #newGameButton {
+            width: 150px;
+            height: 50px;
+            font-size: 1em;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px auto;
+            background-color: #ffcc00;
+            color: #000;
+            display: none;
+        }
+        #newGameButton:hover { background-color: #e6b800; }
+        #challenge {
+            font-size: 1.5em;
+            margin-top: 20px;
+            color: #ff6666;
+            display: none;
+            text-align: center;
+            white-space: pre-line;
+            font-weight: 400;
+            max-width: 90vw;
+            width: 100%;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .action-text {
+            border: 2px solid #ffcc00;
+            padding: 5px;
+            display: inline-block;
+        }
+        #playerSetup { margin-bottom: 20px; }
+        #playerInput {
+            padding: 5px;
+            font-size: 1em;
+            margin-right: 10px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 400;
+        }
+        #addPlayerBtn, #startGameBtn {
+            padding: 5px 10px;
+            font-size: 1em;
+            background-color: #ffcc00;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+        }
+        #addPlayerBtn:hover, #startGameBtn:hover { background-color: #e6b800; }
+        #playerList, #scoreboard {
+            margin-top: 10px;
+            font-size: 1.1em;
+            font-weight: 400;
+        }
+        #scoreboard { display: none; }
+        #winnerMessage {
+            font-size: 2em;
+            color: #ffcc00;
+            font-weight: 700;
+            margin-top: 20px;
+            display: none;
+        }
+        .pass-popup {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 0.5vw 1vw;
+            font-size: clamp(12px, 2vw, 18px);
+            font-weight: 700;
+            border-radius: 10px;
+            z-index: 100;
+            display: none;
+            text-align: center;
+            cursor: pointer;
+            max-width: 90%;
+            max-height: 30%;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+        .vote-buttons {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 90vw;
+            flex-wrap: nowrap; /* Prevent wrapping, keep side by side */
+        }
+        .vote-text {
+            font-size: 1em;
+            color: #000; /* Changed to black */
+            font-weight: 400;
+            display: block;
+        }
+        .thanks-text {
+            font-size: 1em;
+            color: #00ff00;
+            font-weight: 400;
+        }
+        .thumbs-btn {
+            width: 60px;
+            height: 50px;
+            font-size: 1.2em;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #333;
+            color: #fff;
+            transition: background-color 0.3s;
+            padding: 5px;
+            box-sizing: border-box;
+            line-height: 40px;
+            text-align: center;
+        }
+        .thumbs-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .thumbs-btn.pressed.thumbs-up { background-color: #00cc00; }
+        .thumbs-btn.pressed.thumbs-down { background-color: #cc3333; }
+        #thumbsUpBtn:hover:not(:disabled):not(.pressed) { background-color: #00cc00; }
+        #thumbsDownBtn:hover:not(:disabled):not(.pressed) { background-color: #cc3333; }
+        #newGameConfirmPopup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 200;
+            display: none;
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 400;
+            max-width: 80%;
+        }
+        #newGameConfirmPopup button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 1em;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #confirmYesBtn {
+            background-color: #00ff00;
+            color: #000;
+        }
+        #confirmYesBtn:hover { background-color: #00cc00; }
+        #confirmNoBtn {
+            background-color: #ff6666;
+            color: #fff;
+        }
+        #confirmNoBtn:hover { background-color: #cc3333; }
+        @media (max-width: 600px) {
+            body { padding: 5px 0 !important; }
+            #wheelContainer { width: 90vw; height: 90vw; max-width: 350px; max-height: 350px; }
+            .pass-popup { font-size: clamp(14px, 2.5vw, 18px); padding: 1vw 2vw; top: 15%; max-height: 30%; }
+            #challenge { font-size: 1.2em; }
+            /* Removed flex-direction: column from .vote-buttons */
+            .thumbs-btn { 
+                width: 50px; 
+                height: 40px; 
+                font-size: 1em; 
+                line-height: 30px; 
+                padding: 4px; 
+            }
+            .vote-buttons {
+                gap: 5px; /* Reduce gap for tighter fit on mobile */
+            }
+            #newGameConfirmPopup { font-size: 1em; padding: 15px; }
+            #newGameConfirmPopup button { padding: 8px 15px; }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-content">
+        <div id="splash-screen" class="splash-container">
+            <img src="http://www.knottytimes.com/wp-content/uploads/2025/02/Spin-the-wheel.png" 
+                 alt="Knotty Times Splash" 
+                 class="splash-image">
+            <button id="start-button" class="start-btn">Start Game</button>
+        </div>
+
+        <h1>Knotty Roulette</h1>
+        <p id="introText">Grab a Knotty Times Seltzer.<br>Bring at least two friends to start the fun!</p>
+        <div id="playerSetup">
+            <input type="text" id="playerInput" placeholder="Enter player name">
+            <button id="addPlayerBtn">Add Player</button>
+            <button id="startGameBtn" style="display: none;">Start Game</button>
+            <div id="playerList"></div>
+        </div>
+        <div id="wheelContainer">
+            <div id="wheel"></div>
+            <div id="arrow">▼</div>
+            <button id="spinButton">Spin</button>
+            <button id="passButton">Pass</button>
+            <button id="bonusButton">Bonus Done</button>
+            <div id="passPopup" class="pass-popup">Pass Phone to Next Player</div>
+        </div>
+        <div id="challenge"></div>
+        <div id="scoreboard"></div>
+        <div id="winnerMessage"></div>
+        <button id="newGameButton">New Game</button>
+        <div id="newGameConfirmPopup">
+            <p>Are you sure you want to start a new game?</p>
+            <button id="confirmYesBtn">Yes</button>
+            <button id="confirmNoBtn">No</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Script loaded and DOM ready');
+
+            const splashScreen = document.getElementById('splash-screen');
+            const gameContent = document.getElementById('game-content');
+            const startButton = document.getElementById('start-button');
+
+            splashScreen.style.display = 'flex';
+
+            startButton.addEventListener('click', () => {
+                console.log('Start button clicked');
+                splashScreen.style.display = 'none';
+            });
+
+            const challenges = [
+                "Give a flirty compliment to someone in the group or a stranger – Bonus if a stranger!",
+                "Show off your best dance moves! – Bonus if you commit for at least 10 seconds!",
+                "Ask the bartender or a friend for their best flirting advice – Bonus if you actually try it on someone!",
+                "Flirt with someone using only song lyrics – Bonus if they don’t notice!",
+                "Remove your can’s tab and flick it like a football through someone’s goalpost hands – Miss? Take a sip! Bonus if you make it. 🏈🍻",
+                "Do your best celebrity impression – Bonus if they guess who it is!",
+                "Reveal something about yourself that no one in the group knows – Bonus if it's Knotty!",
+                "Make a toast with only eye contact—no words! – Bonus if someone laughs first!",
+                "Ask the group: “Would you rather” and make up a wild scenario – Bonus if everyone answers!",
+                "Say something completely ridiculous with full confidence – Bonus if you get someone to believe it!",
+                "Challenge someone to a dance-off – Loser must finish their drink!",
+                "Challenge someone to a rock-paper-scissors match – Loser takes a sip!",
+                "Buy someone a Knotty Times – Your choice who gets lucky!",
+                "Bottoms up! – Whatever’s left in your drink, finish it now!",
+                "Make a toast to the group – The more ridiculous, the better.",
+                "Blow a kiss to someone in the group – Make it obvious.",
+                "Secretly pick someone in the group until your next turn, copy their drink movements without getting caught – If they catch you, finish your drink!",
+                "Clink glasses with someone in the group - give them a ridiculous compliment.",
+                "Do a fake pickup line on someone in the group – The cheesier, the better!",
+                "Take a sip & stare at someone until they notice – No breaking eye contact!",
+                "Let the group decide if you should take a sip, take a shot, or skip this round - majority rules! 🍻🔥",
+                "Announce another player's drink choice like a sports commentator giving a play-by-play! – Hold your drink like a pretend mic while doing it!",
+                "Start a chant – Even if it’s just 'One more round!'",
+                "Pretend you know a stranger for 30 seconds – Sell it!",
+                "Do an exaggerated sexy walk to the bathroom – Full confidence!",
+                "Take a selfie with someone in the group – Make it extra dramatic.",
+                "Try to get someone in the group to high-five you without asking – Be creative!",
+                "Let the person to your left make up a dare for you – No backing out!",
+                "Start an impromptu karaoke moment – Even if there’s no karaoke.",
+                "Whisper a random word in someone’s ear – Then walk away like nothing happened.",
+                "The group picks three people (real or fictional) and presents them to the chosen player. That player must decide who to Fuck, Marry, or Kill - no backing out!",
+                "Say something spicy in the most innocent voice possible – Keep a straight face!",
+                "Lick your lips & wink at someone in the group – See if they react.",
+                "Make eye contact with someone in the group for 10 seconds – No breaking first!",
+                "Take a sip without using your hands – Get creative!",
+                "Whisper a made-up secret to someone in the group – Make it juicy.",
+                "Tell the group your worst pickup line ever – Then try using it!",
+                "Get a stranger to fist-bump you – No explanation allowed.",
+                "Try to make someone in the group blush – No touching allowed!",
+                "Hold eye contact with someone while slowly sipping your drink – No blinking!",
+                "Tell the group about your most embarrassing night out moment – No holding back.",
+                "Pick a dance move and do it for the next 10 seconds – No stopping!",
+                "Do an over-the-top dramatic reaction to the next thing someone says – Oscar-worthy.",
+                "Ask someone in the group a “truth or dare” question – They must answer!",
+                "Let someone in the group come up with a “new name” for you – Use it for the rest of the game!",
+                "Find out a fun fact about the person sitting next to you – Then share it!",
+                "Make up a wild story about how you and another player met – Sell it like it’s 100% true!",
+                "Fake a phone call and have a dramatic conversation – Keep it entertaining!",
+                "Give an overly dramatic apology to the group for something you didn’t do the more ridiculous the better – No laughing!",
+                "Say a ‘Never Have I Ever’ statement - anyone who’s done it takes a sip! 🍻🔥",
+                "Who is most likely to [do something wild or embarrassing]? – The group votes, and the person with the most votes drinks! 😆",
+                "Balance your drink on the back of your hand and try to take a sip without spilling. – Spill? Drink again! 🍹🎭",
+                "Drink, then flip your empty cup or coaster onto the table - first to land it wins! – Loser drinks! 🔄🍺",
+                "Go around the table counting aloud, but say 'Knotty' instead of any number with a 7 or a multiple of 7! - Mess up? Take a sip! 🔢🍻",
+                "Name a famous person. The next player must say a name that starts with the last letter of yours. – Can't think of one? Drink! 🎤🔥",
+                "Tell the group two truths and one lie about yourself. The group must guess which one is the lie. - Whoever guesses wrong must finish their drink!",
+                "The group picks an accent, and the chosen player must speak in that accent until their next turn - no backing out!",
+                "Say the alphabet backwards - If successful every other player must take a sip. If not, you need to.",
+                "Call someone you know and say “I need to hide a body” – No voice mail",
+                "Act out a charade no talking you have 2 minutes - if the group guesses correctly they drink if not you drink.",
+                "You must only refer to yourself by name for the next two rounds – Forget? drink.",
+                "Swap shirts with the person to your right for two rounds - No shirt, no swap, no excuses…"
+            ];
+
+            const WINNING_SCORE = 11;
+
+            const wheel = document.getElementById('wheel');
+            const challengeDiv = document.getElementById('challenge');
+            const spinButton = document.getElementById('spinButton');
+            const passButton = document.getElementById('passButton');
+            const bonusButton = document.getElementById('bonusButton');
+            const playerInput = document.getElementById('playerInput');
+            const addPlayerBtn = document.getElementById('addPlayerBtn');
+            const startGameBtn = document.getElementById('startGameBtn');
+            const playerList = document.getElementById('playerList');
+            const wheelContainer = document.getElementById('wheelContainer');
+            const scoreboard = document.getElementById('scoreboard');
+            const winnerMessage = document.getElementById('winnerMessage');
+            const newGameButton = document.getElementById('newGameButton');
+            const introText = document.getElementById('introText');
+            const passPopup = document.getElementById('passPopup');
+            const newGameConfirmPopup = document.getElementById('newGameConfirmPopup');
+            const confirmYesBtn = document.getElementById('confirmYesBtn');
+            const confirmNoBtn = document.getElementById('confirmNoBtn');
+
+            let players = [];
+            let currentPlayerIndex = 0;
+            let currentChallengeIndex = -1;
+            let gameOver = false;
+            let recentChallenges = JSON.parse(localStorage.getItem('recentChallenges')) || [];
+            let challengeVotes = JSON.parse(localStorage.getItem('challengeVotes')) || {};
+            const MAX_RECENT = 20;
+
+            let sessionVotedChallenges = JSON.parse(sessionStorage.getItem('sessionVotedChallenges')) || [];
+
+            console.log('addPlayerBtn:', addPlayerBtn);
+            console.log('playerInput:', playerInput);
+            console.log('startGameBtn:', startGameBtn);
+
+            if (!addPlayerBtn || !playerInput || !startGameBtn) {
+                console.error('One or more critical elements not found in DOM');
+                return;
+            }
+
+            addPlayerBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Add Player button clicked');
+                const name = playerInput.value.trim();
+                console.log('Input value:', name);
+                if (name) {
+                    players.push({ name, points: 0 });
+                    console.log('Players array:', players);
+                    playerInput.value = '';
+                    updatePlayerList();
+                    startGameBtn.style.display = players.length >= 2 ? 'inline-block' : 'none';
+                    console.log('Start Game button display:', startGameBtn.style.display);
+                } else {
+                    console.log('No name entered');
+                }
+            });
+
+            startGameBtn.addEventListener('click', () => {
+                console.log('Start Game button clicked');
+                if (players.length >= 2) {
+                    document.getElementById('playerSetup').style.display = 'none';
+                    wheelContainer.style.display = 'block';
+                    scoreboard.style.display = 'block';
+                    newGameButton.style.display = 'block';
+                    introText.style.display = 'none';
+                    updateScoreboard();
+                    spinButton.textContent = `${players[currentPlayerIndex].name}’s Turn to Spin`;
+                }
+            });
+
+            function updatePlayerList() {
+                playerList.textContent = `Players: ${players.map(p => p.name).join(', ')}`;
+                console.log('Player list updated:', playerList.textContent);
+            }
+
+            function updateScoreboard() {
+                scoreboard.innerHTML = `<strong>Scoreboard:</strong><br>${players.map(p => `${p.name}: ${p.points}`).join('<br>')}`;
+            }
+
+            function getNonRepeatingChallengeIndex() {
+                let availableIndices = Array.from({ length: challenges.length }, (_, i) => i)
+                    .filter(i => !recentChallenges.includes(i));
+                if (availableIndices.length === 0) {
+                    recentChallenges = [];
+                    availableIndices = Array.from({ length: challenges.length }, (_, i) => i);
+                }
+                const randomIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+                recentChallenges.push(randomIndex);
+                if (recentChallenges.length > MAX_RECENT) recentChallenges.shift();
+                localStorage.setItem('recentChallenges', JSON.stringify(recentChallenges));
+                return randomIndex;
+            }
+
+            function showPassPopup() {
+                passPopup.style.display = 'block';
+            }
+
+            passPopup.addEventListener('click', () => {
+                passPopup.style.display = 'none';
+            });
+
+            function spinWheel() {
+                passPopup.style.display = 'none';
+                if (gameOver) return;
+                const wasChallengeDisplayed = challengeDiv.style.display === 'block';
+                const isNextPlayerTurn = spinButton.textContent.includes("Turn to Spin");
+
+                if (isNextPlayerTurn || !wasChallengeDisplayed) {
+                    challengeDiv.style.display = 'none';
+                    spinButton.disabled = true;
+                    passButton.disabled = true;
+                    bonusButton.disabled = true;
+
+                    wheel.classList.remove('spinning-wheel');
+                    wheel.style.transform = 'rotate(0deg)';
+
+                    const wedgeCount = 13;
+                    const wedgeAngle = 360 / wedgeCount;
+                    const randomWedge = Math.floor(Math.random() * wedgeCount);
+                    const wedgeCenter = randomWedge * wedgeAngle + (wedgeAngle / 2);
+                    const finalRotation = 1080 + wedgeCenter;
+                    wheel.style.setProperty('--final-rotation', `${finalRotation}deg`);
+
+                    setTimeout(() => {
+                        wheel.classList.add('spinning-wheel');
+                        setTimeout(() => {
+                            wheel.classList.remove('spinning-wheel');
+                            wheel.style.transform = `rotate(${finalRotation}deg)`;
+                            showChallengeForCurrentPlayer();
+                            spinButton.disabled = false;
+                            passButton.disabled = false;
+                            bonusButton.disabled = false;
+                        }, 3000);
+                    }, 50);
+                } else {
+                    challengeDiv.style.display = 'none';
+                    spinButton.disabled = true;
+                    passButton.disabled = true;
+                    bonusButton.disabled = true;
+                    passButton.style.display = 'none';
+                    bonusButton.style.display = 'none';
+                    players[currentPlayerIndex].points += 1;
+                    resetThumbsButtons();
+                    updateScoreboard();
+                    checkForWinner();
+                    if (!gameOver) {
+                        currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+                        spinButton.disabled = false;
+                        passButton.disabled = false;
+                        bonusButton.disabled = false;
+                        spinButton.textContent = `${players[currentPlayerIndex].name}’s Turn to Spin`;
+                        showPassPopup();
+                    }
+                }
+            }
+
+            function showChallengeForCurrentPlayer() {
+                if (gameOver) return;
+                currentChallengeIndex = getNonRepeatingChallengeIndex();
+
+                const hasVotedThisSession = sessionVotedChallenges.includes(currentChallengeIndex);
+                let voteButtonsHTML = '';
+                
+                if (!hasVotedThisSession) {
+                    voteButtonsHTML = `
+                        <div class="vote-buttons">
+                            <span class="vote-text">Did you like this challenge?</span>
+                            <button id="thumbsUpBtn" class="thumbs-btn thumbs-up">👍</button>
+                            <button id="thumbsDownBtn" class="thumbs-btn thumbs-down">👎</button>
+                        </div>`;
+                }
+
+                challengeDiv.innerHTML = `${players[currentPlayerIndex].name}, your turn!\n\n<span class="action-text">${challenges[currentChallengeIndex]}</span>
+                    ${voteButtonsHTML}`;
+                challengeDiv.style.display = 'block';
+                spinButton.textContent = "Complete +1";
+                passButton.textContent = "Pass -1";
+                passButton.style.display = 'block';
+                bonusButton.textContent = "Bonus +2";
+                bonusButton.style.display = challenges[currentChallengeIndex].includes("Bonus") ? 'block' : 'none';
+
+                if (!hasVotedThisSession) {
+                    const thumbsUpBtn = document.getElementById('thumbsUpBtn');
+                    const thumbsDownBtn = document.getElementById('thumbsDownBtn');
+                    thumbsUpBtn.addEventListener('click', () => voteChallenge(true, thumbsUpBtn, thumbsDownBtn));
+                    thumbsDownBtn.addEventListener('click', () => voteChallenge(false, thumbsUpBtn, thumbsDownBtn));
+                }
+            }
+
+            function voteChallenge(isUpvote, thumbsUpBtn, thumbsDownBtn) {
+                if (!challengeVotes[currentChallengeIndex]) {
+                    challengeVotes[currentChallengeIndex] = { upvotes: 0, downvotes: 0 };
+                }
+
+                if (isUpvote) {
+                    challengeVotes[currentChallengeIndex].upvotes += 1;
+                    thumbsUpBtn.classList.add('pressed');
+                    thumbsDownBtn.classList.remove('pressed');
+                    localStorage.setItem(`voted_${currentPlayerIndex}_${currentChallengeIndex}`, 'up');
+                    if (typeof krtLogResponse === 'function') {
+                        krtLogResponse(currentChallengeIndex, challenges[currentChallengeIndex], players[currentPlayerIndex].name, 'upvote');
+                    }
+                } else {
+                    challengeVotes[currentChallengeIndex].downvotes += 1;
+                    thumbsDownBtn.classList.add('pressed');
+                    thumbsUpBtn.classList.remove('pressed');
+                    localStorage.setItem(`voted_${currentPlayerIndex}_${currentChallengeIndex}`, 'down');
+                    if (typeof krtLogResponse === 'function') {
+                        krtLogResponse(currentChallengeIndex, challenges[currentChallengeIndex], players[currentPlayerIndex].name, 'downvote');
+                    }
+                }
+
+                thumbsUpBtn.disabled = true;
+                thumbsDownBtn.disabled = true;
+                localStorage.setItem('challengeVotes', JSON.stringify(challengeVotes));
+
+                if (!sessionVotedChallenges.includes(currentChallengeIndex)) {
+                    sessionVotedChallenges.push(currentChallengeIndex);
+                    sessionStorage.setItem('sessionVotedChallenges', JSON.stringify(sessionVotedChallenges));
+                }
+
+                const voteButtonsDiv = thumbsUpBtn.closest('.vote-buttons');
+                voteButtonsDiv.innerHTML = '<span class="thanks-text">You just made Knotty Times even better - thanks for your input!</span>';
+            }
+
+            function passChallenge() {
+                passPopup.style.display = 'none';
+                if (gameOver) return;
+                players[currentPlayerIndex].points -= 1;
+                challengeDiv.style.display = 'none';
+                spinButton.disabled = true;
+                passButton.disabled = true;
+                bonusButton.disabled = true;
+                passButton.style.display = 'none';
+                bonusButton.style.display = 'none';
+                resetThumbsButtons();
+                updateScoreboard();
+                checkForWinner();
+                if (!gameOver) {
+                    currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+                    spinButton.disabled = false;
+                    passButton.disabled = false;
+                    bonusButton.disabled = false;
+                    spinButton.textContent = `${players[currentPlayerIndex].name}’s Turn to Spin`;
+                    showPassPopup();
+                }
+            }
+
+            function claimBonus() {
+                passPopup.style.display = 'none';
+                if (gameOver || !challenges[currentChallengeIndex].includes("Bonus")) return;
+                players[currentPlayerIndex].points += 2;
+                challengeDiv.style.display = 'none';
+                passButton.style.display = 'none';
+                bonusButton.style.display = 'none';
+                resetThumbsButtons();
+                updateScoreboard();
+                checkForWinner();
+                if (!gameOver) {
+                    currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+                    spinButton.textContent = `${players[currentPlayerIndex].name}’s Turn to Spin`;
+                    spinButton.disabled = false;
+                    passButton.disabled = false;
+                    bonusButton.disabled = false;
+                    showPassPopup();
+                }
+            }
+
+            function resetThumbsButtons() {
+                const thumbsUpBtn = document.getElementById('thumbsUpBtn');
+                const thumbsDownBtn = document.getElementById('thumbsDownBtn');
+                if (thumbsUpBtn) thumbsUpBtn.classList.remove('pressed');
+                if (thumbsDownBtn) thumbsDownBtn.classList.remove('pressed');
+            }
+
+            function checkForWinner() {
+                const winner = players.find(player => player.points >= WINNING_SCORE);
+                if (winner) {
+                    gameOver = true;
+                    winnerMessage.textContent = `${winner.name} wins with ${winner.points} points!`;
+                    winnerMessage.style.display = 'block';
+                    spinButton.disabled = true;
+                    passButton.disabled = true;
+                    bonusButton.disabled = true;
+                    wheelContainer.style.display = 'none';
+                    challengeDiv.style.display = 'none';
+                    newGameButton.style.display = 'block';
+                    confetti({
+                        particleCount: 150,
+                        spread: 70,
+                        origin: { y: 0.6 },
+                        colors: ['#ffcc00', '#00ff00', '#ff6666']
+                    });
+                }
+            }
+
+            function showNewGameConfirmPopup() {
+                newGameConfirmPopup.style.display = 'block';
+            }
+
+            function hideNewGameConfirmPopup() {
+                newGameConfirmPopup.style.display = 'none';
+            }
+
+            spinButton.addEventListener('click', spinWheel);
+            passButton.addEventListener('click', passChallenge);
+            bonusButton.addEventListener('click', claimBonus);
+            newGameButton.addEventListener('click', () => {
+                if (!gameOver && players.length > 0) {
+                    showNewGameConfirmPopup();
+                } else {
+                    newGame();
+                }
+            });
+
+            confirmYesBtn.addEventListener('click', () => {
+                hideNewGameConfirmPopup();
+                newGame();
+            });
+
+            confirmNoBtn.addEventListener('click', () => {
+                hideNewGameConfirmPopup();
+            });
+
+            function newGame() {
+                players = [];
+                currentPlayerIndex = 0;
+                currentChallengeIndex = -1;
+                gameOver = false;
+                recentChallenges = [];
+                sessionVotedChallenges = [];
+                sessionStorage.setItem('sessionVotedChallenges', JSON.stringify(sessionVotedChallenges));
+                localStorage.setItem('recentChallenges', JSON.stringify(recentChallenges));
+                document.getElementById('playerSetup').style.display = 'block';
+                wheelContainer.style.display = 'none';
+                scoreboard.style.display = 'none';
+                newGameButton.style.display = 'none';
+                challengeDiv.style.display = 'none';
+                winnerMessage.style.display = 'none';
+                introText.style.display = 'block';
+                splashScreen.style.display = 'flex';
+                spinButton.textContent = "Spin";
+                passButton.style.display = 'none';
+                bonusButton.style.display = 'none';
+                playerList.textContent = '';
+                startGameBtn.style.display = 'none';
+                spinButton.disabled = false;
+                passButton.disabled = false;
+                bonusButton.disabled = false;
+                wheel.classList.remove('spinning-wheel');
+                wheel.style.transform = 'rotate(0deg)';
+            }
+        });
+    </script>
+    <?php wp_footer(); ?>
+</body>
+</html>

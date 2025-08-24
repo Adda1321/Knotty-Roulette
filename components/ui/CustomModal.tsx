@@ -8,9 +8,9 @@ import {
   View,
 } from "react-native";
 import { Surface } from "react-native-paper";
-import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import { COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 import ModalSparkles from "./ModalSparkles";
-
 interface CustomModalProps {
   visible: boolean;
   onClose: () => void;
@@ -28,6 +28,7 @@ interface CustomModalProps {
   sparkleFadeDelay?: number;
   sparkleFadeDuration?: number;
   sparkleAppearDuration?: number;
+  disabled?: boolean; // New prop to disable buttons
 }
 
 export default function CustomModal({
@@ -47,10 +48,12 @@ export default function CustomModal({
   sparkleFadeDelay = 200,
   sparkleFadeDuration = 300,
   sparkleAppearDuration = 300,
+  disabled = false,
 }: CustomModalProps) {
   // Don't render anything if modal is not visible
+  const { COLORS, currentTheme } = useTheme();
   if (!visible) return null;
-
+  console.log("disabled", disabled);
   return (
     <Modal
       visible={visible}
@@ -72,7 +75,18 @@ export default function CustomModal({
 
           {/* Header */}
           {title && (
-            <View style={styles.header}>
+            <View
+              style={[
+                styles.header,
+                {
+                  backgroundColor: COLORS.PRIMARY,
+                  borderColor:
+                    currentTheme === THEME_PACKS.DEFAULT
+                      ? "#2B7B33"
+                      : COLORS.YELLOW,
+                },
+              ]}
+            >
               <Text style={styles.title}>{title}</Text>
             </View>
           )}
@@ -118,10 +132,17 @@ export default function CustomModal({
                     style={[
                       styles.confirmButton,
                       destructive && styles.destructiveButton,
+                      disabled && styles.disabledButton,
                     ]}
                     onPress={onConfirm}
+                    disabled={disabled} // Disable button if prop is true
                   >
-                    <Text style={styles.confirmButtonText}>
+                    <Text
+                      style={[
+                        styles.confirmButtonText,
+                        disabled && styles.disabledButtonText,
+                      ]}
+                    >
                       {confirmButtonText}
                     </Text>
                   </TouchableOpacity>
@@ -132,10 +153,17 @@ export default function CustomModal({
                     style={[
                       styles.confirmButton,
                       destructive && styles.destructiveButton,
+                      disabled && styles.disabledButton,
                     ]}
                     onPress={onConfirm}
+                    disabled={disabled} // Disable button if prop is true
                   >
-                    <Text style={styles.confirmButtonText}>
+                    <Text
+                      style={[
+                        styles.confirmButtonText,
+                        disabled && styles.disabledButtonText,
+                      ]}
+                    >
                       {confirmButtonText}
                     </Text>
                   </TouchableOpacity>
@@ -149,6 +177,13 @@ export default function CustomModal({
 }
 
 const styles = StyleSheet.create({
+  disabledButtonText: {
+    color: COLORS.TEXT_DARK,
+  },
+  disabledButton: {
+    opacity: 0.7,
+    backgroundColor: COLORS.TEXT_SECONDARY,
+  },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
@@ -165,7 +200,7 @@ const styles = StyleSheet.create({
     position: "relative", // Important for sparkle positioning
   },
   header: {
-    backgroundColor: COLORS.DARK_GREEN,
+    // backgroundColor: COLORS.DARK_GREEN,
     borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE,
     borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_LARGE,

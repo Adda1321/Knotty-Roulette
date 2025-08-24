@@ -1,3 +1,4 @@
+import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
 import { Surface } from "react-native-paper";
@@ -16,23 +17,38 @@ import {
   View,
 } from "react-native";
 
+import Ionicons from "@expo/vector-icons/Ionicons";
+import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import { FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
+import { useTheme } from "../../contexts/ThemeContext";
 import audioService from "../../services/audio";
 import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
+import StoreButton from "../ui/StoreButton";
 
 interface PlayerSetupProps {
   onStartGame: (playerNames: string[]) => void;
 }
 
 export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
+  const { COLORS, currentTheme } = useTheme();
+
+  // Monitor theme changes
+  useEffect(() => {
+    console.log("🎨 PlayerSetup: Theme changed to:", currentTheme);
+  }, [currentTheme]);
+
   const [players, setPlayers] = useState<string[]>(["", ""]); // Default two empty players
   const [showNotEnoughPlayersModal, setShowNotEnoughPlayersModal] =
     useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // Add this for debugging
+  const buildProfile = Constants.expoConfig?.extra?.eas?.buildProfile;
+  const isDev = __DEV__;
 
   const addPlayer = () => {
     audioService.playSound("buttonPress");
@@ -96,7 +112,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
 
   return (
     <LinearGradient
-      colors={[COLORS.DARK_GREEN, "#116b20ff", "#3f663f"]}
+      colors={[COLORS.PRIMARY, COLORS.LIGHT, COLORS.DARK]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -112,17 +128,96 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                   audioService.playHaptic("medium");
                 }}
               />
-            </View>
 
-            <View style={styles.mascotContainer}>
-              <Image
-                source={require("../../assets/images/Knotty Mascot.png")}
-                style={styles.mascotImage}
-                resizeMode="contain"
+              <View style={styles.buttonSpacer} />
+
+              <StoreButton
+                onPress={() => {
+                  audioService.playSound("buttonPress");
+                  audioService.playHaptic("medium");
+                  router.push({
+                    pathname: "/theme-store",
+                    params: { isGameActive: "false" },
+                  } as any); // Temporary fix if types are strict
+                }}
               />
             </View>
-            <Text style={styles.title}>KNOTTY ROULETTE</Text>
-            <Text style={styles.subtitle}>Add Players to Begin</Text>
+
+            {/* Conditional layout based on theme */}
+            {currentTheme === THEME_PACKS.DEFAULT ? (
+              // Default theme: keep original layout
+              <>
+                <View style={styles.mascotContainer}>
+                  <Image
+                    source={require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs.png")}
+                    style={styles.mascotImage}
+                    resizeMode="contain"
+                  />
+                </View>
+                <Text style={[styles.title, { color: COLORS.TEXT }]}>
+                  KNOTTY ROULETTE
+                </Text>
+              </>
+            ) : (
+              // College and Couple themes: centered title with absolute positioned mascot
+              <View style={styles.themeHeaderContainer}>
+                <View style={styles.titleContainer}>
+                  <Text style={[styles.themeTitle, { color: COLORS.TEXT }]}>
+                    KNOTTY ROULETTE
+                  </Text>
+                  {currentTheme === THEME_PACKS.COLLEGE && (
+                    <Text
+                      style={[
+                        styles.editionText,
+                        {
+                          color:
+                            (COLORS as any).THEMEPACKNAME ||
+                            COLORS.TEXT_SECONDARY,
+                          textAlign: "center",
+                        },
+                      ]}
+                    >
+                      COLLEGE EDITION
+                    </Text>
+                  )}
+                  {currentTheme === THEME_PACKS.COUPLE && (
+                    <Text
+                      style={[
+                        styles.editionText,
+                        { color: COLORS.FIELDS, textAlign: "center" },
+                      ]}
+                    >
+                      COUPLES PACK
+                    </Text>
+                  )}
+                </View>
+                <View style={styles.themeMascotContainer}>
+                  <Image
+                    source={
+                      currentTheme === THEME_PACKS.COLLEGE
+                        ? require("../../assets/images/MascotImages/College/College-legs-mascot.png")
+                        : require("../../assets/images/MascotImages/Couple/Couple-legs-mascot.png")
+                    }
+                    style={styles.themeMascotImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              </View>
+            )}
+
+            <Text style={[styles.subtitle, { color: COLORS.TEXT_PRIMARY }]}>
+              Add Players to Begin
+            </Text>
+
+            {/* Add debug info here */}
+            {/* <View style={styles.debugInfo}>
+              <Text style={styles.debugText}>
+                Build Profile: {buildProfile || "undefined"}
+              </Text>
+              <Text style={styles.debugText}>
+                __DEV__: {isDev ? "true" : "false"}
+              </Text>
+            </View> */}
           </View>
 
           <ScrollView style={styles.content}>
@@ -137,7 +232,15 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                 >
                   {players.map((player, index) => (
                     <View key={index}>
-                      <View style={styles.playerInputContainer}>
+                      <View
+                        style={[
+                          styles.playerInputContainer,
+                          {
+                            backgroundColor: COLORS.FIELDS,
+                            borderColor: COLORS.CARD_BORDER,
+                          },
+                        ]}
+                      >
                         {/* Player input field */}
                         <TextInput
                           style={styles.playerInput}
@@ -151,22 +254,50 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                         {/* Remove button */}
                         {players.length > 2 && (
                           <TouchableOpacity
-                            style={styles.removeButton}
+                            style={[
+                              styles.removeButton,
+                              {
+                                backgroundColor: COLORS.OFFLINE,
+                              },
+                            ]}
                             onPress={() => {
                               audioService.playSound("buttonPress");
                               audioService.playHaptic("light");
                               removePlayer(index);
                             }}
                           >
-                            <Text style={styles.removeButtonText}>✕</Text>
+                            <Text
+                              style={[
+                                styles.removeButtonText,
+                                { color: COLORS.TEXT_PRIMARY },
+                              ]}
+                            >
+                              ✕
+                            </Text>
                           </TouchableOpacity>
                         )}
                       </View>
 
                       {/* Add Player button - now with double border in both cases */}
                       {index === players.length - 1 && players.length < 8 && (
-                        <View style={styles.doubleBorderOuter}>
-                          <View style={styles.doubleBorderInner}>
+                        <View
+                          style={[
+                            styles.doubleBorderOuter,
+                            {
+                              borderColor: COLORS.YELLOW,
+                              backgroundColor: COLORS.YELLOW,
+                            },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.doubleBorderInner,
+                              {
+                                borderColor: "#BE960C",
+                                // backgroundColor: "#BE960C",
+                              },
+                            ]}
+                          >
                             <Button
                               text="+ Add Player"
                               onPress={addPlayer}
@@ -190,7 +321,15 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                 <>
                   {players.map((player, index) => (
                     <View key={index}>
-                      <View style={styles.playerInputContainer}>
+                      <View
+                        style={[
+                          styles.playerInputContainer,
+                          {
+                            backgroundColor: COLORS.FIELDS,
+                            borderColor: COLORS.CARD_BORDER,
+                          },
+                        ]}
+                      >
                         {/* Player input field */}
                         <TextInput
                           style={styles.playerInput}
@@ -204,27 +343,71 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                         {/* Remove button */}
                         {players.length > 2 && (
                           <TouchableOpacity
-                            style={styles.removeButton}
+                            style={[
+                              styles.removeButton,
+                              {
+                                backgroundColor: COLORS.OFFLINE,
+                              },
+                            ]}
                             onPress={() => {
                               audioService.playSound("buttonPress");
                               audioService.playHaptic("light");
                               removePlayer(index);
                             }}
                           >
-                            <Text style={styles.removeButtonText}>✕</Text>
+                            <Text
+                              style={[
+                                styles.removeButtonText,
+                                { color: COLORS.TEXT_PRIMARY },
+                              ]}
+                            >
+                              ✕
+                            </Text>
                           </TouchableOpacity>
                         )}
                       </View>
 
                       {/* Add Player button - now with double border */}
                       {index === players.length - 1 && players.length < 8 && (
-                        <View style={styles.doubleBorderOuter}>
-                          <View style={styles.doubleBorderInner}>
+                        <View
+                          style={[
+                            styles.doubleBorderOuter,
+                            {
+                              borderColor:
+                                currentTheme === THEME_PACKS.DEFAULT
+                                  ? COLORS.YELLOW
+                                  : COLORS.LIGHTEST,
+                              backgroundColor:
+                                currentTheme === THEME_PACKS.DEFAULT
+                                  ? COLORS.YELLOW
+                                  : COLORS.LIGHTEST,
+                            },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.doubleBorderInner,
+                              {
+                                borderColor:
+                                  currentTheme === THEME_PACKS.DEFAULT
+                                    ? "#BE960C"
+                                    : COLORS.DARK,
+                              },
+                            ]}
+                          >
                             <Button
                               text="+ Add Player"
                               onPress={addPlayer}
-                              backgroundColor={COLORS.YELLOW}
-                              textColor={COLORS.TEXT_DARK}
+                              backgroundColor={
+                                currentTheme === THEME_PACKS.DEFAULT
+                                  ? COLORS.YELLOW
+                                  : COLORS.LIGHTEST
+                              }
+                              textColor={
+                                currentTheme === THEME_PACKS.DEFAULT
+                                  ? COLORS.TEXT_DARK
+                                  : "#FFFFFF"
+                              }
                               fontSize={SIZES.CAPTION}
                               fontFamily={FONTS.DOSIS_BOLD}
                               fontWeight="600"
@@ -244,15 +427,35 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
             <View style={styles.startButtonContainer}>
               <Animated.View style={{ transform: [{ translateY }] }}>
                 <Surface elevation={5} style={{ borderRadius: 8 }}>
-                  <View style={styles.startButtonOuter}>
+                  <View
+                    style={[
+                      styles.startButtonOuter,
+                      {
+                        borderColor: COLORS.LIGHTEST, // They changed it
+                        backgroundColor: COLORS.LIGHTEST,
+                      },
+                    ]}
+                  >
                     <Button
                       text={
                         <View
-                          style={{ flexDirection: "row", alignItems: "center" }}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            // borderColor: COLORS.LIGHTEST, // They changed it
+                          }}
                         >
-                          <Image
-                            source={require("../../assets/images/play-button-arrowhead.png")}
-                            style={{ width: 14, height: 14, marginRight: 8 }}
+                          <Ionicons
+                            name="play"
+                            size={18}
+                            color={
+                              currentTheme === THEME_PACKS.DEFAULT
+                                ? "#000000"
+                                : currentTheme === THEME_PACKS.COLLEGE
+                                ? COLORS.TEXT_DARK
+                                : COLORS.PRIMARY
+                            }
+                            style={{ marginRight: 4 }}
                           />
                           <Text
                             style={{
@@ -272,12 +475,20 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                       disabled={players.filter((p) => p.trim()).length < 2}
                       backgroundColor={
                         players.filter((p) => p.trim()).length < 2
-                          ? "#bfa204"
-                          : COLORS.YELLOW
+                          ? COLORS.DARK
+                          : currentTheme === THEME_PACKS.COLLEGE
+                          ? COLORS.YELLOW
+                          : COLORS.PRIMARY
                       }
-                      textColor={COLORS.TEXT_DARK}
+                      textColor={
+                        currentTheme === THEME_PACKS.COLLEGE
+                          ? COLORS.TEXT_DARK
+                          : COLORS.TEXT_PRIMARY
+                      }
                       backgroundGradient={
-                        [COLORS.DARK_GREEN, COLORS.YELLOW] as const
+                        currentTheme === THEME_PACKS.COLLEGE
+                          ? ([COLORS.YELLOW, COLORS.YELLOW] as const)
+                          : ([COLORS.LIGHTEST, COLORS.YELLOW] as const)
                       }
                       paddingHorizontal={SIZES.PADDING_LARGE}
                       paddingVertical={15}
@@ -301,6 +512,8 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
         closeButtonText="OK"
         showConfirmButton={false}
       />
+
+      {/* ThemeStore is now a page component, navigation handled by router */}
     </LinearGradient>
   );
 }
@@ -308,7 +521,6 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.DARK_GREEN,
     padding: SIZES.PADDING_MEDIUM,
   },
   safeArea: {
@@ -329,25 +541,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.PADDING_SMALL,
     marginBottom: SIZES.PADDING_SMALL,
   },
-  titleContainer: {
-    flex: 1,
-    alignItems: "center",
-  },
   title: {
     fontSize: 40,
     fontFamily: FONTS.DOSIS_BOLD,
-    color: COLORS.YELLOW,
-    marginBottom: SIZES.PADDING_SMALL,
     textAlign: "center",
     ...SIZES.TEXT_SHADOW_MEDIUM,
     marginTop: -48,
   },
   subtitle: {
     fontSize: SIZES.BODY,
-    color: COLORS.TEXT_PRIMARY,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
-    marginBottom: SIZES.PADDING_LARGE,
+    marginBottom: SIZES.PADDING_SMALL,
   },
   content: {
     flex: 1,
@@ -367,18 +572,16 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 10,
-    backgroundColor: COLORS.FIELDS,
     borderRadius: SIZES.BORDER_RADIUS_SMALL,
     paddingHorizontal: 15,
     paddingVertical: 5,
     borderWidth: 1,
-    borderColor: "#F1E9BE",
     ...SIZES.SHADOW_SMALL,
   },
   playerInput: {
     flex: 1,
     fontSize: SIZES.BODY,
-    color: COLORS.TEXT_DARK,
+    // color: COLOR ,
     paddingVertical: 12,
     fontFamily: FONTS.DOSIS_BOLD,
   },
@@ -388,10 +591,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: COLORS.OFFLINE,
   },
   removeButtonText: {
-    color: COLORS.TEXT_PRIMARY,
     fontSize: SIZES.BODY,
     fontWeight: "bold",
   },
@@ -406,13 +607,23 @@ const styles = StyleSheet.create({
   spacer: {
     width: SIZES.PADDING_LARGE, // Adjust as needed for spacing
   },
+  debugInfo: {
+    backgroundColor: "rgba(0,0,0,0.3)",
+    padding: 8,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  debugText: {
+    fontSize: 12,
+    fontFamily: FONTS.PRIMARY,
+    textAlign: "center",
+  },
 
   mascotContainer: {
     alignSelf: "flex-end",
     marginRight: Platform.OS === "ios" ? 20 : 0,
-    
   },
-  
+
   mascotImage: {
     width: 150,
     height: 150,
@@ -422,10 +633,8 @@ const styles = StyleSheet.create({
   },
   doubleBorderOuter: {
     borderWidth: 2,
-    borderColor: COLORS.YELLOW,
     borderRadius: 6,
     padding: 2,
-    backgroundColor: COLORS.YELLOW,
     elevation: 6,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -435,15 +644,12 @@ const styles = StyleSheet.create({
   },
   doubleBorderInner: {
     borderWidth: 3,
-    borderColor: "#BE960C",
     borderRadius: 6,
   },
   startButtonOuter: {
-    borderWidth: 3,
-    borderColor: "#63A133",
+    // borderWidth: 3,
     borderRadius: 8,
-    padding: 1, // This creates space between border and button
-    backgroundColor: "#63A133", // Matches border color for seamless look
+    padding: 3, // Use padding instead of borderWidth for clean border effect
     elevation: 6,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
@@ -455,24 +661,53 @@ const styles = StyleSheet.create({
     borderRadius: 5, // Slightly less than outer for border effect
     overflow: "hidden", // Important for gradient + borderRadius
   },
-  texturedButton: {
-    backgroundColor: COLORS.DARK_GREEN,
-    overflow: "hidden",
-    borderRadius: 8,
+
+  buttonSpacer: {
+    width: SIZES.PADDING_SMALL, // Space between buttons
   },
-  textureOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "transparent",
-    backgroundImage: `linear-gradient(
-      45deg,
-      rgba(0, 80, 0, 0.8) 25%,
-      transparent 25%,
-      transparent 50%,
-      rgba(0, 80, 0, 0.8) 50%,
-      rgba(0, 80, 0, 0.8) 75%,
-      transparent 75%,
-      transparent
-    )`,
-    backgroundSize: "8px 8px",
+  editionText: {
+    fontSize: SIZES.EXTRALARGE,
+    fontFamily: FONTS.DOSIS_BOLD,
+    textAlign: "left",
+    marginBottom: SIZES.PADDING_SMALL,
+    letterSpacing: 0,
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 1,
+  },
+  themeHeaderContainer: {
+    position: "relative",
+    alignItems: "center",
+    width: "100%",
+    // paddingTop: SIZES.PADDING_MEDIUM,
+    paddingHorizontal: SIZES.PADDING_SMALL,
+    marginBottom: SIZES.PADDING_SMALL,
+    marginTop: SIZES.PADDING_LARGE,
+  },
+  titleContainer: {
+    alignItems: "flex-start",
+    width: "100%",
+    paddingHorizontal: 15,
+  },
+  themeMascotContainer: {
+    position: "absolute",
+    right: -5,
+    top: -30,
+    zIndex: 10,
+  },
+  themeMascotImage: {
+    width: 150,
+    height: 150,
+    zIndex: 1,
+    transform: [{ rotate: "5deg" }],
+    marginBottom: Platform.OS === "ios" ? 0 : -5,
+  },
+  themeTitle: {
+    fontSize: 50,
+    fontFamily: FONTS.DOSIS_BOLD,
+    textAlign: "left",
+    ...SIZES.TEXT_SHADOW_MEDIUM,
+    lineHeight: 45,
+    maxWidth: "80%",
+    paddingTop: 8,
   },
 });

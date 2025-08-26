@@ -3,19 +3,19 @@ import { Surface } from "react-native-paper";
 
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  Easing,
-  Image,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
+    Animated,
+    Dimensions,
+    Easing,
+    Image,
+    Platform,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  ANIMATION_CONFIGS,
-  ANIMATION_VALUES,
+    ANIMATION_CONFIGS,
+    ANIMATION_VALUES,
 } from "../../constants/animations";
 import { FONTS, GAME_CONFIG, SIZES, THEME_PACKS } from "../../constants/theme"; // Fixed import
 import { useTheme } from "../../contexts/ThemeContext";
@@ -509,7 +509,7 @@ export default function GameBoard({
               onPress={() => {
                 audioService.playSound("buttonPress");
                 audioService.playHaptic("medium");
-                router.push("/theme-store?isGameActive=true");
+                router.push("/theme-store");
               }}
             />
 

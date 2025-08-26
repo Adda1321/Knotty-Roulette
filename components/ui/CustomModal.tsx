@@ -1,16 +1,18 @@
 import React from "react";
 import {
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { Surface } from "react-native-paper";
 import { COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import ModalSparkles from "./ModalSparkles";
+
 interface CustomModalProps {
   visible: boolean;
   onClose: () => void;
@@ -29,6 +31,7 @@ interface CustomModalProps {
   sparkleFadeDuration?: number;
   sparkleAppearDuration?: number;
   disabled?: boolean; // New prop to disable buttons
+  isLoading?: boolean; // New prop to show loading state
 }
 
 export default function CustomModal({
@@ -49,6 +52,7 @@ export default function CustomModal({
   sparkleFadeDuration = 300,
   sparkleAppearDuration = 300,
   disabled = false,
+  isLoading = false,
 }: CustomModalProps) {
   // Don't render anything if modal is not visible
   const { COLORS, currentTheme } = useTheme();
@@ -132,19 +136,33 @@ export default function CustomModal({
                     style={[
                       styles.confirmButton,
                       destructive && styles.destructiveButton,
-                      disabled && styles.disabledButton,
+                      (disabled || isLoading) && styles.disabledButton,
                     ]}
                     onPress={onConfirm}
-                    disabled={disabled} // Disable button if prop is true
+                    disabled={disabled || isLoading} // Disable button if prop is true or loading
                   >
-                    <Text
-                      style={[
-                        styles.confirmButtonText,
-                        disabled && styles.disabledButtonText,
-                      ]}
-                    >
-                      {confirmButtonText}
-                    </Text>
+                    {isLoading ? (
+                      <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="small" color={COLORS.TEXT_PRIMARY} />
+                        <Text
+                          style={[
+                            styles.confirmButtonText,
+                            styles.loadingButtonText,
+                          ]}
+                        >
+                          Loading...
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text
+                        style={[
+                          styles.confirmButtonText,
+                          (disabled || isLoading) && styles.disabledButtonText,
+                        ]}
+                      >
+                        {confirmButtonText}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -153,19 +171,33 @@ export default function CustomModal({
                     style={[
                       styles.confirmButton,
                       destructive && styles.destructiveButton,
-                      disabled && styles.disabledButton,
+                      (disabled || isLoading) && styles.disabledButton,
                     ]}
                     onPress={onConfirm}
-                    disabled={disabled} // Disable button if prop is true
+                    disabled={disabled || isLoading} // Disable button if prop is true or loading
                   >
-                    <Text
-                      style={[
-                        styles.confirmButtonText,
-                        disabled && styles.disabledButtonText,
-                      ]}
-                    >
-                      {confirmButtonText}
-                    </Text>
+                    {isLoading ? (
+                      <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="small" color={COLORS.TEXT_PRIMARY} />
+                        <Text
+                          style={[
+                            styles.confirmButtonText,
+                            styles.loadingButtonText,
+                          ]}
+                        >
+                          Loading...
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text
+                        style={[
+                          styles.confirmButtonText,
+                          (disabled || isLoading) && styles.disabledButtonText,
+                        ]}
+                      >
+                        {confirmButtonText}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 </Surface>
               ))}
@@ -273,5 +305,13 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_PRIMARY,
     fontFamily: FONTS.PRIMARY,
     fontWeight: "600",
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingButtonText: {
+    marginLeft: SIZES.PADDING_MEDIUM,
   },
 });

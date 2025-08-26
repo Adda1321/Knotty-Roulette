@@ -136,14 +136,20 @@ const styles = StyleSheet.create({
     padding: SIZES.PADDING_LARGE,
   },
   title: {
-    fontSize: 40,
+      fontSize: Platform.select({
+      android: 28, // 👈 use a different size on Android
+      ios: 40,        // fallback for iOS
+    }),
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
     marginBottom: SIZES.PADDING_SMALL,
   },
   subtitle: {
-    fontSize: SIZES.TITLE,
+    fontSize: Platform.select({
+      android: SIZES.SUBTITLE, // 👈 use a different size on Android
+      ios: SIZES.TITLE,        // fallback for iOS
+    }),
     color: COLORS.TEXT_PRIMARY,
     fontFamily: FONTS.PRIMARY,
     fontStyle: "italic",

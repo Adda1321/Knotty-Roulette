@@ -47,11 +47,7 @@ interface ThemePack {
   emoji: string;
 }
 
-export default function ThemeStore({
-  isGameActive = false, // Add prop to check if game is active
-}: {
-  isGameActive?: boolean;
-}) {
+export default function ThemeStore() {
   const [showPreview, setShowPreview] = useState(false);
   const [selectedPack, setSelectedPack] = useState<ThemePack | null>(null);
   const [themePacks, setThemePacks] = useState<ThemePack[]>([]);
@@ -80,8 +76,9 @@ export default function ThemeStore({
     useState(false);
   const [purchaseType, setPurchaseType] = useState<
     "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null
-  >(null);
-  console.log("isGameActive=>>", isGameActive);
+  | null>(null);
+  const [isThemeSwitching, setIsThemeSwitching] = useState(false);
+  
   // Load theme packs with current status
   useEffect(() => {
     loadThemePacks();
@@ -263,6 +260,7 @@ export default function ThemeStore({
     audioService.playHaptic("light");
     console.log("🎨 ThemeStore: User wants to switch to theme:", pack.id);
     console.log("🎨 ThemeStore: Pack details:", pack);
+    console.log("🎨 ThemeStore: Current theme:", currentTheme);
 
     // Show confirmation modal instead of direct switch
     setPackToSwitch(pack);
@@ -270,24 +268,64 @@ export default function ThemeStore({
   };
 
   const confirmThemeSwitch = async () => {
-    if (!packToSwitch) return;
-    console.log("Pack to switch ID", packToSwitch.id);
-    // Use theme context to switch themes - this will update all components
-    const success = await switchTheme(packToSwitch.id as ThemePackId);
-    if (success) {
-      loadThemePacks(); // Refresh to show current selection
+    if (!packToSwitch || isThemeSwitching) return;
+    
+    console.log("🎨 ThemeStore: Confirming theme switch to:", packToSwitch.id);
+    console.log("🎨 ThemeStore: Current theme before switch:", currentTheme);
+    
+    // Set loading state
+    setIsThemeSwitching(true);
+    
+    try {
+      // Use theme context to switch themes - this will update all components
+      const success = await switchTheme(packToSwitch.id as ThemePackId);
+      if (success) {
+        console.log("🎨 ThemeStore: Theme switched successfully to:", packToSwitch.id);
+        
+        // Wait for background music to be fully loaded before navigation
+        console.log("🎨 ThemeStore: Waiting for background music to load...");
+        
+        // Import background music service to check audio readiness
+        const backgroundMusic = (await import('../../services/backgroundMusic')).default;
+        const audioReady = await backgroundMusic.ensureAudioLoaded();
+        
+        if (audioReady) {
+          console.log("🎨 ThemeStore: Background music loaded successfully");
+        } else {
+          console.warn("⚠️ ThemeStore: Background music loading timeout, proceeding anyway");
+        }
+        
+        // Refresh theme packs to show current selection
+        loadThemePacks();
+        
+        // Play success feedback
+        audioService.playSound("buttonPress");
+        audioService.playHaptic("light");
+        
+        console.log("🎨 ThemeStore: Navigating to player setup page...");
+        
+        // Small delay to ensure all state updates are processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Navigate to player setup page to start a new game with the new theme
+        router.push("/(tabs)");
+      } else {
+        console.log("❌ ThemeStore: Failed to switch theme to:", packToSwitch.id);
+        // Show error feedback
+        audioService.playSound("buttonPress");
+        audioService.playHaptic("error");
+      }
+    } catch (error) {
+      console.error("❌ ThemeStore: Error during theme switch:", error);
+      // Show error feedback
       audioService.playSound("buttonPress");
-      audioService.playHaptic("light");
-      console.log(
-        "🎨 ThemeStore: Theme switched successfully to:",
-        packToSwitch.id
-      );
-    } else {
-      console.log("❌ ThemeStore: Failed to switch theme to:", packToSwitch.id);
+      audioService.playHaptic("error");
+    } finally {
+      // Reset loading state
+      setIsThemeSwitching(false);
+      setShowSwitchConfirmation(false);
+      setPackToSwitch(null);
     }
-
-    setShowSwitchConfirmation(false);
-    setPackToSwitch(null);
   };
 
   const handleAdFreeOnlyPurchase = async () => {
@@ -611,12 +649,11 @@ export default function ThemeStore({
               contentContainerStyle={styles.previewScrollContent}
             >
               <View style={styles.previewImageWrapper}>
-                <View style={styles.previewImageContainer}>
-                  <Image
-                    source={selectedPack?.previewImage}
-                    style={styles.previewImage}
-                  />
-                </View>
+                <Image
+                  source={selectedPack?.previewImage}
+                  style={styles.previewImage}
+                  resizeMode="contain"
+                />
               </View>
 
               <View style={styles.previewContent}>
@@ -781,7 +818,7 @@ export default function ThemeStore({
           setShowPurchaseSuccess(false);
         }}
         title="Purchase Successful! 🎉"
-        message={`You've unlocked the ${purchasedPackName}! You can now use this theme pack. Select it manually when you're ready to switch themes.`}
+        message={`You've unlocked the ${purchasedPackName}! You can now use this theme pack. Switching themes will start a new game with the new theme.`}
         showConfirmButton={true}
         confirmButtonText="Awesome!"
         onConfirm={() => {
@@ -797,22 +834,29 @@ export default function ThemeStore({
       <CustomModal
         visible={showSwitchConfirmation}
         onClose={() => {
-          audioService.playSound("buttonPress");
-          audioService.playHaptic("light");
-          setShowSwitchConfirmation(false);
+          if (!isThemeSwitching) {
+            audioService.playSound("buttonPress");
+            audioService.playHaptic("light");
+            setShowSwitchConfirmation(false);
+          }
         }}
         title="Switch Theme Pack?"
-        message={`Are you sure you want to switch to ${packToSwitch?.name}? You can only change themes when not in an active game.`}
+        message={`Are you sure you want to switch to ${packToSwitch?.name}? Switching themes will start a new game. This action cannot be undone.${
+          isThemeSwitching ? '\n\n⏳ Please wait while we switch themes...' : ''
+        }`}
         showConfirmButton={true}
         confirmButtonText="Switch Theme"
         onConfirm={() => {
-          audioService.playSound("buttonPress");
-          audioService.playHaptic("light");
-          confirmThemeSwitch();
+          if (!isThemeSwitching) {
+            audioService.playSound("buttonPress");
+            audioService.playHaptic("light");
+            confirmThemeSwitch();
+          }
         }}
-        showCloseButton={true}
+        showCloseButton={!isThemeSwitching}
         closeButtonText="Cancel"
-        disabled={isGameActive}
+        disabled={isThemeSwitching}
+        isLoading={isThemeSwitching}
       />
 
       {/* Store Reset Confirmation Modal */}
@@ -1175,7 +1219,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
     marginBottom: SIZES.PADDING_SMALL,
-    lineHeight: 16,
   },
   themePrice: {
     fontSize: SIZES.BODY,
@@ -1234,28 +1277,15 @@ const styles = StyleSheet.create({
   },
   previewImageWrapper: {
     width: "100%",
-    alignItems: "center", // This centers horizontally
-    justifyContent: "center", // This centers vertically
-    marginBottom: SIZES.PADDING_LARGE,
-    paddingHorizontal: 26,
-  },
-  previewImageContainer: {
-    width: "80%",
-    height: 400, // Reduced from 300
-    backgroundColor: COLORS.CARD_BACKGROUND,
-    borderRadius: SIZES.BORDER_RADIUS_LARGE,
-    // marginBottom: SIZES.PADDING_LARGE,
     alignItems: "center",
     justifyContent: "center",
-    overflow: "hidden",
-    // borderWidth: 1,
-    borderColor: COLORS.CARD_BORDER,
-    ...SIZES.SHADOW_SMALL,
-    // padding: SIZES.PADDING_SMALL, // Reduced padding
+    marginBottom: SIZES.PADDING_LARGE,
+    paddingHorizontal: SIZES.PADDING_SMALL,
   },
   previewImage: {
     width: "100%",
-    height: "100%",
+    height: undefined,
+    aspectRatio: 1, // Maintain square aspect ratio for consistent display
     resizeMode: "contain",
   },
   previewContent: {
@@ -1294,8 +1324,8 @@ const styles = StyleSheet.create({
   sampleChallengeItem: {
     flexDirection: "row", // Horizontal layout
     alignItems: "flex-start", // Align items to top
-    marginBottom: SIZES.PADDING_MEDIUM, // Space between challenges
-    paddingHorizontal: SIZES.PADDING_SMALL, // Minimal horizontal padding
+    marginBottom: SIZES.PADDING_SMALL, // Space between challenges
+    // paddingHorizontal: SIZES.PADDING_SMALL, // Minimal horizontal padding
     paddingVertical: SIZES.PADDING_SMALL, // Minimal vertical padding
     position: "relative",
     minHeight: 60, // Reduced height since no container
@@ -1315,16 +1345,15 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
-    fontSize: SIZES.SUBTITLE,
+    fontSize: SIZES.SUBTITLE ,
   },
   sampleChallengeText: {
-    fontSize: SIZES.SUBTITLE,
+    fontSize: SIZES.SUBTITLE -2,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
     lineHeight: 20,
     flex: 1, // Take remaining space
-    paddingRight: SIZES.PADDING_MEDIUM, // Space for bonus badge
   },
   bonusBadge: {
     position: "absolute",
@@ -1360,7 +1389,7 @@ const styles = StyleSheet.create({
   },
   ownedSection: {
     alignItems: "center",
-    paddingVertical: SIZES.PADDING_LARGE,
+    paddingTop: SIZES.PADDING_LARGE,
     paddingHorizontal: SIZES.PADDING_SMALL, // Added horizontal padding
   },
   ownedMessage: {

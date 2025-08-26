@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { THEME_COLORS, THEME_PACKS, ThemePackId } from '../constants/theme';
+import backgroundMusic from '../services/backgroundMusic';
 import themePackService from '../services/themePackService';
 
 interface ThemeContextType {
@@ -65,9 +66,25 @@ export const CustomThemeProvider: React.FC<ThemeProviderProps> = ({ children }) 
       const activeTheme = await themePackService.getCurrentPack();
       console.log('🔧 ThemeContext: Refreshing theme to:', activeTheme);
       setCurrentTheme(activeTheme);
+      
+      // Ensure background music service is synchronized with current theme
+      try {
+        await backgroundMusic.setTheme(activeTheme);
+        console.log('🎵 ThemeContext: Background music synchronized with refreshed theme');
+      } catch (error) {
+        console.error('❌ ThemeContext: Failed to synchronize background music with refreshed theme:', error);
+      }
     } catch (error) {
       console.log('Error refreshing theme:', error);
       setCurrentTheme(THEME_PACKS.DEFAULT);
+      
+      // Ensure background music service is synchronized with default theme
+      try {
+        await backgroundMusic.setTheme(THEME_PACKS.DEFAULT);
+        console.log('🎵 ThemeContext: Background music synchronized with default theme');
+      } catch (error) {
+        console.error('❌ ThemeContext: Failed to synchronize background music with default theme:', error);
+      }
     }
   };
 
@@ -82,6 +99,15 @@ export const CustomThemeProvider: React.FC<ThemeProviderProps> = ({ children }) 
         console.log('🔧 ThemeContext: Theme switch successful, updating to:', themeId);
         console.log('🔧 ThemeContext: New colors will be:', THEME_COLORS[themeId]);
         setCurrentTheme(themeId);
+        
+        // Notify background music service of theme change
+        try {
+          await backgroundMusic.setTheme(themeId);
+          console.log('🎵 ThemeContext: Background music theme updated successfully');
+        } catch (error) {
+          console.error('❌ ThemeContext: Failed to update background music theme:', error);
+        }
+        
         // Notify all callbacks of theme change
         notifyThemeChange(themeId);
         return true;

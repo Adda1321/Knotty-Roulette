@@ -1,7 +1,7 @@
 import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
+    DarkTheme,
+    DefaultTheme,
+    ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
@@ -29,7 +29,7 @@ const initializeAudioServices = async () => {
     await audioService.initialize();
     console.log("🎵 Audio service initialized immediately");
 
-    // Initialize background music
+    // Initialize background music with default theme
     await backgroundMusic.initialize();
     await backgroundMusic.loadBackgroundMusic();
     await backgroundMusic.playBackgroundMusic();

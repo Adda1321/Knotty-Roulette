@@ -9,7 +9,7 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { CustomThemeProvider } from '../contexts/ThemeContext';
+import { CustomThemeProvider } from "../contexts/ThemeContext";
 import audioService from "../services/audio";
 import backgroundMusic from "../services/backgroundMusic";
 
@@ -17,7 +17,7 @@ import backgroundMusic from "../services/backgroundMusic";
 const fontConfig = {
   "Dosis-Regular": require("../assets/fonts/Dosis-Regular.ttf"),
   "Dosis-Bold": require("../assets/fonts/Dosis-Bold.ttf"),
-  "Dosis-Medium":require('../assets/fonts/Dosis-Medium.ttf'),
+  "Dosis-Medium": require("../assets/fonts/Dosis-Medium.ttf"),
   FontdinerSwanky: require("../assets/fonts/FontdinerSwanky-Regular.ttf"),
   SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
 };

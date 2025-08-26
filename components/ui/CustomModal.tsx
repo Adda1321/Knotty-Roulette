@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: SIZES.TITLE,
+    fontSize: SIZES.TITLE + 2,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   message: {
-    fontSize: SIZES.BODY,
+    fontSize: SIZES.SUBTITLE,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
     textAlign: "center",

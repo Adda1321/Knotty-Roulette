@@ -593,8 +593,9 @@ export default function GameBoard({
                   {`${currentPlayer.name}'s Turn`}
                 </Text>
                 <Text
-                  style={[styles.passInstruction, 
-                     {
+                  style={[
+                    styles.passInstruction,
+                    {
                       color:
                         currentTheme === THEME_PACKS.COUPLE
                           ? "#333333"
@@ -840,7 +841,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   currentPlayer: {
-    fontSize: SIZES.SUBTITLE,
+    fontSize: SIZES.SUBTITLE + 4,
     fontFamily: FONTS.DOSIS_BOLD,
     paddingTop: 5,
   },
@@ -868,8 +869,8 @@ const styles = StyleSheet.create({
     overflow: "visible",
   },
   wheel: {
-    width: width * 0.6,
-    height: 240,
+    width: width * 0.9,
+    height: 260,
   },
   spinButton: {
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,

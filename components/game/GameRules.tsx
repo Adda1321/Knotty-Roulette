@@ -47,10 +47,10 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
     },
   ];
   const { COLORS, currentTheme } = useTheme();
-  
+
   // Debug logging
   console.log("🎨 GameBoard: Current theme:", currentTheme);
-  
+
   // Monitor theme changes
   useEffect(() => {
     console.log("🎨 GameBoard: Theme changed to:", currentTheme);
@@ -65,7 +65,7 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
       <View style={styles.overlay}>
         <View style={styles.container}>
           {/* Header */}
-          <View style={[styles.header,{backgroundColor:COLORS.PRIMARY}]}>
+          <View style={[styles.header, { backgroundColor: COLORS.PRIMARY }]}>
             <Text style={styles.title}>Knotty Roulette</Text>
             <Text style={styles.subtitle}>(Party Game)</Text>
           </View>
@@ -100,7 +100,7 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
             }}
             backgroundColor={COLORS.YELLOW}
             textColor={COLORS.TEXT_DARK}
-            fontSize={SIZES.SUBTITLE}
+            fontSize={SIZES.TITLE}
             // fontWeight="bold"
             fontFamily={FONTS.DOSIS_BOLD}
             style={styles.closeButton}
@@ -136,14 +136,14 @@ const styles = StyleSheet.create({
     padding: SIZES.PADDING_LARGE,
   },
   title: {
-    fontSize: 30,
+    fontSize: 40,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
     marginBottom: SIZES.PADDING_SMALL,
   },
   subtitle: {
-    fontSize: SIZES.SUBTITLE,
+    fontSize: SIZES.TITLE,
     color: COLORS.TEXT_PRIMARY,
     fontFamily: FONTS.PRIMARY,
     fontStyle: "italic",
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     ...SIZES.SHADOW_SMALL,
   },
   ruleNumberText: {
-    fontSize: SIZES.CAPTION,
+    fontSize: SIZES.BODY,
     fontWeight: "bold",
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
@@ -178,14 +178,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ruleText: {
-    fontSize: SIZES.CAPTION,
+    fontSize: SIZES.BODY,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
     lineHeight: 22,
     marginBottom: SIZES.PADDING_SMALL,
   },
   ruleSubtext: {
-    fontSize: SIZES.CAPTION,
+    fontSize: SIZES.BODY,
     color: "#666",
     fontFamily: FONTS.PRIMARY,
     fontStyle: "italic",

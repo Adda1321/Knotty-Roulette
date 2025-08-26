@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
-import { Player } from "../../types/game";
-import { COLORS as THEME_COLORS,COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme"; // Fixed import
+import { COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme"; // Fixed import
 import { useTheme } from "../../contexts/ThemeContext";
+import { Player } from "../../types/game";
 
 interface ScoreboardProps {
   players: Player[];
@@ -14,10 +14,10 @@ export default function Scoreboard({
   currentPlayerIndex,
 }: ScoreboardProps) {
   const { COLORS, currentTheme } = useTheme();
-  
+
   // Debug logging
   console.log("🎨 GameBoard: Current theme:", currentTheme);
-  
+
   // Monitor theme changes
   useEffect(() => {
     console.log("🎨 GameBoard: Theme changed to:", currentTheme);
@@ -33,15 +33,14 @@ export default function Scoreboard({
     index: number;
   }) => (
     <View
-         style={[
-    styles.playerCard,
-    player.id === currentPlayerIndex && {
-      backgroundColor: COLORS.PRIMARY,
-      borderWidth: 2,
-    borderColor: COLORS.YELLOW,
-    },
-  ]}
-
+      style={[
+        styles.playerCard,
+        player.id === currentPlayerIndex && {
+          backgroundColor: COLORS.PRIMARY,
+          borderWidth: 2,
+          borderColor: COLORS.YELLOW,
+        },
+      ]}
     >
       <Text
         style={[
@@ -56,7 +55,7 @@ export default function Scoreboard({
       <Text
         style={[
           styles.playerScore,
-          {color: COLORS.PRIMARY},
+          { color: COLORS.PRIMARY },
           player.id === currentPlayerIndex && styles.currentPlayerScore,
         ]}
       >
@@ -66,17 +65,17 @@ export default function Scoreboard({
   );
 
   return (
-  <View
-  style={[
-    styles.container,
-    {
-      backgroundColor:
-        currentTheme === THEME_PACKS.COUPLE
-          ? COLORS.GAMEBOARDPRIMARY
-          : COLORS.SCOREBOARD,
-    },
-  ]}
->
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            currentTheme === THEME_PACKS.COUPLE
+              ? COLORS.GAMEBOARDPRIMARY
+              : COLORS.SCOREBOARD,
+        },
+      ]}
+    >
       <Text style={styles.title}>Scoreboard</Text>
 
       <FlatList
@@ -110,7 +109,7 @@ const styles = StyleSheet.create({
     ...SIZES.SHADOW_SMALL,
   },
   title: {
-    fontSize: SIZES.SUBTITLE,
+    fontSize: SIZES.SUBTITLE + 4,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -136,9 +135,8 @@ const styles = StyleSheet.create({
     height: 60,
     alignItems: "center",
     justifyContent: "center",
-    ...SIZES.SHADOW_SMALL,  
-    backgroundColor:COLORS.FIELDS,
-
+    ...SIZES.SHADOW_SMALL,
+    backgroundColor: COLORS.FIELDS,
   },
   currentPlayerCard: {
     backgroundColor: COLORS.DARK_GREEN,
@@ -146,7 +144,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.YELLOW,
   },
   playerName: {
-    fontSize: SIZES.SMALL,
+    fontSize: SIZES.CAPTION,
     fontWeight: "600",
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_MEDIUM,
@@ -155,6 +153,7 @@ const styles = StyleSheet.create({
   },
   currentPlayerName: {
     color: COLORS.TEXT_PRIMARY,
+    fontSize: SIZES.CAPTION,
   },
   playerScore: {
     fontSize: SIZES.SUBTITLE,

@@ -237,7 +237,7 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                   }}
                   backgroundColor={COLORS.YELLOW}
                   textColor={COLORS.TEXT_DARK}
-                  fontSize={SIZES.BODY}
+                  fontSize={SIZES.TITLE}
                   shadowIntensity={5}
                   fontFamily={FONTS.DOSIS_BOLD}
                   shadowRadius={10}
@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: SIZES.TITLE,
+    fontSize: SIZES.EXTRALARGE,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingText: {
-    fontSize: SIZES.BODY,
+    fontSize: SIZES.BODY+4,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
     marginLeft: SIZES.PADDING_MEDIUM,

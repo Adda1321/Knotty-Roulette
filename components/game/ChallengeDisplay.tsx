@@ -31,7 +31,6 @@ interface ChallengeDisplayProps {
 }
 
 export default function ChallengeDisplay({
-
   challenge,
   playerName,
   onComplete,
@@ -43,7 +42,7 @@ export default function ChallengeDisplay({
       text: challenge.challenge_text.substring(0, 60) + "...",
       card_pack: challenge.card_pack,
       has_bonus: challenge.has_bonus,
-      playerName: playerName
+      playerName: playerName,
     });
   }, [challenge, playerName]);
 
@@ -53,11 +52,11 @@ export default function ChallengeDisplay({
     null
   );
 
- const { COLORS, currentTheme } = useTheme();
-  
+  const { COLORS, currentTheme } = useTheme();
+
   // Debug logging
   console.log("🎨 GameBoard: Current theme:", currentTheme);
-  
+
   // Monitor theme changes
   useEffect(() => {
     console.log("🎨 GameBoard: Theme changed to:", currentTheme);
@@ -102,7 +101,7 @@ export default function ChallengeDisplay({
         playerName,
         voteType,
       });
-      
+
       setHasVoted(true);
 
       // Handle the response based on the documented API behavior
@@ -115,25 +114,30 @@ export default function ChallengeDisplay({
           position: "top",
           visibilityTime: 2000,
         });
-        
-        console.log('Vote response - already voted:', voteResponse);
+
+        console.log("Vote response - already voted:", voteResponse);
       } else {
         // New vote submitted successfully
         Toast.show({
           type: "success",
           text1: "Vote Submitted!",
-          text2: `Your ${voteType} has been recorded`,
+          text2:
+            "You just made Knotty Times even better - thanks for your input!",
           position: "top",
           visibilityTime: 2000,
         });
-        
-        console.log('Vote response - new vote:', voteResponse);
-        console.log('Updated counts - Likes:', voteResponse.likes, 'Dislikes:', voteResponse.dislikes);
+
+        console.log("Vote response - new vote:", voteResponse);
+        console.log(
+          "Updated counts - Likes:",
+          voteResponse.likes,
+          "Dislikes:",
+          voteResponse.dislikes
+        );
       }
 
       // Note: The API returns updated like/dislike counts that could be used
       // to update the UI if you want to show real-time vote counts
-      
     } catch (error) {
       console.error("Error logging vote:", error);
 
@@ -203,31 +207,40 @@ export default function ChallengeDisplay({
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-    <Animated.View
-  style={[
-    styles.challengeCard,
-    {
-    backgroundColor: COLORS.FIELDS,
-      borderColor:
-        currentTheme === THEME_PACKS.DEFAULT ? "#2B7B33" : COLORS.YELLOW,
-    },
-  ]}
->
-                      <View style={[styles.playerContainer,{                      
-                        backgroundColor:COLORS.PRIMARY}]}>
-            
+        <Animated.View
+          style={[
+            styles.challengeCard,
+            {
+              backgroundColor: COLORS.FIELDS,
+              borderColor:
+                currentTheme === THEME_PACKS.DEFAULT
+                  ? "#2B7B33"
+                  : COLORS.YELLOW,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.playerContainer,
+              {
+                backgroundColor: COLORS.PRIMARY,
+              },
+            ]}
+          >
             <View>
-          <Text
-  style={[
-    styles.playerName,
-    { color: COLORS.YELLOW }
-  ]}
->{playerName},</Text>
-              <Text style={[styles.turnText,
-                {
-    color: COLORS.YELLOW,
-                }]
-              }>YOUR TURN</Text>
+              <Text style={[styles.playerName, { color: COLORS.YELLOW }]}>
+                {playerName},
+              </Text>
+              <Text
+                style={[
+                  styles.turnText,
+                  {
+                    color: COLORS.YELLOW,
+                  },
+                ]}
+              >
+                YOUR TURN
+              </Text>
             </View>
             <View style={styles.mascotContainer}>
               <Image
@@ -256,11 +269,14 @@ export default function ChallengeDisplay({
             }}
           >
             <View style={styles.challengeTextContainer}>
-              <Text style={[styles.challengeText,
-                {
-    color: COLORS.TEXT_DARK,
-                }
-              ]}>
+              <Text
+                style={[
+                  styles.challengeText,
+                  {
+                    color: COLORS.TEXT_DARK,
+                  },
+                ]}
+              >
                 {challenge.challenge_text}
               </Text>
             </View>
@@ -277,10 +293,10 @@ export default function ChallengeDisplay({
                       {
                         borderRadius: 10,
                       },
-                      styles.upvoteButton,{
-                        backgroundColor:COLORS.ONLINE,
-                        borderColor:COLORS.PRIMARY
-
+                      styles.upvoteButton,
+                      {
+                        backgroundColor: COLORS.ONLINE,
+                        borderColor: COLORS.PRIMARY,
                       },
                       styles.voteButton,
                     ]}
@@ -308,9 +324,16 @@ export default function ChallengeDisplay({
                           size="small"
                         />
                       ) : (
-                        <Text style={[styles.voteButtonText,{
-    color: COLORS.TEXT_PRIMARY,
-                        }]}>👍</Text>
+                        <Text
+                          style={[
+                            styles.voteButtonText,
+                            {
+                              color: COLORS.TEXT_PRIMARY,
+                            },
+                          ]}
+                        >
+                          👍
+                        </Text>
                       )}
                     </TouchableOpacity>
                   </Surface>
@@ -320,9 +343,12 @@ export default function ChallengeDisplay({
                       {
                         borderRadius: 10,
                       },
-                      styles.downvoteButton,{
-                    backgroundColor: currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :"#EE562B"
-
+                      styles.downvoteButton,
+                      {
+                        backgroundColor:
+                          currentTheme === THEME_PACKS.COUPLE
+                            ? COLORS.LIGHT
+                            : "#EE562B",
                       },
                       styles.voteButton,
                     ]}
@@ -358,29 +384,30 @@ export default function ChallengeDisplay({
             )}
             <View>
               <View style={styles.actionButtons}>
-            <Surface
-  elevation={3}
-  style={{
-    borderRadius: 11,
-    borderWidth: 3, // Add border width
-    borderColor:
-      currentTheme === THEME_PACKS.DEFAULT
-        ? "#18752A"
-        : COLORS.PRIMARY,
-    overflow: "hidden", // Ensures border radius clips content
-  }}
->
-
+                <Surface
+                  elevation={3}
+                  style={{
+                    borderRadius: 11,
+                    borderWidth: 3, // Add border width
+                    borderColor:
+                      currentTheme === THEME_PACKS.DEFAULT
+                        ? "#18752A"
+                        : COLORS.PRIMARY,
+                    overflow: "hidden", // Ensures border radius clips content
+                  }}
+                >
                   <Animated.View
                     style={{ transform: [{ scale: buttonScale }] }}
                   >
                     <Button
                       text="COMPLETE CHALLENGE +1" // Uppercase to match image
                       onPress={handleComplete}
- backgroundColor=
-    {  currentTheme === THEME_PACKS.DEFAULT
-        ? "#3A983D"
-        : COLORS.ONLINE}                    textColor={COLORS.YELLOW}
+                      backgroundColor={
+                        currentTheme === THEME_PACKS.DEFAULT
+                          ? "#3A983D"
+                          : COLORS.ONLINE
+                      }
+                      textColor={COLORS.YELLOW}
                       fontSize={SIZES.SUBTITLE}
                       fontFamily={FONTS.DOSIS_BOLD}
                       // fontWeight="800" // Bolder to match image
@@ -404,7 +431,11 @@ export default function ChallengeDisplay({
                   <Button
                     text="Pass (-1 point)"
                     onPress={handleOnPass}
-                    backgroundColor={currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :"#EE562B"}
+                    backgroundColor={
+                      currentTheme === THEME_PACKS.COUPLE
+                        ? COLORS.LIGHT
+                        : "#EE562B"
+                    }
                     textColor={COLORS.YELLOW}
                     fontSize={SIZES.SUBTITLE}
                     fontFamily={FONTS.DOSIS_BOLD}
@@ -541,7 +572,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   voteQuestion: {
-    fontSize: 14,
+    fontSize: SIZES.BODY,
     color: "#504f4fff",
     marginBottom: 12,
     textAlign: "center",

@@ -303,7 +303,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                               onPress={addPlayer}
                               backgroundColor={COLORS.YELLOW}
                               textColor={COLORS.TEXT_DARK}
-                              fontSize={SIZES.BODY}
+                              fontSize={SIZES.SUBTITLE}
                               fontFamily={FONTS.DOSIS_MEDIUM}
                               fontWeight="800"
                               paddingHorizontal={SIZES.PADDING_SMALL}
@@ -460,7 +460,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                           <Text
                             style={{
                               color: COLORS.TEXT_DARK,
-                              fontSize: SIZES.SUBTITLE,
+                              fontSize: SIZES.TITLE,
                               fontFamily: FONTS.DOSIS_BOLD,
                             }}
                           >
@@ -542,14 +542,14 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.PADDING_SMALL,
   },
   title: {
-    fontSize: 40,
+    fontSize: 45,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
     ...SIZES.TEXT_SHADOW_MEDIUM,
     marginTop: -48,
   },
   subtitle: {
-    fontSize: SIZES.BODY,
+    fontSize: SIZES.SUBTITLE,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
     marginBottom: SIZES.PADDING_SMALL,

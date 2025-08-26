@@ -7,7 +7,6 @@ export const COLORS = {
 
   // Background Colors
   BACKGROUND_DARK: "#1a1a1a",
-  
 
   // Text Colors
   TEXT_PRIMARY: "#ffffff",
@@ -24,8 +23,6 @@ export const COLORS = {
 
   // Button Colors
   BUTTON_PRIMARY: "#6bc26e",
-  
-  
 
   // Shadow Colors
   SHADOW: "rgba(0, 0, 0, 0.1)",
@@ -111,11 +108,11 @@ export const SIZES = {
 // Theme Pack Constants
 export const THEME_PACKS = {
   DEFAULT: "default",
-  COLLEGE: "college", 
+  COLLEGE: "college",
   COUPLE: "couple",
 } as const;
 
-export type ThemePackId = typeof THEME_PACKS[keyof typeof THEME_PACKS];
+export type ThemePackId = (typeof THEME_PACKS)[keyof typeof THEME_PACKS];
 
 export interface ThemePackData {
   id: ThemePackId;
@@ -130,7 +127,8 @@ export const THEME_PACK_DATA: Record<ThemePackId, ThemePackData> = {
   [THEME_PACKS.DEFAULT]: {
     id: THEME_PACKS.DEFAULT,
     name: "Default Theme",
-    description: "The classic Knotty Roulette experience with party challenges and drinking games.",
+    description:
+      "The classic Knotty Roulette experience with party challenges and drinking games.",
     price: 0,
     emoji: "🎯",
     isDefault: true,
@@ -138,15 +136,17 @@ export const THEME_PACK_DATA: Record<ThemePackId, ThemePackData> = {
   [THEME_PACKS.COLLEGE]: {
     id: THEME_PACKS.COLLEGE,
     name: "College Theme",
-    description: "Wild college party challenges perfect for dorm rooms and frat parties.",
+    description:
+      "Wild college party challenges perfect for dorm rooms and frat parties.",
     price: 2.99,
     emoji: "🎓",
     isDefault: false,
   },
   [THEME_PACKS.COUPLE]: {
     id: THEME_PACKS.COUPLE,
-    name: "Couple Theme", 
-    description: "Romantic and flirty challenges designed for couples and date nights.",
+    name: "Couple Theme",
+    description:
+      "Romantic and flirty challenges designed for couples and date nights.",
     price: 2.99,
     emoji: "💕",
     isDefault: false,
@@ -157,125 +157,122 @@ export const THEME_PACK_DATA: Record<ThemePackId, ThemePackData> = {
 export const THEME_COLORS = {
   [THEME_PACKS.DEFAULT]: {
     // Primary Colors - Use original green colors
-    PRIMARY: "#6bc26e",      // Original green || OKAY
-    LIGHT: "#116b20ff",     // Original light green || OKAY
-    DARK:"#3f663f",
-    LIGHTEST: "#63A133", 
+    PRIMARY: "#6bc26e", // Original green || OKAY
+    LIGHT: "#116b20ff", // Original light green || OKAY
+    DARK: "#3f663f",
+    LIGHTEST: "#63A133",
     // BackGround:"#116b20ff" ,   // Original light green || OKAY
-    BORDER:"#63A133",
-    TEXT:"#F4C614",
-    YELLOW: "#F4C614",          // Original yellow || OKAY
-    FIELDS: "#F1E9BE",          // Original fields color || OKAY
-    GAMEBOARDPRIMARY:"#286a19ff",
-    GAMEBOARDSECONDARY:"#d4f6daff",
-    SCOREBOARD:"#5aad5d",
+    BORDER: "#63A133",
+    TEXT: "#F4C614",
+    YELLOW: "#F4C614", // Original yellow || OKAY
+    FIELDS: "#F1E9BE", // Original fields color || OKAY
+    GAMEBOARDPRIMARY: "#286a19ff",
+    GAMEBOARDSECONDARY: "#d4f6daff",
+    SCOREBOARD: "#5aad5d",
     // Background Colors
     BACKGROUND_DARK: "#1a1a1a", // Original dark background || OKAY
-     //|| OKAY
-    
+    //|| OKAY
+
     // Text Colors
-    TEXT_PRIMARY: "#ffffff",    // White text
-    TEXT_SECONDARY: "#cccccc",  // Light gray text
-    TEXT_DARK: "#333333",       // Dark text
-    
+    TEXT_PRIMARY: "#ffffff", // White text
+    TEXT_SECONDARY: "#cccccc", // Light gray text
+    TEXT_DARK: "#333333", // Dark text
+
     // Status Colors
-    ONLINE: "#6bc26e",          // Green for online
-    OFFLINE: "#ff6b6b",         // Red for offline
-    
+    ONLINE: "#6bc26e", // Green for online
+    OFFLINE: "#ff6b6b", // Red for offline
+
     // Card Colors
     CARD_BACKGROUND: "#ffffff", // White cards
-    CARD_BORDER: "#e0e0e0",    // Light gray borders
-    
+    CARD_BORDER: "#e0e0e0", // Light gray borders
+
     // Button Colors
-    BUTTON_PRIMARY: "#6bc26e",  // Green buttons
-     // Yellow secondary
-     // Gray disabled
-    
+    BUTTON_PRIMARY: "#6bc26e", // Green buttons
+    // Yellow secondary
+    // Gray disabled
+
     // Shadow Colors
     SHADOW: "rgba(0, 0, 0, 0.1)",
     SHADOW_DARK: "#000000",
   },
-  
+
   [THEME_PACKS.COLLEGE]: {
     // Primary Colors - Blue Theme
-    PRIMARY: "#0c2f64ff",      // Blue instead of green
+    PRIMARY: "#0c2f64ff", // Blue instead of green
     LIGHT: "#1976D2",
-    THEMEPACKNAME:"#9cbfe2ff",
+    THEMEPACKNAME: "#9cbfe2ff",
     LIGHTEST: "#6598cbff",
-    DARK:"#123f65ff",     // Light blue
-    TEXT:"#ff3b9dff",
-    YELLOW: "#F4C614", 
-             // Orange accent
-    FIELDS: "#E3F2FD",          // Light blue fields
-       GAMEBOARDPRIMARY:"#4495bbff",
-    GAMEBOARDSECONDARY:"#bcecf0ff",
-    
-    SCOREBOARD:"#639db6ff",
- 
-    
+    DARK: "#123f65ff", // Light blue
+    TEXT: "#ff3b9dff",
+    YELLOW: "#F4C614",
+    // Orange accent
+    FIELDS: "#E3F2FD", // Light blue fields
+    GAMEBOARDPRIMARY: "#4495bbff",
+    GAMEBOARDSECONDARY: "#bcecf0ff",
+
+    SCOREBOARD: "#639db6ff",
+
     // Text Colors
     TEXT_PRIMARY: "#ffffff",
-    TEXT_SECONDARY: "#E3F2FD",  // Light blue text
-    TEXT_DARK: "#0D47A1",       // Dark blue text
-    
+    TEXT_SECONDARY: "#E3F2FD", // Light blue text
+    TEXT_DARK: "#0D47A1", // Dark blue text
+
     // Status Colors
-    ONLINE: "#1976D2",          // Blue
+    ONLINE: "#1976D2", // Blue
     OFFLINE: "#ff6b6b",
-    
+
     // Card Colors
     CARD_BACKGROUND: "#ffffff",
-    CARD_BORDER: "#BBDEFB",     // Light blue border
-    
+    CARD_BORDER: "#BBDEFB", // Light blue border
+
     // Button Colors
-    BUTTON_PRIMARY: "#1976D2",  // Blue
+    BUTTON_PRIMARY: "#1976D2", // Blue
     BUTTON_SECONDARY: "#FF9800", // Orange
-    
-    
+
     // Shadow Colors
     SHADOW: "rgba(0, 0, 0, 0.1)",
     SHADOW_DARK: "#000000",
   },
-  
+
   [THEME_PACKS.COUPLE]: {
     // Primary Colors - Red/Pink Theme
-    PRIMARY: "#BC2538",      // Pink/Red instead of green
-      // Primary Colors - Blue Theme
-    THEMEPACKNAME:"#9cbfe2ff",
+    PRIMARY: "#BC2538", // Pink/Red instead of green
+    // Primary Colors - Blue Theme
+    THEMEPACKNAME: "#9cbfe2ff",
 
     LIGHT: "#E78D90",
-    LIGHTEST:"#EB6051",
-    DARK:"#CB4757", 
-    TEXT:"#FDCA2B",
-    BORDER:"#4292c1ff",
-        // Light blue    // Light pink
-    YELLOW: "#FFC107",          // Amber accent
-    FIELDS: "#FCE4EC",          // Light pink fields
-    
+    LIGHTEST: "#EB6051",
+    DARK: "#CB4757",
+    TEXT: "#FDCA2B",
+    BORDER: "#4292c1ff",
+    // Light blue    // Light pink
+    YELLOW: "#FFC107", // Amber accent
+    FIELDS: "#FCE4EC", // Light pink fields
+
     // Background Colors
     BACKGROUND_DARK: "#E14C31", // Dark pink
-    
-       GAMEBOARDPRIMARY:"#d7364cff",
-    GAMEBOARDSECONDARY:"#d28c8eff",
-    SCOREBOARD:"#ce5256ff",
+
+    GAMEBOARDPRIMARY: "#d7364cff",
+    GAMEBOARDSECONDARY: "#d28c8eff",
+    SCOREBOARD: "#ce5256ff",
 
     // Text Colors
     TEXT_PRIMARY: "#ffffff",
-    TEXT_SECONDARY: "#FCE4EC",  // Light pink text
-    TEXT_DARK: "#C2185B",       // Dark pink text
-    
+    TEXT_SECONDARY: "#FCE4EC", // Light pink text
+    TEXT_DARK: "#C2185B", // Dark pink text
+
     // Status Colors
-    ONLINE: "#e95e62ff",          // Pink
+    ONLINE: "#e95e62ff", // Pink
     OFFLINE: "#ff6b6b",
-    
+
     // Card Colors
     CARD_BACKGROUND: "#ffffff",
-    CARD_BORDER: "#F8BBD9",     // Light pink border
-    
+    CARD_BORDER: "#F8BBD9", // Light pink border
+
     // Button Colors
-    BUTTON_PRIMARY: "#E91E63",  // Pink
+    BUTTON_PRIMARY: "#E91E63", // Pink
     BUTTON_SECONDARY: "#FFC107", // Amber
-    
-    
+
     // Shadow Colors
     SHADOW: "rgba(0, 0, 0, 0.1)",
     SHADOW_DARK: "#000000",

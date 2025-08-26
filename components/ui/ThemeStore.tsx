@@ -81,7 +81,7 @@ export default function ThemeStore({
   const [purchaseType, setPurchaseType] = useState<
     "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null
   >(null);
-console.log("isGameActive=>>",isGameActive)
+  console.log("isGameActive=>>", isGameActive);
   // Load theme packs with current status
   useEffect(() => {
     loadThemePacks();
@@ -909,7 +909,7 @@ const styles = StyleSheet.create({
     // backgroundColor:"red"
   },
   title: {
-    fontSize: SIZES.TITLE,
+    fontSize: SIZES.EXTRALARGE + 4,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     flex: 1,
@@ -971,7 +971,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   sectionTitle: {
-    fontSize: SIZES.SUBTITLE,
+    fontSize: SIZES.TITLE,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -996,6 +996,7 @@ const styles = StyleSheet.create({
   bundleCardCompleted: {
     // Keep original styling, just indicate it's completed
     borderColor: COLORS.YELLOW,
+    fontSize: SIZES.CAPTION,
   },
   bundleButtonDisabled: {
     backgroundColor: COLORS.TEXT_SECONDARY,
@@ -1008,7 +1009,7 @@ const styles = StyleSheet.create({
     paddingVertical: SIZES.PADDING_SMALL,
   },
   bundleCompletedTextStyle: {
-    fontSize: SIZES.SMALL,
+    fontSize: SIZES.CAPTION,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -1065,7 +1066,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.DOSIS_BOLD,
   },
   bundleDescription: {
-    fontSize: SIZES.SMALL,
+    fontSize: SIZES.CAPTION,
     color: COLORS.TEXT_DARK,
     marginBottom: SIZES.PADDING_MEDIUM,
     lineHeight: 18,
@@ -1134,7 +1135,7 @@ const styles = StyleSheet.create({
     borderRadius: SIZES.BORDER_RADIUS_SMALL - 2,
   },
   ownedBadgeText: {
-    fontSize: SIZES.CAPTION,
+    fontSize: SIZES.BODY,
     color: COLORS.FIELDS, // Use existing color instead of WHITE
     fontFamily: FONTS.DOSIS_BOLD,
   },
@@ -1169,7 +1170,7 @@ const styles = StyleSheet.create({
     resizeMode: "contain",
   },
   themeName: {
-    fontSize: SIZES.SMALL,
+    fontSize: SIZES.BODY,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -1177,7 +1178,7 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
   themePrice: {
-    fontSize: SIZES.CAPTION,
+    fontSize: SIZES.BODY,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -1210,7 +1211,7 @@ const styles = StyleSheet.create({
     flex: 0, // Don't expand header
   },
   previewTitle: {
-    fontSize: SIZES.TITLE,
+    fontSize: SIZES.EXTRALARGE,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     flex: 1,
@@ -1236,7 +1237,7 @@ const styles = StyleSheet.create({
     alignItems: "center", // This centers horizontally
     justifyContent: "center", // This centers vertically
     marginBottom: SIZES.PADDING_LARGE,
-    paddingHorizontal: SIZES.PADDING_MEDIUM,
+    paddingHorizontal: 26,
   },
   previewImageContainer: {
     width: "80%",
@@ -1247,10 +1248,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
-    borderWidth: 1,
+    // borderWidth: 1,
     borderColor: COLORS.CARD_BORDER,
     ...SIZES.SHADOW_SMALL,
-    padding: SIZES.PADDING_SMALL, // Reduced padding
+    // padding: SIZES.PADDING_SMALL, // Reduced padding
   },
   previewImage: {
     width: "100%",
@@ -1262,7 +1263,7 @@ const styles = StyleSheet.create({
     paddingTop: 0, // Remove top padding since image container has margin
   },
   previewDescription: {
-    fontSize: SIZES.BODY,
+    fontSize: SIZES.SUBTITLE,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
     lineHeight: 22,
@@ -1276,14 +1277,14 @@ const styles = StyleSheet.create({
     borderWidth: 0, // Remove border for cleaner look
   },
   sampleChallengesTitle: {
-    fontSize: SIZES.SUBTITLE,
+    fontSize: SIZES.TITLE,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     marginBottom: SIZES.PADDING_SMALL,
     textAlign: "center",
   },
   sampleChallengesSubtitle: {
-    fontSize: SIZES.SMALL,
+    fontSize: SIZES.SUBTITLE,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS, // Use existing DOSIS font
     marginBottom: SIZES.PADDING_LARGE,
@@ -1310,19 +1311,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   challengeNumberText: {
-    fontSize: SIZES.SMALL,
+    // fontSize: SIZES.SMALL,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
+    fontSize: SIZES.SUBTITLE,
   },
   sampleChallengeText: {
-    fontSize: SIZES.SMALL,
+    fontSize: SIZES.SUBTITLE,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
     lineHeight: 20,
     flex: 1, // Take remaining space
-    paddingRight: SIZES.PADDING_LARGE, // Space for bonus badge
+    paddingRight: SIZES.PADDING_MEDIUM, // Space for bonus badge
   },
   bonusBadge: {
     position: "absolute",
@@ -1362,7 +1364,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.PADDING_SMALL, // Added horizontal padding
   },
   ownedMessage: {
-    fontSize: SIZES.BODY,
+    fontSize: SIZES.SUBTITLE,
     color: COLORS.ONLINE,
     fontFamily: FONTS.DOSIS_BOLD,
     marginTop: SIZES.PADDING_MEDIUM,
@@ -1391,7 +1393,7 @@ const styles = StyleSheet.create({
     marginTop: SIZES.PADDING_SMALL,
   },
   selectButtonText: {
-    fontSize: SIZES.SMALL,
+    fontSize: SIZES.CAPTION,
     color: COLORS.TEXT_PRIMARY,
     fontFamily: FONTS.DOSIS_BOLD,
   },

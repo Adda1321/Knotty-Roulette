@@ -1,17 +1,17 @@
 {
   "expo": {
-    "name": "Knotty Roulette",
+    "name": "Knotty Times",
     "slug": "knotty-roulette",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/1024.png",
+    "icon": "./assets/images/knotty-times-updated.jpeg",
     "scheme": "knottyroulette",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.adda1325.knottyroulette",
-      "icon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/512.png",
+      "icon": "./assets/images/knotty-times-updated.jpeg",
       "infoPlist": {
         "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
         "SKAdNetworkItems": [
@@ -50,7 +50,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/92.png",
+        "foregroundImage": "./assets/images/knotty-times-updated.jpeg",
         "backgroundColor": "#FFFF00"
       },
       "icon": "./assets/images/favicon.png",
@@ -65,7 +65,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/AppIcons/Assets.xcassets/AppIcon.appiconset/1024.png"
+      "favicon": "./assets/images/knotty-times-updated.jpeg"
     },
     "plugins": [
       "expo-router",

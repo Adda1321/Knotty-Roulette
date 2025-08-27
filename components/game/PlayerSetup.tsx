@@ -460,7 +460,10 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                           <Text
                             style={{
                               color: COLORS.TEXT_DARK,
-                              fontSize: SIZES.TITLE,
+                              fontSize: Platform.select({
+                                android: SIZES.SUBTITLE, // 👈 use a different size on Android
+                                ios: SIZES.SUBTITLE, // fallback for iOS
+                              }),
                               fontFamily: FONTS.DOSIS_BOLD,
                             }}
                           >
@@ -542,7 +545,10 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.PADDING_SMALL,
   },
   title: {
-    fontSize: 45,
+     fontSize: Platform.select({
+      android: 40, // 👈 use a different size on Android
+      ios: 45,        // fallback for iOS
+    }),
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
     ...SIZES.TEXT_SHADOW_MEDIUM,

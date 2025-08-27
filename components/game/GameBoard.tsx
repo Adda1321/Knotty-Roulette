@@ -3,19 +3,19 @@ import { Surface } from "react-native-paper";
 
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Animated,
-    Dimensions,
-    Easing,
-    Image,
-    Platform,
-    StyleSheet,
-    Text,
-    View,
+  Animated,
+  Dimensions,
+  Easing,
+  Image,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-    ANIMATION_CONFIGS,
-    ANIMATION_VALUES,
+  ANIMATION_CONFIGS,
+  ANIMATION_VALUES,
 } from "../../constants/animations";
 import { FONTS, GAME_CONFIG, SIZES, THEME_PACKS } from "../../constants/theme"; // Fixed import
 import { useTheme } from "../../contexts/ThemeContext";
@@ -813,7 +813,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "flex-start",
-    maxHeight: "88%",
+    maxHeight: "90%",
   },
   header: {
     alignItems: "center",

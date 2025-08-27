@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Platform, StyleSheet, Text, View } from "react-native";
 import { COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme"; // Fixed import
 import { useTheme } from "../../contexts/ThemeContext";
 import { Player } from "../../types/game";
@@ -102,14 +102,21 @@ const styles = StyleSheet.create({
     // backgroundColor: "#5aad5d", // Darker shade of 6bc26e - more sophisticated
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_SMALL,
+    paddingBottom: SIZES.PADDING_MEDIUM,
     marginTop: 14,
     maxHeight: 150,
-    paddingVertical: 12,
+     paddingVertical: Platform.select({
+          android: 5, // 👈 use a different size on Android
+          ios: 12,        // fallback for iOS
+        }),
     width: "100%",
     ...SIZES.SHADOW_SMALL,
   },
   title: {
-    fontSize: SIZES.SUBTITLE + 4,
+      fontSize: Platform.select({
+          android: SIZES.SUBTITLE, // 👈 use a different size on Android
+          ios: SIZES.SUBTITLE + 4,        // fallback for iOS
+        }),
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -144,7 +151,10 @@ const styles = StyleSheet.create({
     borderColor: COLORS.YELLOW,
   },
   playerName: {
-    fontSize: SIZES.CAPTION,
+     fontSize: Platform.select({
+          android: SIZES.SMALL, // 👈 use a different size on Android
+          ios: SIZES.CAPTION,        // fallback for iOS
+        }),
     fontWeight: "600",
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_MEDIUM,
@@ -153,10 +163,16 @@ const styles = StyleSheet.create({
   },
   currentPlayerName: {
     color: COLORS.TEXT_PRIMARY,
-    fontSize: SIZES.CAPTION,
+     fontSize: Platform.select({
+          android: SIZES.SMALL, // 👈 use a different size on Android
+          ios: SIZES.CAPTION,        // fallback for iOS
+        }),
   },
   playerScore: {
-    fontSize: SIZES.SUBTITLE,
+     fontSize: Platform.select({
+          android: SIZES.CAPTION, // 👈 use a different size on Android
+          ios: SIZES.SUBTITLE,        // fallback for iOS
+        }),
     fontWeight: "bold",
     // color: COLORS.DARK_GREEN,
     fontFamily: FONTS.DOSIS_MEDIUM,

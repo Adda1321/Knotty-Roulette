@@ -2,23 +2,24 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
-  Dimensions,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    Dimensions,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import {
-  COLORS,
-  FONTS,
-  SIZES,
-  THEME_PACKS,
-  THEME_PACK_DATA,
-  ThemePackId,
+    COLORS,
+    FONTS,
+    SIZES,
+    THEME_COLORS,
+    THEME_PACKS,
+    THEME_PACK_DATA,
+    ThemePackId,
 } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext"; // Add useTheme hook
 import audioService from "../../services/audio";
@@ -559,61 +560,78 @@ export default function ThemeStore() {
     );
   };
 
-  const renderThemeCard = (pack: ThemePack) => (
-    <TouchableOpacity
-      key={pack.id}
-      style={[styles.themeCard, pack.isLocked && styles.lockedCard]}
-      onPress={() => openPreview(pack)}
-      activeOpacity={0.8}
-    >
-      <View style={styles.cardHeader}>
-        {/* <View style={styles.themeEmojiContainer}> */}
-        <Text style={styles.themeEmoji}>{pack.emoji}</Text>
-        {/* </View> */}
-        {pack.isOwned && (
-          <View style={[styles.ownedBadge, { backgroundColor: COLORS.ONLINE }]}>
-            <Text style={styles.ownedBadgeText}>Owned</Text>
-          </View>
-        )}
-      </View>
+  const renderThemeCard = (pack: ThemePack) => {
+    // Get theme-specific colors from the existing THEME_COLORS constants
+    const getThemeColors = (themeId: string) => {
+      const themeColors = THEME_COLORS[themeId as ThemePackId];
+      return {
+        primary: themeColors.PRIMARY,
+        online: themeColors.ONLINE,
+        yellow: themeColors.YELLOW,
+      };
+    };
 
-      <View style={styles.cardContent}>
-        <View style={styles.imageContainer}>
-          <Image
-            source={pack.image}
-            style={styles.themeImage}
-            resizeMode="contain"
-          />
+    const themeColors = getThemeColors(pack.id);
+
+    return (
+      <TouchableOpacity
+        key={pack.id}
+        style={[styles.themeCard, pack.isLocked && styles.lockedCard]}
+        onPress={() => openPreview(pack)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.cardHeader}>
+          <Text style={styles.themeEmoji}>{pack.emoji}</Text>
+          {pack.isOwned && (
+            <View style={[styles.ownedBadge, { backgroundColor: themeColors.online }]}>
+              <Text style={styles.ownedBadgeText}>Owned</Text>
+            </View>
+          )}
         </View>
-        <Text style={styles.themeName}>{pack.name}</Text>
-        <Text style={styles.themePrice}>{pack.price}</Text>
 
-        {/* Show "In Use", "Use This Theme", or "Preview" button */}
-        {pack.isOwned && pack.isCurrent ? (
-          <TouchableOpacity
-            style={[
-              styles.selectButton,
-              {
-                backgroundColor: COLORS.ONLINE,
-              },
-            ]}
-            disabled={true}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.selectButtonText}>In Use</Text>
-          </TouchableOpacity>
-        ) : pack.isOwned && !pack.isCurrent ? (
-          <TouchableOpacity
-            style={styles.selectButton}
-            onPress={() => handlePackSelection(pack)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.selectButtonText}>Use This Theme</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.cardContent}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={pack.image}
+              style={styles.themeImage}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.themeName}>{pack.name}</Text>
+          <Text style={styles.themePrice}>{pack.price}</Text>
+
+          {/* Show "In Use", "Use This Theme", or "Preview" button */}
+          {pack.isOwned && pack.isCurrent ? (
+            <TouchableOpacity
+              style={[
+                styles.selectButton,
+                {
+                  backgroundColor: themeColors.online,
+                },
+              ]}
+              disabled={true}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.selectButtonText}>In Use</Text>
+            </TouchableOpacity>
+          ) : pack.isOwned && !pack.isCurrent ? (
+            <TouchableOpacity
+              style={[
+                styles.selectButton,
+                {
+                  backgroundColor: themeColors.yellow,
+                },
+              ]}
+              onPress={() => handlePackSelection(pack)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.selectButtonText}>Use This Theme</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderPreviewModal = () => (
     <Modal

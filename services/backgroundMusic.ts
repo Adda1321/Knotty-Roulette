@@ -8,6 +8,8 @@ class BackgroundMusicService {
   private isMuted: boolean = false;
   private volume: number = 0.3;
   private currentTheme: ThemePackId = THEME_PACKS.DEFAULT;
+  private isInitialized: boolean = false;
+  private appStateListener: any = null;
 
   // Theme to audio file mapping
   private themeAudioFiles: Record<ThemePackId, any> = {
@@ -17,13 +19,16 @@ class BackgroundMusicService {
   };
 
   async initialize() {
+    if (this.isInitialized) {
+      console.log('Background music service already initialized');
+      return;
+    }
+
     try {
-      // Audio mode is already set by the main audio service
-      // No need to set it again here
-
       // Set up app state listener for background/foreground
-      AppState.addEventListener('change', this.handleAppStateChange.bind(this));
-
+      this.appStateListener = AppState.addEventListener('change', this.handleAppStateChange.bind(this));
+      
+      this.isInitialized = true;
       console.log('Background music service initialized');
     } catch (error) {
       console.error('Failed to initialize background music service:', error);
@@ -34,7 +39,7 @@ class BackgroundMusicService {
   private handleAppStateChange(nextAppState: string) {
     if (nextAppState === 'active') {
       // App came to foreground - resume music
-      this.playBackgroundMusic();
+      this.resumeBackgroundMusic();
     } else if (nextAppState === 'background' || nextAppState === 'inactive') {
       // App went to background - pause music
       this.pauseBackgroundMusic();
@@ -139,6 +144,11 @@ class BackgroundMusicService {
       }
       
       const audioFile = this.themeAudioFiles[this.currentTheme];
+      if (!audioFile) {
+        console.error(`❌ No audio file found for theme: ${this.currentTheme}`);
+        return;
+      }
+
       console.log(`🎵 Loading background music for theme: ${this.currentTheme}`);
       
       const { sound } = await Audio.Sound.createAsync(
@@ -149,27 +159,11 @@ class BackgroundMusicService {
           volume: this.isMuted ? 0 : this.volume,
         }
       );
+      
       this.backgroundMusic = sound;
       console.log(`✅ Background music loaded successfully for theme: ${this.currentTheme}`);
     } catch (error) {
       console.error(`❌ Failed to load background music for theme ${this.currentTheme}:`, error);
-      // Try to recreate the sound
-      try {
-        console.log('🔄 Retrying background music load...');
-        const audioFile = this.themeAudioFiles[this.currentTheme];
-        const { sound } = await Audio.Sound.createAsync(
-          audioFile,
-          {
-            shouldPlay: false,
-            isLooping: true,
-            volume: this.isMuted ? 0 : this.volume,
-          }
-        );
-        this.backgroundMusic = sound;
-        console.log(`✅ Background music loaded on retry for theme: ${this.currentTheme}`);
-      } catch (retryError) {
-        console.error(`❌ Background music load failed on retry for theme ${this.currentTheme}:`, retryError);
-      }
     }
   }
 
@@ -190,21 +184,32 @@ class BackgroundMusicService {
         console.log('ℹ️ Background music already playing');
       } else {
         console.log('⚠️ Background music not loaded properly');
+        // Try to reload and play
+        await this.reloadAndPlay();
       }
     } catch (error) {
       console.error('❌ Failed to play background music:', error);
       // Try to reload and play
-      try {
-        console.log('🔄 Retrying background music play...');
-        await this.loadBackgroundMusic();
-        if (this.backgroundMusic) {
-          await this.backgroundMusic.playAsync();
-          this.isPlaying = true;
-          console.log('✅ Background music started on retry');
-        }
-      } catch (retryError) {
-        console.error('❌ Background music play failed on retry:', retryError);
+      await this.reloadAndPlay();
+    }
+  }
+
+  private async reloadAndPlay() {
+    try {
+      console.log('🔄 Reloading background music...');
+      if (this.backgroundMusic) {
+        await this.backgroundMusic.unloadAsync();
+        this.backgroundMusic = null;
       }
+      
+      await this.loadBackgroundMusic();
+      if (this.backgroundMusic) {
+        await (this.backgroundMusic as Audio.Sound).playAsync();
+        this.isPlaying = true;
+        console.log('✅ Background music started after reload');
+      }
+    } catch (error) {
+      console.error('❌ Failed to reload and play background music:', error);
     }
   }
 
@@ -233,21 +238,47 @@ class BackgroundMusicService {
     }
   }
 
+  async resumeBackgroundMusic() {
+    if (!this.isMuted && this.backgroundMusic) {
+      const music = this.backgroundMusic;
+      try {
+        const status = await music.getStatusAsync();
+        if ('isLoaded' in status && status.isLoaded && 'isPlaying' in status && !status.isPlaying) {
+          await music.playAsync();
+          this.isPlaying = true;
+          console.log('✅ Background music resumed');
+        }
+      } catch (error) {
+        console.error('Failed to resume background music:', error);
+      }
+    }
+  }
+
   async setVolume(volume: number) {
     this.volume = Math.min(Math.max(0, volume), 1); // Clamp between 0 and 1
     if (this.backgroundMusic && !this.isMuted) {
-      await this.backgroundMusic.setVolumeAsync(this.volume);
+      try {
+        await this.backgroundMusic.setVolumeAsync(this.volume);
+      } catch (error) {
+        console.error('Failed to set volume:', error);
+      }
     }
   }
 
   async toggleMute(): Promise<boolean> {
     this.isMuted = !this.isMuted;
     if (this.backgroundMusic) {
-      await this.backgroundMusic.setIsMutedAsync(this.isMuted);
-      if (this.isMuted) {
-        await this.backgroundMusic.pauseAsync();
-      } else {
-        await this.backgroundMusic.playAsync();
+      try {
+        await this.backgroundMusic.setIsMutedAsync(this.isMuted);
+        if (this.isMuted) {
+          await this.backgroundMusic.pauseAsync();
+          this.isPlaying = false;
+        } else {
+          await this.backgroundMusic.playAsync();
+          this.isPlaying = true;
+        }
+      } catch (error) {
+        console.error('Failed to toggle mute:', error);
       }
     }
     return this.isMuted;
@@ -264,11 +295,17 @@ class BackgroundMusicService {
   async setMute(mute: boolean) {
     this.isMuted = mute;
     if (this.backgroundMusic) {
-      await this.backgroundMusic.setIsMutedAsync(this.isMuted);
-      if (this.isMuted) {
-        await this.backgroundMusic.pauseAsync();
-      } else {
-        await this.backgroundMusic.playAsync();
+      try {
+        await this.backgroundMusic.setIsMutedAsync(this.isMuted);
+        if (this.isMuted) {
+          await this.backgroundMusic.pauseAsync();
+          this.isPlaying = false;
+        } else {
+          await this.backgroundMusic.playAsync();
+          this.isPlaying = true;
+        }
+      } catch (error) {
+        console.error('Failed to set mute:', error);
       }
     }
   }
@@ -285,11 +322,25 @@ class BackgroundMusicService {
 
   async cleanup() {
     try {
+      // Remove app state listener
+      if (this.appStateListener) {
+        this.appStateListener.remove();
+        this.appStateListener = null;
+      }
+
+      // Clean up background music
       if (this.backgroundMusic) {
-        await this.backgroundMusic.unloadAsync();
+        try {
+          await this.backgroundMusic.stopAsync();
+          await this.backgroundMusic.unloadAsync();
+        } catch (error) {
+          console.log('Error cleaning up background music:', error);
+        }
         this.backgroundMusic = null;
       }
+
       this.isPlaying = false;
+      this.isInitialized = false;
       console.log('Background music service cleaned up');
     } catch (error) {
       console.error('Failed to cleanup background music service:', error);

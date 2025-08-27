@@ -281,12 +281,12 @@ export const THEME_COLORS = {
 
 // Upsell Configuration
 export const UPSELL_CONFIG = {
-  AD_COUNT_BEFORE_UPSELL: 1, //5 Change this value for testing (e.g., 3, 7, 10)
-  GAME_OVER_UPSELL_FREQUENCY: 1, //3 Show upsell every N game overs for premium users
+  AD_COUNT_BEFORE_UPSELL: 5, //5 Change this value for testing (e.g., 3, 7, 10)
+  GAME_OVER_UPSELL_FREQUENCY: 3, //3 Show upsell every N game overs for premium users
   SHOP_ENTRY_UPSELL_FREQUENCY: 5, //5 Show upsell every N shop visits for ALL users
 };
 
 // Game Configuration
 export const GAME_CONFIG = {
-  WINNING_SCORE: 4, //10 First player to reach this score wins the game
+  WINNING_SCORE: 10, //10 First player to reach this score wins the game
 };

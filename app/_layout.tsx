@@ -29,9 +29,16 @@ const initializeAudioServices = async () => {
     await audioService.initialize();
     console.log("🎵 Audio service initialized immediately");
 
+    // Wait a bit for audio service to fully initialize
+    await new Promise(resolve => setTimeout(resolve, 200));
+
     // Initialize background music with default theme
     await backgroundMusic.initialize();
     await backgroundMusic.loadBackgroundMusic();
+    
+    // Wait a bit more before starting background music
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
     await backgroundMusic.playBackgroundMusic();
     console.log("🎵 Background music initialized immediately");
   } catch (error) {

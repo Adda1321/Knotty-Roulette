@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { Surface } from "react-native-paper";
 import { COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
@@ -26,7 +26,8 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
-    audioService.initialize();
+    // Audio service is already initialized in app layout
+    // No need to initialize again here
     setIsMusicMuted(backgroundMusic.isMusicMuted());
     setIsSoundsMuted(audioService.isSoundsMuted());
     setIsVibrationEnabled(audioService.isVibrationEnabled());

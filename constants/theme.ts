@@ -4,7 +4,6 @@ export const COLORS = {
   LIGHT_GREEN: "#def6e2",
   YELLOW: "#F4C614",
   FIELDS: "#F1E9BE",
-
   // Background Colors
   BACKGROUND_DARK: "#1a1a1a",
 

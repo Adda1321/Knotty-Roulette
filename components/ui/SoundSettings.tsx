@@ -1,12 +1,12 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import {
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Surface } from "react-native-paper";
 import { COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
@@ -238,7 +238,9 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                   }}
                   backgroundColor={COLORS.YELLOW}
                   textColor={COLORS.TEXT_DARK}
-                  fontSize={Platform.OS === "android" ? SIZES.SUBTITLE : SIZES.TITLE}
+                  fontSize={
+                    Platform.OS === "android" ? SIZES.SUBTITLE : SIZES.TITLE
+                  }
                   shadowIntensity={5}
                   fontFamily={FONTS.DOSIS_BOLD}
                   shadowRadius={10}
@@ -306,10 +308,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingText: {
-     fontSize: Platform.select({
-      android: SIZES.SUBTITLE-1, // 👈 use a different size on Android
-      ios: SIZES.SUBTITLE+4,        // fallback for iOS
-      default: SIZES.TITLE,    // for web/other
+    fontSize: Platform.select({
+      android: SIZES.SUBTITLE - 1, // 👈 use a different size on Android
+      ios: SIZES.SUBTITLE + 2, // fallback for iOS
+      default: SIZES.TITLE, // for web/other
     }),
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,

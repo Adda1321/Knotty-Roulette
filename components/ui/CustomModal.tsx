@@ -1,12 +1,12 @@
 import React from "react";
 import {
-    ActivityIndicator,
-    Modal,
-    Platform,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Modal,
+  Platform,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Surface } from "react-native-paper";
 import { COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
@@ -107,7 +107,15 @@ export default function CustomModal({
               (Platform.OS === "ios" ? (
                 <View style={styles.buttonContainerIOS}>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                    style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          closeButtonText === "Maybe Later"
+                            ? "#f05b59ff"
+                            : COLORS.YELLOW,
+                      },
+                    ]}
                     onPress={onClose}
                   >
                     <Text style={styles.closeButtonText}>
@@ -118,7 +126,15 @@ export default function CustomModal({
               ) : (
                 <Surface elevation={3} style={styles.buttonSurface}>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                  style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          closeButtonText === "Maybe Later"
+                            ? "#f05b59ff"
+                            : COLORS.YELLOW,
+                      },
+                    ]}
                     onPress={onClose}
                   >
                     <Text style={styles.closeButtonText}>
@@ -143,7 +159,10 @@ export default function CustomModal({
                   >
                     {isLoading ? (
                       <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="small" color={COLORS.TEXT_PRIMARY} />
+                        <ActivityIndicator
+                          size="small"
+                          color={COLORS.TEXT_PRIMARY}
+                        />
                         <Text
                           style={[
                             styles.confirmButtonText,
@@ -178,7 +197,10 @@ export default function CustomModal({
                   >
                     {isLoading ? (
                       <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="small" color={COLORS.TEXT_PRIMARY} />
+                        <ActivityIndicator
+                          size="small"
+                          color={COLORS.TEXT_PRIMARY}
+                        />
                         <Text
                           style={[
                             styles.confirmButtonText,
@@ -276,7 +298,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   closeButton: {
-    backgroundColor: COLORS.YELLOW,
+    // backgroundColor: COLORS.YELLOW,
     paddingHorizontal: SIZES.PADDING_MEDIUM,
     paddingVertical: SIZES.PADDING_MEDIUM,
     alignItems: "center",
@@ -307,9 +329,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   loadingButtonText: {
     marginLeft: SIZES.PADDING_MEDIUM,

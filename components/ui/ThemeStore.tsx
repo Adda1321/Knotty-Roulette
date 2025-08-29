@@ -1,25 +1,26 @@
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-    Alert,
-    Dimensions,
-    Image,
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  Dimensions,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import {
-    COLORS,
-    FONTS,
-    SIZES,
-    THEME_COLORS,
-    THEME_PACKS,
-    THEME_PACK_DATA,
-    ThemePackId,
+  COLORS,
+  FONTS,
+  SIZES,
+  THEME_COLORS,
+  THEME_PACKS,
+  THEME_PACK_DATA,
+  ThemePackId,
 } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext"; // Add useTheme hook
 import audioService from "../../services/audio";
@@ -76,10 +77,10 @@ export default function ThemeStore() {
   const [showPurchaseCelebrationModal, setShowPurchaseCelebrationModal] =
     useState(false);
   const [purchaseType, setPurchaseType] = useState<
-    "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null
-  | null>(null);
+    "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null | null
+  >(null);
   const [isThemeSwitching, setIsThemeSwitching] = useState(false);
-  
+
   // Load theme packs with current status
   useEffect(() => {
     loadThemePacks();
@@ -270,48 +271,57 @@ export default function ThemeStore() {
 
   const confirmThemeSwitch = async () => {
     if (!packToSwitch || isThemeSwitching) return;
-    
+
     console.log("🎨 ThemeStore: Confirming theme switch to:", packToSwitch.id);
     console.log("🎨 ThemeStore: Current theme before switch:", currentTheme);
-    
+
     // Set loading state
     setIsThemeSwitching(true);
-    
+
     try {
       // Use theme context to switch themes - this will update all components
       const success = await switchTheme(packToSwitch.id as ThemePackId);
       if (success) {
-        console.log("🎨 ThemeStore: Theme switched successfully to:", packToSwitch.id);
-        
+        console.log(
+          "🎨 ThemeStore: Theme switched successfully to:",
+          packToSwitch.id
+        );
+
         // Wait for background music to be fully loaded before navigation
         console.log("🎨 ThemeStore: Waiting for background music to load...");
-        
+
         // Import background music service to check audio readiness
-        const backgroundMusic = (await import('../../services/backgroundMusic')).default;
+        const backgroundMusic = (await import("../../services/backgroundMusic"))
+          .default;
         const audioReady = await backgroundMusic.ensureAudioLoaded();
-        
+
         if (audioReady) {
           console.log("🎨 ThemeStore: Background music loaded successfully");
         } else {
-          console.warn("⚠️ ThemeStore: Background music loading timeout, proceeding anyway");
+          console.warn(
+            "⚠️ ThemeStore: Background music loading timeout, proceeding anyway"
+          );
         }
-        
+
         // Refresh theme packs to show current selection
         loadThemePacks();
-        
+
         // Play success feedback
         audioService.playSound("buttonPress");
         audioService.playHaptic("light");
-        
+
         console.log("🎨 ThemeStore: Navigating to player setup page...");
-        
+
         // Small delay to ensure all state updates are processed
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
         // Navigate to player setup page to start a new game with the new theme
         router.push("/(tabs)");
       } else {
-        console.log("❌ ThemeStore: Failed to switch theme to:", packToSwitch.id);
+        console.log(
+          "❌ ThemeStore: Failed to switch theme to:",
+          packToSwitch.id
+        );
         // Show error feedback
         audioService.playSound("buttonPress");
         audioService.playHaptic("error");
@@ -568,68 +578,82 @@ export default function ThemeStore() {
         primary: themeColors.PRIMARY,
         online: themeColors.ONLINE,
         yellow: themeColors.YELLOW,
+        dark: themeColors.DARK,
+      light: themeColors.LIGHT
       };
     };
 
     const themeColors = getThemeColors(pack.id);
 
     return (
-      <TouchableOpacity
-        key={pack.id}
-        style={[styles.themeCard, pack.isLocked && styles.lockedCard]}
-        onPress={() => openPreview(pack)}
-        activeOpacity={0.8}
+      <LinearGradient
+        colors={[
+          themeColors.primary,
+          themeColors.light,
+          themeColors.dark
+        ]}
+        style={[{ borderRadius: SIZES.BORDER_RADIUS_LARGE }]}
       >
-        <View style={styles.cardHeader}>
-          <Text style={styles.themeEmoji}>{pack.emoji}</Text>
-          {pack.isOwned && (
-            <View style={[styles.ownedBadge, { backgroundColor: themeColors.online }]}>
-              <Text style={styles.ownedBadgeText}>Owned</Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.cardContent}>
-          <View style={styles.imageContainer}>
-            <Image
-              source={pack.image}
-              style={styles.themeImage}
-              resizeMode="contain"
-            />
+        <TouchableOpacity
+          key={pack.id}
+          style={[
+            styles.themeCard,
+            pack.isLocked && styles.lockedCard,
+          ]}
+          onPress={() => openPreview(pack)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.cardHeader}>
+            <Text style={styles.themeEmoji}>{pack.emoji}</Text>
+            {pack.isOwned && (
+              <View
+                style={[
+                  styles.ownedBadge,
+                  { backgroundColor: themeColors.yellow },
+                ]}
+              >
+                <Text style={styles.ownedBadgeText}>Owned</Text>
+              </View>
+            )}
           </View>
-          <Text style={styles.themeName}>{pack.name}</Text>
-          <Text style={styles.themePrice}>{pack.price}</Text>
 
-          {/* Show "In Use", "Use This Theme", or "Preview" button */}
-          {pack.isOwned && pack.isCurrent ? (
-            <TouchableOpacity
-              style={[
-                styles.selectButton,
-                {
-                  backgroundColor: themeColors.online,
-                },
-              ]}
-              disabled={true}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.selectButtonText}>In Use</Text>
-            </TouchableOpacity>
-          ) : pack.isOwned && !pack.isCurrent ? (
-            <TouchableOpacity
-              style={[
-                styles.selectButton,
-                {
-                  backgroundColor: themeColors.yellow,
-                },
-              ]}
-              onPress={() => handlePackSelection(pack)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.selectButtonText}>Use This Theme</Text>
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </TouchableOpacity>
+          <View style={styles.cardContent}>
+            <View style={styles.imageContainer}>
+              <Image
+                source={pack.image}
+                style={styles.themeImage}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.themeName}>{pack.name}</Text>
+            <Text style={styles.themePrice}>{pack.price}</Text>
+
+            {/* Show "In Use", "Use This Theme", or "Preview" button */}
+            {pack.isOwned && pack.isCurrent ? (
+              <TouchableOpacity
+                style={[styles.selectButton]}
+                disabled={true}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.selectButtonText}>In Use</Text>
+              </TouchableOpacity>
+            ) : pack.isOwned && !pack.isCurrent ? (
+              <TouchableOpacity
+                style={[
+                  styles.selectButton,
+                  {
+                    backgroundColor: themeColors.yellow,
+                  },
+                ]}
+                onPress={() => handlePackSelection(pack)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.selectButtonText}>Use This Theme</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </TouchableOpacity>
+      </LinearGradient>
     );
   };
 
@@ -859,8 +883,10 @@ export default function ThemeStore() {
           }
         }}
         title="Switch Theme Pack?"
-        message={`Are you sure you want to switch to ${packToSwitch?.name}? Switching themes will start a new game. This action cannot be undone.${
-          isThemeSwitching ? '\n\n⏳ Please wait while we switch themes...' : ''
+        message={`Are you sure you want to switch to ${
+          packToSwitch?.name
+        }? Switching themes will start a new game. This action cannot be undone.${
+          isThemeSwitching ? "\n\n⏳ Please wait while we switch themes..." : ""
         }`}
         showConfirmButton={true}
         confirmButtonText="Switch Theme"
@@ -1168,7 +1194,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.PADDING_SMALL,
   },
   themeCard: {
-    backgroundColor: COLORS.CARD_BACKGROUND,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_MEDIUM,
     width: (screenWidth - SIZES.PADDING_LARGE * 2.7) / 2,
@@ -1198,7 +1223,7 @@ const styles = StyleSheet.create({
   },
   ownedBadgeText: {
     fontSize: SIZES.BODY,
-    color: COLORS.FIELDS, // Use existing color instead of WHITE
+    color: COLORS.TEXT_DARK, // Use existing color instead of WHITE
     fontFamily: FONTS.DOSIS_BOLD,
   },
   // inUseBadge: {
@@ -1233,7 +1258,7 @@ const styles = StyleSheet.create({
   },
   themeName: {
     fontSize: SIZES.BODY,
-    color: COLORS.TEXT_DARK,
+    color: COLORS.FIELDS,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
     marginBottom: SIZES.PADDING_SMALL,
@@ -1363,10 +1388,10 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
-    fontSize: SIZES.SUBTITLE ,
+    fontSize: SIZES.SUBTITLE,
   },
   sampleChallengeText: {
-    fontSize: SIZES.SUBTITLE -2,
+    fontSize: SIZES.SUBTITLE - 2,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "left",
@@ -1441,7 +1466,7 @@ const styles = StyleSheet.create({
   },
   selectButtonText: {
     fontSize: SIZES.CAPTION,
-    color: COLORS.TEXT_PRIMARY,
+    color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
   },
   previewButton: {

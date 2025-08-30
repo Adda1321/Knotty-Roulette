@@ -55,26 +55,32 @@ export default function UpsellModal({
         | "complete_set" = "ad_free";
 
       if (offer.primaryButton.action === "ad_free") {
-        success = await purchaseService.purchasePremiumPack();
+        success = await purchaseService.purchaseAdFree();
         purchaseType = "ad_free";
       } else if (offer.primaryButton.action === "theme_packs") {
-        success = await themePackService.purchasePack("college");
-        if (success) {
-          success = await themePackService.purchasePack("couple");
-        }
+        // Buy both theme packs (expand fun bundle)
+        success = await purchaseService.purchaseExpandBundle();
         purchaseType = "theme_packs";
       } else if (offer.primaryButton.action === "complete_set") {
-        success = await themePackService.purchasePack("couple");
+        // Buy the remaining theme pack to complete the collection
+        const purchasedPacks = themePackService.getPurchasedPacks();
+        const hasCollege = purchasedPacks.includes("college");
+        const hasCouple = purchasedPacks.includes("couple");
+
+        if (!hasCollege) {
+          success = await purchaseService.purchaseCollegeTheme();
+        } else if (!hasCouple) {
+          success = await purchaseService.purchaseCoupleTheme();
+        } else {
+          // User already has all themes, this shouldn't happen
+          console.warn(
+            "⚠️ UpsellModal: User already has all themes but complete_set action triggered"
+          );
+        }
         purchaseType = "complete_set";
       } else if (offer.primaryButton.action === "all_in_bundle") {
         // Handle all-in bundle purchase
-        success = await purchaseService.purchasePremiumPack();
-        if (success) {
-          success = await themePackService.purchasePack("college");
-          if (success) {
-            success = await themePackService.purchasePack("couple");
-          }
-        }
+        success = await purchaseService.purchaseCompleteBundle();
         purchaseType = "all_in_bundle";
       }
 
@@ -115,24 +121,28 @@ export default function UpsellModal({
 
       if (offer.secondaryButton.action === "all_in_bundle") {
         // Buy all-in bundle
-        success = await purchaseService.purchasePremiumPack();
-        if (success) {
-          success = await themePackService.purchasePack("college");
-          if (success) {
-            success = await themePackService.purchasePack("couple");
-          }
-        }
+        success = await purchaseService.purchaseCompleteBundle();
         purchaseType = "all_in_bundle";
       } else if (offer.secondaryButton.action === "theme_packs") {
-        // Buy both theme packs
-        success = await themePackService.purchasePack("college");
-        if (success) {
-          success = await themePackService.purchasePack("couple");
-        }
+        // Buy both theme packs (expand fun bundle)
+        success = await purchaseService.purchaseExpandBundle();
         purchaseType = "theme_packs";
       } else if (offer.secondaryButton.action === "complete_set") {
-        // Buy the remaining pack
-        success = await themePackService.purchasePack("couple");
+        // Buy the remaining theme pack to complete the collection
+        const purchasedPacks = themePackService.getPurchasedPacks();
+        const hasCollege = purchasedPacks.includes("college");
+        const hasCouple = purchasedPacks.includes("couple");
+
+        if (!hasCollege) {
+          success = await purchaseService.purchaseCollegeTheme();
+        } else if (!hasCouple) {
+          success = await purchaseService.purchaseCoupleTheme();
+        } else {
+          // User already has all themes, this shouldn't happen
+          console.warn(
+            "⚠️ UpsellModal: User already has all themes but complete_set action triggered"
+          );
+        }
         purchaseType = "complete_set";
       }
 

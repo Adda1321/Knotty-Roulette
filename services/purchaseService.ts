@@ -1,4 +1,6 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Constants from "expo-constants";
+import themePackService from "./themePackService";
 import upsellService from "./upsellService";
 import userService from "./userService";
 
@@ -8,9 +10,57 @@ const isProduction = () => Constants.expoConfig?.extra?.eas?.buildProfile === 'p
 // Helper: Should we show mock data?
 const shouldShowMockData = () => !isProduction();
 
-// Product IDs
+// Storage keys for persistence
+const STORAGE_KEYS = {
+  PURCHASED_PRODUCTS: 'knotty_roulette_purchased_products',
+  PRODUCT_CACHE: 'knotty_roulette_product_cache',
+  LAST_PRODUCT_FETCH: 'knotty_roulette_last_product_fetch',
+} as const;
+
+// Product IDs - All the products mentioned in UPSELL_README.md
 const PRODUCT_IDS = {
-  PREMIUM_PACK: "knotty_roulette_premium_pack",
+  // Individual products
+  AD_FREE_REMOVAL: "ad_free_removal",
+  COLLEGE_THEME_PACK: "college_theme_pack", 
+  COUPLE_THEME_PACK: "couple_theme_pack",
+  
+  // Bundle products
+  COMPLETE_EXPERIENCE_BUNDLE: "complete_experience_bundle",
+  EXPAND_FUN_BUNDLE: "expand_fun_bundle",
+};
+
+// Product definitions with metadata - Used for mock data and feature unlocking
+const PRODUCT_DEFINITIONS = {
+  [PRODUCT_IDS.AD_FREE_REMOVAL]: {
+    title: "Remove Ads",
+    description: "Remove all ads and enjoy uninterrupted gameplay",
+    price: "$2.99",
+    unlocks: ['ad_free'],
+  },
+  [PRODUCT_IDS.COLLEGE_THEME_PACK]: {
+    title: "College Theme Pack",
+    description: "Unlock the exciting college theme for your wheel",
+    price: "$2.99",
+    unlocks: ['college_theme'],
+  },
+  [PRODUCT_IDS.COUPLE_THEME_PACK]: {
+    title: "Couple Theme Pack", 
+    description: "Unlock the romantic couple theme for your wheel",
+    price: "$2.99",
+    unlocks: ['couple_theme'],
+  },
+  [PRODUCT_IDS.COMPLETE_EXPERIENCE_BUNDLE]: {
+    title: "Complete Experience Bundle",
+    description: "Get everything: All themes + Ad-free (Save $2)",
+    price: "$6.99",
+    unlocks: ['ad_free', 'college_theme', 'couple_theme'],
+  },
+  [PRODUCT_IDS.EXPAND_FUN_BUNDLE]: {
+    title: "Expand the Fun Bundle",
+    description: "Both theme packs (Save $1)",
+    price: "$4.99",
+    unlocks: ['college_theme', 'couple_theme'],
+  },
 };
 
 // Mock IAP for development/preview builds
@@ -32,7 +82,6 @@ class MockIAPService {
 let IAP: any = null;
 
 if (isProduction()) {
-  // Only try to import in production
   try {
     IAP = require("expo-iap");
   } catch (error) {
@@ -50,35 +99,30 @@ const getIAPService = () => {
 
 class PurchaseService {
   private isInitialized = false;
-
-  /**
-   * Check if IAP is available
-   */
-  async isIAPAvailable(): Promise<boolean> {
-    if (!isProduction()) return false;
-    return IAP !== null;
-  }
+  private purchasedProducts: Set<string> = new Set();
+  private productCache: any[] = [];
+  private lastProductFetch: number = 0;
 
   /**
    * Initialize the purchase service
    */
   async initialize(): Promise<void> {
-    if (this.isInitialized || !isProduction()) {
-      this.isInitialized = true;
+    if (this.isInitialized) {
       return;
     }
 
     try {
-      if (!IAP) {
-        this.isInitialized = true;
-        return;
+      // Load cached data first
+      await this.loadCachedData();
+
+      if (isProduction() && IAP) {
+        const iapService = getIAPService();
+        await iapService.connectAsync();
+        iapService.setPurchaseListener((result: any) => this.handlePurchaseResult(result));
+        await this.handlePendingPurchases();
+        await this.autoRestorePurchases();
       }
 
-      const iapService = getIAPService();
-      await iapService.connectAsync();
-      iapService.setPurchaseListener((result: any) => this.handlePurchaseResult(result));
-      await this.handlePendingPurchases();
-      await this.autoRestorePremiumStatus();
       this.isInitialized = true;
     } catch (error) {
       console.error("❌ IAP: Failed to initialize");
@@ -87,26 +131,129 @@ class PurchaseService {
   }
 
   /**
-   * Automatically restore premium status if user was previously premium
+   * Load cached data from AsyncStorage
    */
-  private async autoRestorePremiumStatus(): Promise<void> {
+  private async loadCachedData(): Promise<void> {
     try {
-      if (userService.isPremium()) return;
+      const purchasedData = await AsyncStorage.getItem(STORAGE_KEYS.PURCHASED_PRODUCTS);
+      if (purchasedData) {
+        this.purchasedProducts = new Set(JSON.parse(purchasedData));
+      }
 
+      const productCacheData = await AsyncStorage.getItem(STORAGE_KEYS.PRODUCT_CACHE);
+      if (productCacheData) {
+        this.productCache = JSON.parse(productCacheData);
+      }
+
+      const lastFetchData = await AsyncStorage.getItem(STORAGE_KEYS.LAST_PRODUCT_FETCH);
+      if (lastFetchData) {
+        this.lastProductFetch = parseInt(lastFetchData);
+      }
+    } catch (error) {
+      console.error("❌ Failed to load cached data:", error);
+    }
+  }
+
+  /**
+   * Save purchased products to AsyncStorage
+   */
+  private async savePurchasedProducts(): Promise<void> {
+    try {
+      await AsyncStorage.setItem(
+        STORAGE_KEYS.PURCHASED_PRODUCTS,
+        JSON.stringify(Array.from(this.purchasedProducts))
+      );
+    } catch (error) {
+      console.error("❌ Failed to save purchased products:", error);
+    }
+  }
+
+  /**
+   * Save product cache to AsyncStorage
+   */
+  private async saveProductCache(products: any[]): Promise<void> {
+    try {
+      this.productCache = products;
+      this.lastProductFetch = Date.now();
+      
+      await AsyncStorage.setItem(STORAGE_KEYS.PRODUCT_CACHE, JSON.stringify(products));
+      await AsyncStorage.setItem(STORAGE_KEYS.LAST_PRODUCT_FETCH, this.lastProductFetch.toString());
+    } catch (error) {
+      console.error("❌ Failed to save product cache:", error);
+    }
+  }
+
+  /**
+   * Check if a product is purchased
+   */
+  isProductPurchased(productId: string): boolean {
+    return this.purchasedProducts.has(productId);
+  }
+
+  /**
+   * Check if user is premium (has ad-free)
+   */
+  isPremium(): boolean {
+    return this.isProductPurchased(PRODUCT_IDS.AD_FREE_REMOVAL);
+  }
+
+  /**
+   * Automatically restore all purchases if user was previously premium
+   */
+  private async autoRestorePurchases(): Promise<void> {
+    try {
       if (!IAP) return;
 
       const iapService = getIAPService();
       const result = await iapService.getPurchaseHistoryAsync();
       if (result.responseCode === iapService.IAPResponseCode.OK && result.results) {
-        const hasPremium = result.results.some(
-          (purchase: any) => purchase.productId === PRODUCT_IDS.PREMIUM_PACK
-        );
-        if (hasPremium) {
-          await userService.setPremium("lifetime");
+        for (const purchase of result.results) {
+          await this.processPurchase(purchase);
         }
       }
     } catch (error) {
       console.error("❌ Auto-restore failed:", error);
+    }
+  }
+
+  /**
+   * Process a single purchase and unlock features
+   */
+  private async processPurchase(purchase: any): Promise<void> {
+    try {
+      const productId = purchase.productId;
+      const productDef = PRODUCT_DEFINITIONS[productId];
+      
+      if (!productDef) {
+        console.log(`⚠️ Unknown product: ${productId}`);
+        return;
+      }
+
+      // Add to purchased products set
+      this.purchasedProducts.add(productId);
+      await this.savePurchasedProducts();
+
+      // Unlock features based on product
+      for (const unlock of productDef.unlocks) {
+        switch (unlock) {
+          case 'ad_free':
+            await userService.setPremium("lifetime");
+            break;
+          case 'college_theme':
+            await themePackService.purchasePack('college');
+            break;
+          case 'couple_theme':
+            await themePackService.purchasePack('couple');
+            break;
+        }
+      }
+
+      // Check for post-purchase upsells
+      await upsellService.checkPostPurchaseUpsell('ad_free');
+      
+      console.log(`✅ Unlocked: ${productDef.title}`);
+    } catch (error) {
+      console.error("❌ Error processing purchase:", error);
     }
   }
 
@@ -122,15 +269,11 @@ class PurchaseService {
         const purchases = result.results;
         for (const purchase of purchases) {
           if (purchase.acknowledged) {
-            await userService.setPremium("lifetime");
-            // Check for post-purchase upsells
-            await upsellService.checkPostPurchaseUpsell('ad_free');
+            await this.processPurchase(purchase);
           } else {
             try {
               await iapService.finishTransactionAsync(purchase, true);
-              await userService.setPremium("lifetime");
-              // Check for post-purchase upsells
-              await upsellService.checkPostPurchaseUpsell('ad_free');
+              await this.processPurchase(purchase);
             } catch (acknowledgmentError) {
               console.error("❌ Failed to acknowledge purchase:", acknowledgmentError);
             }
@@ -157,12 +300,10 @@ class PurchaseService {
         );
 
         for (const purchase of pendingPurchases) {
-          if (purchase.productId === PRODUCT_IDS.PREMIUM_PACK) {
-            await this.handlePurchaseResult({
-              responseCode: iapService.IAPResponseCode.OK,
-              results: [purchase],
-            });
-          }
+          await this.handlePurchaseResult({
+            responseCode: iapService.IAPResponseCode.OK,
+            results: [purchase],
+          });
         }
       }
     } catch (error) {
@@ -171,46 +312,82 @@ class PurchaseService {
   }
 
   /**
-   * Get available products
+   * Get all available products with caching
    */
   async getProducts(): Promise<any[]> {
     await this.initialize();
 
+    // Check if we have recent cache (less than 1 hour old)
+    const cacheAge = Date.now() - this.lastProductFetch;
+    const isCacheValid = cacheAge < 60 * 60 * 1000; // 1 hour
+
     if (!isProduction()) {
-      return [{
-        productId: PRODUCT_IDS.PREMIUM_PACK,
-        title: "Premium Pack - Ad Free Gaming",
-        description: "Remove all ads and unlock premium features",
-        price: "$4.99",
-        priceAmountMicros: 4990000,
-        priceCurrencyCode: "USD",
-      }];
+      // Return mock products for development
+      const mockProducts = Object.entries(PRODUCT_DEFINITIONS).map(([productId, def]) => ({
+        productId,
+        title: def.title,
+        description: def.description,
+        price: def.price,
+        type: 'individual',
+        unlocks: def.unlocks,
+        isPurchased: this.isProductPurchased(productId),
+      }));
+
+      await this.saveProductCache(mockProducts);
+      return mockProducts;
+    }
+
+    // Return cached products if valid
+    if (isCacheValid && this.productCache.length > 0) {
+      return this.productCache.map(product => ({
+        ...product,
+        isPurchased: this.isProductPurchased(product.productId),
+      }));
     }
 
     try {
       if (!IAP) return [];
 
       const iapService = getIAPService();
-      const result = await iapService.getProductsAsync([PRODUCT_IDS.PREMIUM_PACK]);
-      return (result.responseCode === iapService.IAPResponseCode.OK && result.results) 
-        ? result.results 
-        : [];
-    } catch (error) {
+      const allProductIds = Object.keys(PRODUCT_DEFINITIONS);
+      const result = await iapService.getProductsAsync(allProductIds);
+      
+      if (result.responseCode === iapService.IAPResponseCode.OK && result.results) {
+        // Enhance store products with our metadata
+        const enhancedProducts = result.results.map((storeProduct: any) => {
+          const def = PRODUCT_DEFINITIONS[storeProduct.productId];
+          return {
+            ...storeProduct,
+            type: 'individual',
+            unlocks: def?.unlocks || [],
+            isPurchased: this.isProductPurchased(storeProduct.productId),
+          };
+        });
+
+        await this.saveProductCache(enhancedProducts);
+        return enhancedProducts;
+      }
       return [];
+    } catch (error) {
+      console.error("❌ Error fetching products:", error);
+      // Return cached products as fallback
+      return this.productCache.map(product => ({
+        ...product,
+        isPurchased: this.isProductPurchased(product.productId),
+      }));
     }
   }
 
   /**
-   * Purchase premium pack
+   * Purchase any product by ID
    */
-  async purchasePremiumPack(): Promise<boolean> {
+  async purchaseProduct(productId: string): Promise<boolean> {
     await this.initialize();
 
     if (shouldShowMockData()) {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      await userService.setPremium("lifetime");
-      // Check for post-purchase upsells
-      await upsellService.checkPostPurchaseUpsell('ad_free');
+      // Simulate purchase success immediately (no delay)
+      const mockPurchase = { productId };
+      await this.processPurchase(mockPurchase);
       return true;
     }
 
@@ -218,22 +395,57 @@ class PurchaseService {
       if (!IAP) return false;
 
       const iapService = getIAPService();
-      await iapService.purchaseItemAsync(PRODUCT_IDS.PREMIUM_PACK);
+      await iapService.purchaseItemAsync(productId);
       return true;
     } catch (error) {
+      console.error(`❌ Purchase failed for ${productId}:`, error);
       return false;
     }
   }
 
   /**
-   * Restore purchases
+   * Purchase ad-free removal (this makes user premium)
+   */
+  async purchaseAdFree(): Promise<boolean> {
+    return this.purchaseProduct(PRODUCT_IDS.AD_FREE_REMOVAL);
+  }
+
+  /**
+   * Purchase college theme individually
+   */
+  async purchaseCollegeTheme(): Promise<boolean> {
+    return this.purchaseProduct(PRODUCT_IDS.COLLEGE_THEME_PACK);
+  }
+
+  /**
+   * Purchase couple theme individually
+   */
+  async purchaseCoupleTheme(): Promise<boolean> {
+    return this.purchaseProduct(PRODUCT_IDS.COUPLE_THEME_PACK);
+  }
+
+  /**
+   * Purchase complete experience bundle (ad-free + both themes)
+   */
+  async purchaseCompleteBundle(): Promise<boolean> {
+    return this.purchaseProduct(PRODUCT_IDS.COMPLETE_EXPERIENCE_BUNDLE);
+  }
+
+  /**
+   * Purchase expand fun bundle (both themes only, no ad-free)
+   */
+  async purchaseExpandBundle(): Promise<boolean> {
+    return this.purchaseProduct(PRODUCT_IDS.EXPAND_FUN_BUNDLE);
+  }
+
+  /**
+   * Restore all purchases
    */
   async restorePurchases(): Promise<boolean> {
     await this.initialize();
 
     if (shouldShowMockData()) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      return userService.isPremium();
+      return this.purchasedProducts.size > 0;
     }
 
     try {
@@ -242,54 +454,38 @@ class PurchaseService {
       const iapService = getIAPService();
       const result = await iapService.getPurchaseHistoryAsync();
       if (result.responseCode === iapService.IAPResponseCode.OK && result.results) {
-        const hasPremium = result.results.some(
-          (purchase: any) => purchase.productId === PRODUCT_IDS.PREMIUM_PACK
-        );
-        if (hasPremium) {
-          await userService.setPremium("lifetime");
-          return true;
+        let restored = false;
+        for (const purchase of result.results) {
+          await this.processPurchase(purchase);
+          restored = true;
         }
+        return restored;
       }
       return false;
     } catch (error) {
+      console.error("❌ Restore purchases failed:", error);
       return false;
     }
   }
 
   /**
-   * Manually trigger premium restoration check
-   * This can be called from other parts of the app when needed
+   * Clear all purchase status from local storage (for testing purposes)
    */
-  async triggerPremiumRestoration(): Promise<boolean> {
+  async clearPurchaseStatus(): Promise<void> {
     try {
-      console.log("🔄 Manually triggering premium restoration...");
-      return await this.restorePurchases();
-    } catch (error) {
-      console.error("❌ Manual premium restoration failed:", error);
-      return false;
-    }
-  }
-
-  /**
-   * Clear premium status from local storage (for testing purposes)
-   * This allows developers to test the purchase flow again
-   */
-  async clearPremiumStatus(): Promise<void> {
-    try {
-      console.log("🧹 Clearing premium status for testing...");
+      console.log("🧹 Clearing purchase status for testing...");
       
-      // Clear from AsyncStorage directly to bypass userService restrictions
-      const AsyncStorage =
-        require("@react-native-async-storage/async-storage").default;
+      this.purchasedProducts.clear();
+      await this.savePurchasedProducts();
+      
       await AsyncStorage.removeItem("userTier");
+      await AsyncStorage.removeItem("unlockedThemes");
       
-      // Force reset the userService internal state for testing
-      // This bypasses the normal downgrade restrictions
       userService.forceResetForTesting();
       
-      console.log("✅ Premium status cleared successfully");
+      console.log("✅ Purchase status cleared successfully");
     } catch (error) {
-      console.error("❌ Failed to clear premium status:", error);
+      console.error("❌ Failed to clear purchase status:", error);
       throw error;
     }
   }

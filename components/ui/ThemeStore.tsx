@@ -25,7 +25,7 @@ import {
 import { useTheme } from "../../contexts/ThemeContext"; // Add useTheme hook
 import audioService from "../../services/audio";
 import purchaseService from "../../services/purchaseService";
-import themePackService from "../../services/themePackService";
+import { themePackService } from "../../services/themePackService";
 import upsellService from "../../services/upsellService";
 import userService from "../../services/userService";
 import { getSampleChallenges } from "../../utils/themeHelpers";
@@ -222,7 +222,17 @@ export default function ThemeStore() {
     audioService.playHaptic("medium");
     setIsPurchasing(true);
     try {
-      const success = await themePackService.purchasePack(pack.id as any);
+      let success = false;
+
+      // Use proper purchase service methods based on theme type
+      if (pack.id === "college") {
+        success = await purchaseService.purchaseCollegeTheme();
+      } else if (pack.id === "couple") {
+        success = await purchaseService.purchaseCoupleTheme();
+      } 
+      // else {
+      //   success = await themePackService.purchasePack(pack.id as any);
+      // }
 
       if (success) {
         setPurchasedPackName(pack.name);
@@ -346,7 +356,7 @@ export default function ThemeStore() {
     setIsAdFreePurchasing(true);
 
     try {
-      const success = await purchaseService.purchasePremiumPack();
+      const success = await purchaseService.purchaseAdFree();
 
       if (success) {
         // Refresh passive offers and theme packs
@@ -401,22 +411,26 @@ export default function ThemeStore() {
       let success = false;
 
       if (offer.primaryButton.action === "ad_free") {
-        success = await purchaseService.purchasePremiumPack();
+        success = await purchaseService.purchaseAdFree();
       } else if (offer.primaryButton.action === "theme_packs") {
-        success = await themePackService.purchasePack("college");
-        if (success) {
-          success = await themePackService.purchasePack("couple");
-        }
+        // Buy both theme packs (expand fun bundle)
+        success = await purchaseService.purchaseExpandBundle();
       } else if (offer.primaryButton.action === "complete_set") {
-        success = await themePackService.purchasePack("couple");
-      } else if (offer.primaryButton.action === "all_in_bundle") {
-        success = await purchaseService.purchasePremiumPack();
-        if (success) {
-          success = await themePackService.purchasePack("college");
-          if (success) {
-            success = await themePackService.purchasePack("couple");
-          }
+        // Buy the remaining theme pack to complete the collection
+        const purchasedPacks = themePackService.getPurchasedPacks();
+        const hasCollege = purchasedPacks.includes('college');
+        const hasCouple = purchasedPacks.includes('couple');
+        
+        if (!hasCollege) {
+          success = await purchaseService.purchaseCollegeTheme();
+        } else if (!hasCouple) {
+          success = await purchaseService.purchaseCoupleTheme();
+        } else {
+          // User already has all themes, this shouldn't happen
+          console.warn("⚠️ ThemeStore: User already has all themes but complete_set action triggered");
         }
+      } else if (offer.primaryButton.action === "all_in_bundle") {
+        success = await purchaseService.purchaseCompleteBundle();
       }
 
       if (success) {
@@ -579,7 +593,7 @@ export default function ThemeStore() {
         online: themeColors.ONLINE,
         yellow: themeColors.YELLOW,
         dark: themeColors.DARK,
-      light: themeColors.LIGHT
+        light: themeColors.LIGHT,
       };
     };
 
@@ -587,19 +601,12 @@ export default function ThemeStore() {
 
     return (
       <LinearGradient
-        colors={[
-          themeColors.primary,
-          themeColors.light,
-          themeColors.dark
-        ]}
+        colors={[themeColors.primary, themeColors.light, themeColors.dark]}
         style={[{ borderRadius: SIZES.BORDER_RADIUS_LARGE }]}
       >
         <TouchableOpacity
           key={pack.id}
-          style={[
-            styles.themeCard,
-            pack.isLocked && styles.lockedCard,
-          ]}
+          style={[styles.themeCard, pack.isLocked && styles.lockedCard]}
           onPress={() => openPreview(pack)}
           activeOpacity={0.8}
         >

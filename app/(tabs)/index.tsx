@@ -15,16 +15,16 @@ import { COLORS, FONTS, GAME_CONFIG, SIZES } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import adService from "../../services/adService";
 import {
-  fetchAllChallenges,
-  fetchChallenges,
-  getChallengesByTheme,
-  trackPlay,
+    fetchAllChallenges,
+    fetchChallenges,
+    getChallengesByTheme,
+    trackPlay,
 } from "../../services/api";
 import audioService from "../../services/audio";
 import { themePackService } from "../../services/themePackService";
 import upsellService, {
-  UpsellOffer,
-  UpsellType,
+    UpsellOffer,
+    UpsellType,
 } from "../../services/upsellService";
 import userService from "../../services/userService";
 import { Challenge, GameState, Player } from "../../types/game";
@@ -53,8 +53,9 @@ export default function HomeScreen() {
     "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null
   >(null);
 
-  // Get theme context
-  const { onThemeChange } = useTheme();
+  // Get theme context safely
+  const themeContext = useTheme();
+  const onThemeChange = themeContext?.onThemeChange;
 
   // Handle purchase completion from upsell modal
   const handlePurchaseComplete = (
@@ -131,6 +132,11 @@ export default function HomeScreen() {
 
   // Listen for theme changes and refresh challenges
   useEffect(() => {
+    if (!onThemeChange) {
+      console.log("Theme change callback not available yet");
+      return;
+    }
+
     const unsubscribe = onThemeChange(async (newThemeId) => {
       console.log(
         "🎨 Theme changed to:",

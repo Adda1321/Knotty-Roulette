@@ -3,7 +3,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Dimensions,
   Image,
   Modal,
@@ -11,7 +10,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import {
   COLORS,
@@ -31,6 +30,7 @@ import userService from "../../services/userService";
 import { getSampleChallenges } from "../../utils/themeHelpers";
 import Button from "./Button";
 import CustomModal from "./CustomModal";
+import { useIAPContext } from "./IAPProvider";
 import PurchaseCelebrationModal from "./PurchaseCelebrationModal";
 import UpsellModal from "./UpsellModal";
 
@@ -60,6 +60,7 @@ export default function ThemeStore() {
   const [packToSwitch, setPackToSwitch] = useState<ThemePack | null>(null);
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const { COLORS, switchTheme, currentTheme, refreshTheme } = useTheme();
+  const iapContext = useIAPContext();
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [currentUpsellOffer, setCurrentUpsellOffer] = useState<any>(null);
   const [showPurchaseSuccessModal, setShowPurchaseSuccessModal] =
@@ -80,12 +81,42 @@ export default function ThemeStore() {
     "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null | null
   >(null);
   const [isThemeSwitching, setIsThemeSwitching] = useState(false);
+  const [fetchStatus, setFetchStatus] = useState("");
+  const [lastError, setLastError] = useState("");
 
   // Load theme packs with current status
   useEffect(() => {
     loadThemePacks();
     checkShopEntryUpsell();
+    updateFetchStatus();
   }, []);
+
+  const updateFetchStatus = async () => {
+    // Clear previous errors
+    setLastError("");
+
+    // Get status from IAP context
+    setFetchStatus(iapContext.fetchStatus);
+    setLastError(iapContext.lastError);
+
+    // Refresh products to get updated status
+    try {
+      console.log("🔄 ThemeStore: Refreshing IAP status...");
+      await iapContext.refreshProducts();
+      setFetchStatus(iapContext.fetchStatus);
+      setLastError(iapContext.lastError);
+      console.log("✅ ThemeStore: IAP status refreshed:", {
+        status: iapContext.fetchStatus,
+        error: iapContext.lastError,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      setFetchStatus(`❌ Refresh Error: ${errorMessage}`);
+      setLastError(`Exception during refresh: ${errorMessage}`);
+      console.error("❌ ThemeStore: Error refreshing IAP status:", error);
+    }
+  };
 
   const checkShopEntryUpsell = async () => {
     try {
@@ -173,32 +204,6 @@ export default function ThemeStore() {
   const loadPassiveOffers = () => {
     const offers = upsellService.getPassiveUpsells();
     setPassiveOffers(offers);
-
-    // Debug: Log user status and passive offers
-    const isPremium = userService.isPremium();
-    const purchasedPacks = themePackService.getPurchasedPacks();
-    const hasAdFreeBundle = offers.some(
-      (offer) => offer.primaryButton.action === "ad_free"
-    );
-
-    console.log("🔍 ThemeStore Debug:", {
-      userStatus: isPremium ? "Premium (Ad-Free)" : "Free User",
-      ownedThemePacks: purchasedPacks.length,
-      totalThemePacks: Object.keys(themePackService.getAllPacksWithStatus())
-        .length,
-      passiveOffersCount: offers.length,
-      passiveOffers: offers.map((o) => ({
-        id: o.id,
-        title: o.title,
-        price: o.primaryButton.price,
-        action: o.primaryButton.action,
-      })),
-      hasAdFreeBundle: hasAdFreeBundle,
-      adFreeButtonVisible: !isPremium && !hasAdFreeBundle,
-      adFreeButtonReason: hasAdFreeBundle
-        ? "Hidden - Ad-Free bundle available"
-        : "Visible - No Ad-Free bundle",
-    });
   };
 
   const openPreview = (pack: ThemePack) => {
@@ -229,7 +234,7 @@ export default function ThemeStore() {
         success = await purchaseService.purchaseCollegeTheme();
       } else if (pack.id === "couple") {
         success = await purchaseService.purchaseCoupleTheme();
-      } 
+      }
       // else {
       //   success = await themePackService.purchasePack(pack.id as any);
       // }
@@ -246,17 +251,24 @@ export default function ThemeStore() {
         loadPassiveOffers(); // Refresh passive offers
         closePreview();
       } else {
+        const errorMsg = iapContext.lastError || "Unknown error occurred";
         setPurchaseSuccessData({
           title: "❌ Purchase Failed",
-          message: "Unable to complete purchase. Please try again.",
+          message: `Unable to complete purchase: ${errorMsg}`,
           action: "OK",
         });
         setShowPurchaseSuccessModal(true);
+        console.error("❌ ThemeStore: Theme purchase failed:", {
+          pack: pack.id,
+          error: errorMsg,
+        });
       }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       setPurchaseSuccessData({
         title: "❌ Error",
-        message: "An error occurred during purchase.",
+        message: `Exception during purchase: ${errorMessage}`,
         action: "OK",
       });
       setShowPurchaseSuccessModal(true);
@@ -375,17 +387,20 @@ export default function ThemeStore() {
         });
         setShowPurchaseSuccessModal(true);
       } else {
+        const errorMsg = iapContext.lastError || "Unknown error occurred";
         setPurchaseSuccessData({
           title: "❌ Purchase Failed",
-          message: "Unable to complete purchase. Please try again.",
+          message: `Unable to complete purchase: ${errorMsg}`,
           action: "OK",
         });
         setShowPurchaseSuccessModal(true);
       }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       setPurchaseSuccessData({
         title: "❌ Error",
-        message: "An error occurred during purchase.",
+        message: `Exception during purchase: ${errorMessage}`,
         action: "OK",
       });
       setShowPurchaseSuccessModal(true);
@@ -418,16 +433,18 @@ export default function ThemeStore() {
       } else if (offer.primaryButton.action === "complete_set") {
         // Buy the remaining theme pack to complete the collection
         const purchasedPacks = themePackService.getPurchasedPacks();
-        const hasCollege = purchasedPacks.includes('college');
-        const hasCouple = purchasedPacks.includes('couple');
-        
+        const hasCollege = purchasedPacks.includes("college");
+        const hasCouple = purchasedPacks.includes("couple");
+
         if (!hasCollege) {
           success = await purchaseService.purchaseCollegeTheme();
         } else if (!hasCouple) {
           success = await purchaseService.purchaseCoupleTheme();
         } else {
           // User already has all themes, this shouldn't happen
-          console.warn("⚠️ ThemeStore: User already has all themes but complete_set action triggered");
+          console.warn(
+            "⚠️ ThemeStore: User already has all themes but complete_set action triggered"
+          );
         }
       } else if (offer.primaryButton.action === "all_in_bundle") {
         success = await purchaseService.purchaseCompleteBundle();
@@ -449,17 +466,20 @@ export default function ThemeStore() {
         });
         setShowPurchaseSuccessModal(true);
       } else {
+        const errorMsg = iapContext.lastError || "Unknown error occurred";
         setPurchaseSuccessData({
           title: "❌ Purchase Failed",
-          message: "Unable to complete purchase. Please try again.",
+          message: `Unable to complete purchase: ${errorMsg}`,
           action: "OK",
         });
         setShowPurchaseSuccessModal(true);
       }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       setPurchaseSuccessData({
         title: "❌ Error",
-        message: "An error occurred during purchase.",
+        message: `Exception during purchase: ${errorMessage}`,
         action: "OK",
       });
       setShowPurchaseSuccessModal(true);
@@ -468,56 +488,48 @@ export default function ThemeStore() {
     }
   };
 
-  const handleBundlePurchase = (bundle: any) => {
-    audioService.playHaptic("medium");
-    audioService.playSound("buttonPress");
+  // const handleResetStore = async () => {
+  //   audioService.playSound("buttonPress");
+  //   audioService.playHaptic("medium");
 
-    // Mock bundle purchase - replace with actual IAP logic later
-    console.log(`Mock bundle purchase initiated for ${bundle.title}`);
-  };
+  //   try {
+  //     // Reset theme pack purchases
+  //     await themePackService.resetPurchases();
 
-  const handleResetStore = async () => {
-    audioService.playSound("buttonPress");
-    audioService.playHaptic("medium");
+  //     // Reset user premium status (Ad-Free)
+  //     await userService.forceResetForTesting();
 
-    try {
-      // Reset theme pack purchases
-      await themePackService.resetPurchases();
+  //     // Reset upsell service state
+  //     await upsellService.resetUpsellState();
 
-      // Reset user premium status (Ad-Free)
-      await userService.forceResetForTesting();
+  //     // Force theme refresh to ensure context updates
+  //     await refreshTheme();
 
-      // Reset upsell service state
-      await upsellService.resetUpsellState();
+  //     // Small delay to ensure theme context updates
+  //     await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Force theme refresh to ensure context updates
-      await refreshTheme();
+  //     // Refresh all data
+  //     loadThemePacks();
+  //     loadPassiveOffers();
 
-      // Small delay to ensure theme context updates
-      await new Promise((resolve) => setTimeout(resolve, 100));
+  //     // Show success feedback
+  //     audioService.playSound("buttonPress");
+  //     audioService.playHaptic("medium");
 
-      // Refresh all data
-      loadThemePacks();
-      loadPassiveOffers();
-
-      // Show success feedback
-      audioService.playSound("buttonPress");
-      audioService.playHaptic("medium");
-
-      // Show success message
-      Alert.alert(
-        "🔄 Store Reset Complete!",
-        "All purchases and premium status have been reset. You're now a free user again and back to the default theme.",
-        [{ text: "Got it!" }]
-      );
-    } catch (error) {
-      console.error("❌ ThemeStore: Error resetting store:", error);
-      Alert.alert(
-        "Error",
-        "Failed to reset store completely. Please try again."
-      );
-    }
-  };
+  //     // Show success message
+  //     Alert.alert(
+  //       "🔄 Store Reset Complete!",
+  //       "All purchases and premium status have been reset. You're now a free user again and back to the default theme.",
+  //       [{ text: "Got it!" }]
+  //     );
+  //   } catch (error) {
+  //     console.error("❌ ThemeStore: Error resetting store:", error);
+  //     Alert.alert(
+  //       "Error",
+  //       "Failed to reset store completely. Please try again."
+  //     );
+  //   }
+  // };
 
   const renderBundleDeals = () => {
     return (
@@ -780,6 +792,7 @@ export default function ThemeStore() {
     console.log("🛍️ ThemeStore: Upsell purchase successful!");
     loadThemePacks(); // Refresh theme packs after purchase
     loadPassiveOffers(); // Refresh passive offers
+    updateFetchStatus(); // Refresh IAP status
     setShowUpsellModal(false);
   };
 
@@ -805,7 +818,7 @@ export default function ThemeStore() {
             <Ionicons name="arrow-back" size={24} color={COLORS.YELLOW} />
           </TouchableOpacity>
           <Text style={styles.title}>Theme Store</Text>
-          <View style={styles.headerButtons}>
+          {/* <View style={styles.headerButtons}>
             <TouchableOpacity
               onPress={() => {
                 audioService.playSound("buttonPress");
@@ -816,8 +829,35 @@ export default function ThemeStore() {
             >
               <Ionicons name="refresh" size={20} color={COLORS.YELLOW} />
             </TouchableOpacity>
+          </View> */}
+        </View>
+
+        {/* Store Status Display */}
+        <View style={styles.statusContainer}>
+          <View style={styles.statusRow}>
+            <Text style={styles.statusText}>Store Status: {fetchStatus}</Text>
+            <TouchableOpacity
+              onPress={updateFetchStatus}
+              style={styles.refreshStatusButton}
+            >
+              <Ionicons name="refresh" size={16} color={COLORS.YELLOW} />
+            </TouchableOpacity>
+          </View>
+          {lastError && (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>Error: {lastError}</Text>
+            </View>
+          )}
+          {/* Debug Information */}
+          <View style={styles.debugContainer}>
+            <Text style={styles.debugText}>
+              IAP Connected: {iapContext.connected ? "✅" : "❌"} | Products:{" "}
+              {iapContext.products?.length || 0} | Premium:{" "}
+              {userService.isPremium() ? "✅" : "❌"}
+            </Text>
           </View>
         </View>
+
         <View>
           {!userService.isPremium() &&
             !passiveOffers.some(
@@ -911,7 +951,7 @@ export default function ThemeStore() {
       />
 
       {/* Store Reset Confirmation Modal */}
-      <CustomModal
+      {/* <CustomModal
         visible={showResetConfirmation}
         onClose={() => {
           audioService.playSound("buttonPress");
@@ -931,7 +971,7 @@ export default function ThemeStore() {
         showCloseButton={true}
         closeButtonText="Cancel"
         destructive={true}
-      />
+      /> */}
 
       {/* Upsell Modal */}
       {currentUpsellOffer && (
@@ -1021,6 +1061,58 @@ const styles = StyleSheet.create({
   resetButton: {
     padding: SIZES.PADDING_SMALL,
     marginRight: SIZES.PADDING_SMALL,
+  },
+  statusContainer: {
+    backgroundColor: COLORS.CARD_BACKGROUND,
+    padding: SIZES.PADDING_SMALL,
+    marginHorizontal: SIZES.PADDING_MEDIUM,
+    marginVertical: SIZES.PADDING_SMALL,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    borderWidth: 1,
+    borderColor: COLORS.CARD_BORDER,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  statusText: {
+    fontSize: SIZES.SMALL,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.DOSIS_BOLD,
+    flex: 1,
+  },
+  refreshStatusButton: {
+    padding: SIZES.PADDING_SMALL,
+    marginLeft: SIZES.PADDING_SMALL,
+  },
+  errorContainer: {
+    marginTop: SIZES.PADDING_SMALL,
+    padding: SIZES.PADDING_SMALL,
+    backgroundColor: "#ffebee",
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    borderLeftWidth: 3,
+    borderLeftColor: "#f44336",
+  },
+  errorText: {
+    fontSize: SIZES.SMALL,
+    color: "#d32f2f",
+    fontFamily: FONTS.DOSIS_BOLD,
+    lineHeight: 16,
+  },
+  debugContainer: {
+    marginTop: SIZES.PADDING_SMALL,
+    padding: SIZES.PADDING_SMALL,
+    backgroundColor: "#e3f2fd",
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    borderLeftWidth: 3,
+    borderLeftColor: "#2196f3",
+  },
+  debugText: {
+    fontSize: SIZES.SMALL,
+    color: "#1976d2",
+    fontFamily: FONTS.DOSIS_BOLD,
+    lineHeight: 16,
   },
   contentContainer: {
     flex: 1,

@@ -23,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import audioService from "../../services/audio";
+import { getEnvironmentInfo } from "../../utils/environment";
 import Button from "../ui/Button";
 import CustomModal from "../ui/CustomModal";
 import SoundSettings from "../ui/SoundSettings";
@@ -49,6 +50,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
   // Add this for debugging
   const buildProfile = Constants.expoConfig?.extra?.eas?.buildProfile;
   const isDev = __DEV__;
+  const envInfo = getEnvironmentInfo();
 
   const addPlayer = () => {
     audioService.playSound("buttonPress");
@@ -204,20 +206,21 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
                 </View>
               </View>
             )}
-
             <Text style={[styles.subtitle, { color: COLORS.TEXT_PRIMARY }]}>
               Add Players to Begin
             </Text>
 
-            {/* Add debug info here */}
-            {/* <View style={styles.debugInfo}>
+            <View style={styles.debugInfo}>
               <Text style={styles.debugText}>
-                Build Profile: {buildProfile || "undefined"}
+                Production: {envInfo.isProduction ? "✅" : "❌"}
               </Text>
               <Text style={styles.debugText}>
-                __DEV__: {isDev ? "true" : "false"}
+                Environment Var: {envInfo.envVar || "undefined"}
               </Text>
-            </View> */}
+              <Text style={styles.debugText}>
+                __DEV__: {envInfo.__DEV__ ? "true" : "false"}
+              </Text>
+            </View>
           </View>
 
           <ScrollView style={styles.content}>
@@ -545,9 +548,9 @@ const styles = StyleSheet.create({
     marginBottom: SIZES.PADDING_SMALL,
   },
   title: {
-     fontSize: Platform.select({
+    fontSize: Platform.select({
       android: 40, // 👈 use a different size on Android
-      ios: 45,        // fallback for iOS
+      ios: 45, // fallback for iOS
     }),
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",

@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.adda1325.knottyroulette",
+      "bundleIdentifier": "com.knottytimes.knottytimesroulette",
       "icon": "./assets/images/knotty-times-updated.jpeg",
       "infoPlist": {
         "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
@@ -55,12 +55,13 @@
       },
       "icon": "./assets/images/favicon.png",
       "edgeToEdgeEnabled": true,
+      "versionCode": 2,
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "com.android.vending.BILLING"
       ],
-      "package": "com.adda1325.knottyroulette"
+      "package": "com.knottytimes.knottytimesroulette"
     },
     "web": {
       "bundler": "metro",
@@ -97,7 +98,8 @@
       "eas": {
         "projectId": "25e3a310-8fd2-4cfa-939a-86a1eef596e8"
       },
-      "useTestAds": true
+      "useTestAds": true,
+      "privacyPolicyUrl": "https://docs.google.com/document/d/1FbH_Iu_VFmUGqaeVy80wZ4MzQ0u8lgAOsROSN36uGyI/edit?usp=sharing"
     },
     "owner": "adda1325"
   }

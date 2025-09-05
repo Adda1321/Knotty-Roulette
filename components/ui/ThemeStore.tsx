@@ -26,7 +26,6 @@ import audioService from "../../services/audio";
 import purchaseService from "../../services/purchaseService";
 import { themePackService } from "../../services/themePackService";
 import upsellService from "../../services/upsellService";
-import userService from "../../services/userService";
 import { getSampleChallenges } from "../../utils/themeHelpers";
 import Button from "./Button";
 import CustomModal from "./CustomModal";
@@ -822,7 +821,7 @@ export default function ThemeStore() {
         </View>
 
         {/* Store Status Display */}
-        <View style={styles.statusContainer}>
+        {/* <View style={styles.statusContainer}>
           <View style={styles.statusRow}>
             <Text style={styles.statusText}>Store Status: {fetchStatus}</Text>
             <TouchableOpacity
@@ -837,11 +836,9 @@ export default function ThemeStore() {
               <Text style={styles.errorText}>Error: {lastError}</Text>
             </View>
           )}
-          {/* Detailed Debug Information */}
           <View style={styles.debugContainer}>
             <Text style={styles.debugTitle}>🔍 IAP Debug Information</Text>
 
-            {/* Connection Status */}
             <View style={styles.debugRow}>
               <Text style={styles.debugLabel}>Connection:</Text>
               <Text
@@ -855,7 +852,6 @@ export default function ThemeStore() {
                 {iapContext.connected ? "✅ Connected" : "❌ Disconnected"}
               </Text>
             </View>
-            {/* Fetch Status */}
             <View style={styles.debugRow}>
               <Text style={styles.debugLabel}>Status:</Text>
               <Text
@@ -870,7 +866,6 @@ export default function ThemeStore() {
               </Text>
             </View>
 
-            {/* Last Error */}
             {iapContext.lastError && (
               <View style={styles.debugRow}>
                 <Text style={styles.debugLabel}>Error:</Text>
@@ -879,8 +874,6 @@ export default function ThemeStore() {
                 </Text>
               </View>
             )}
-
-            {/* Premium Status */}
             <View style={styles.debugRow}>
               <Text style={styles.debugLabel}>Premium:</Text>
               <Text
@@ -895,7 +888,6 @@ export default function ThemeStore() {
               </Text>
             </View>
 
-            {/* Purchased Products */}
             <View style={styles.debugRow}>
               <Text style={styles.debugLabel}>Purchased:</Text>
               <Text style={styles.debugValue}>
@@ -905,7 +897,6 @@ export default function ThemeStore() {
               </Text>
             </View>
 
-            {/* Available Purchases (Raw) */}
             <View style={styles.debugRow}>
               <Text style={styles.debugLabel}>Available Purchases:</Text>
               <Text style={styles.debugValue}>
@@ -924,7 +915,6 @@ export default function ThemeStore() {
               </Text>
             </View>
 
-            {/* Environment Info */}
             <View style={styles.debugRow}>
               <Text style={styles.debugLabel}>Environment:</Text>
               <Text style={styles.debugValue}>
@@ -934,7 +924,6 @@ export default function ThemeStore() {
               </Text>
             </View>
 
-            {/* Auto-restoration Info */}
             <View style={styles.debugRow}>
               <Text style={styles.debugLabel}>Auto-Restore:</Text>
               <Text style={[styles.debugValue, styles.debugSuccess]}>
@@ -942,9 +931,7 @@ export default function ThemeStore() {
               </Text>
             </View>
           </View>
-          {/* </View> */}
 
-          {/* Ad-Free Button */}
           {!userService.isPremium() &&
             !passiveOffers.some(
               (offer) => offer.primaryButton.action === "ad_free"
@@ -963,7 +950,8 @@ export default function ThemeStore() {
                 </Text>
               </TouchableOpacity>
             )}
-        </View>
+        </View> */}
+
         <View style={styles.contentContainer}>
           <ScrollView
             style={styles.content}

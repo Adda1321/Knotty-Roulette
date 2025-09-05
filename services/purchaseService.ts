@@ -221,6 +221,33 @@ class PurchaseService {
   }
 
   /**
+   * Purchase multiple products (Android) or single product (iOS)
+   * Handles platform differences automatically
+   */
+  async purchaseProducts(productIds: string[]): Promise<boolean> {
+    await this.initialize();
+
+    const context = getIAPContext();
+    if (context) {
+      const success = await context.purchaseProducts(productIds);
+      // Note: In production mode, processPurchase is handled by IAPProvider's event system
+      // In mock mode, we need to process it here
+      if (success && !isProduction()) {
+        for (const productId of productIds) {
+          await this.processPurchase({ productId, id: productId });
+        }
+      }
+      return success;
+    }
+
+    // Fallback for when context is not available
+    for (const productId of productIds) {
+      await this.processPurchase({ productId, id: productId });
+    }
+    return true;
+  }
+
+  /**
    * Purchase ad-free removal (this makes user premium)
    */
   async purchaseAdFree(): Promise<boolean> {

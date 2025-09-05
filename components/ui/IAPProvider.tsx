@@ -1,10 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, {
-    createContext,
-    ReactNode,
-    useContext,
-    useEffect,
-    useState,
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
 } from "react";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
 import adService from "../../services/adService";
@@ -19,17 +19,13 @@ let useIAP: any = null;
 
 if (isProduction()) {
   try {
-    console.log("📱 Attempting to load expo-iap...");
     useIAP = require("expo-iap").useIAP;
-    console.log("✅ expo-iap loaded successfully");
   } catch (error) {
-    console.log("🚫 expo-iap: Failed to load", error);
+    // expo-iap failed to load
   }
-} else {
-  console.log("🚫 expo-iap: Not in production environment");
 }
 
-// Product IDs - All the products mentioned in UPSELL_README.md
+// Product IDs - Must match Google Play Console exactly
 const PRODUCT_IDS = {
   // Individual products
   AD_FREE_REMOVAL: "ad_free_removal",
@@ -79,12 +75,15 @@ interface IAPContextType {
   connected: boolean;
   products: any[];
   subscriptions: any[];
+  availablePurchases: any[];
   fetchStatus: string;
   lastError: string;
+  purchasedProducts: Set<string>;
   isProductPurchased: (productId: string) => boolean;
   purchaseProduct: (productId: string) => Promise<boolean>;
   restorePurchases: () => Promise<boolean>;
   getProducts: () => Promise<any[]>;
+  getCurrentProducts: () => any[];
   clearError: () => void;
   refreshProducts: () => Promise<void>;
   clearPurchaseStatus: () => Promise<void>;
@@ -106,16 +105,18 @@ export function IAPProvider({ children }: IAPProviderProps) {
     try {
       iapHook = useIAP({
         onPurchaseSuccess: (purchase: any) => {
-          console.log("✅ Purchase successful:", purchase);
           handlePurchaseSuccess(purchase);
         },
         onPurchaseError: (error: any) => {
-          console.error("❌ Purchase failed:", error);
           handlePurchaseError(error);
         },
+        onSyncError: (error: any) => {
+          // IAP sync error
+        },
+        autoFinishTransactions: false, // We'll handle this manually
       });
     } catch (error) {
-      console.log("⚠️ IAP: Failed to initialize useIAP:", error);
+      // IAP failed to initialize
     }
   }
 
@@ -124,7 +125,7 @@ export function IAPProvider({ children }: IAPProviderProps) {
     connected: !isProd, // Always "connected" in mock mode
     products: [],
     subscriptions: [],
-    fetchProducts: async () => {},
+    requestProducts: async () => {},
     requestPurchase: async () => ({ success: true }),
     finishTransaction: async () => {},
     getAvailablePurchases: async (skus: string[]) => [],
@@ -138,7 +139,7 @@ export function IAPProvider({ children }: IAPProviderProps) {
     connected,
     products,
     subscriptions,
-    fetchProducts,
+    requestProducts,
     requestPurchase,
     finishTransaction,
     getAvailablePurchases,
@@ -161,27 +162,85 @@ export function IAPProvider({ children }: IAPProviderProps) {
     initializeIAP();
   }, []);
 
+  // Effect to handle product loading and purchase restoration when connected
+  useEffect(() => {
+    if (isProd && connected && requestProducts) {
+      // Load products first, then restore purchases
+      const loadAndRestore = async () => {
+        try {
+          // Call requestProducts directly to fetch products
+          const productIds = Object.keys(PRODUCT_DEFINITIONS);
+          
+          await requestProducts({
+            skus: productIds,
+            type: "inapp",
+          });
+          
+          await restorePurchases();
+        } catch (error) {
+          // IAP auto-restoration failed
+        }
+      };
+      
+      loadAndRestore();
+    }
+  }, [connected, isProd, requestProducts]);
+
+
+  // Effect to update status when products are loaded
+  useEffect(() => {
+    if (isProd && connected && products && products.length > 0) {
+      setFetchStatus(`✅ ${products.length} products loaded from store`);
+      setLastError(""); // Clear any previous errors
+    }
+  }, [products, connected, isProd]);
+
+  // Effect to update status when purchased products change
+  useEffect(() => {
+    if (purchasedProducts.size > 0) {
+      const purchasedList = Array.from(purchasedProducts).join(", ");
+      setFetchStatus(`✅ ${products?.length || 0} products available, ${purchasedProducts.size} purchased (${purchasedList})`);
+    } else if (availablePurchases && availablePurchases.length > 0) {
+      // If we have available purchases but no purchased products, try to restore
+      setFetchStatus(`⚠️ Found ${availablePurchases.length} available purchases but 0 mapped. Try manual restore.`);
+    }
+  }, [purchasedProducts, products, availablePurchases]);
+
+  // Auto-restore purchases when available purchases are detected but not mapped
+  useEffect(() => {
+    if (isProd && availablePurchases && availablePurchases.length > 0 && purchasedProducts.size === 0) {
+      // Auto-trigger restoration if we have available purchases but no mapped purchases
+      const autoRestore = async () => {
+        try {
+          // Add a small delay to ensure state is stable
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await restorePurchases();
+        } catch (error) {
+          // Auto-restoration failed, user can try manual restore
+        }
+      };
+      autoRestore();
+    }
+  }, [availablePurchases, purchasedProducts.size, isProd]);
+
   // Proper IAP initialization with offline-first approach
   const initializeIAP = async () => {
-    console.log("🔄 IAP: Initializing with offline-first approach...");
-
     // Step 1: Load cached purchases immediately (offline-first)
     await loadPurchasedProducts();
 
-    // Step 2: If in production, try to restore purchases from store
-    if (isProd && connected) {
-      console.log("🔄 IAP: Attempting to restore purchases from store...");
-      try {
-        await restorePurchases();
-        // After restoration, fetch fresh product data
-        await getProducts();
-      } catch (error) {
-        console.log("⚠️ IAP: Store restoration failed, using cache:", error);
-        // If store restoration fails, we still have cache
-        setFetchStatus("✅ Using cached data (offline mode)");
+    // Step 2: If in production, wait for connection and then restore
+    if (isProd) {
+      if (connected) {
+        try {
+          await getProducts();
+          await restorePurchases();
+        } catch (error) {
+          setFetchStatus("✅ Using cached data (offline mode)");
+        }
+      } else {
+        setFetchStatus("🔄 Connecting to store...");
       }
     } else {
-      console.log("🎭 IAP: Development mode, using mock data");
       setFetchStatus("🎭 Mock mode - using cached data");
     }
   };
@@ -189,11 +248,10 @@ export function IAPProvider({ children }: IAPProviderProps) {
   // Process purchase and unlock features
   const processPurchase = async (purchase: any) => {
     try {
-      const productId = purchase.productId || purchase.id;
+      const productId = purchase.productId || purchase.id || purchase.sku;
       const productDef = PRODUCT_DEFINITIONS[productId];
 
       if (!productDef) {
-        console.log(`⚠️ Unknown product: ${productId}`);
         return;
       }
 
@@ -216,21 +274,18 @@ export function IAPProvider({ children }: IAPProviderProps) {
 
       // Check for post-purchase upsells
       await upsellService.checkPostPurchaseUpsell("ad_free");
-
-      console.log(`✅ Unlocked: ${productDef.title}`);
     } catch (error) {
-      console.error("❌ Error processing purchase:", error);
+      // Error processing purchase
     }
   };
 
   // Handle purchase success
   const handlePurchaseSuccess = async (purchase: any) => {
     try {
-      console.log("🎉 Processing successful purchase:", purchase);
-
       // Add to purchased products
       const newPurchasedProducts = new Set(purchasedProducts);
-      newPurchasedProducts.add(purchase.id || purchase.productId);
+      const productId = purchase.productId || purchase.id || purchase.sku;
+      newPurchasedProducts.add(productId);
       setPurchasedProducts(newPurchasedProducts);
 
       // Save to storage
@@ -247,18 +302,27 @@ export function IAPProvider({ children }: IAPProviderProps) {
         purchase,
         isConsumable: false, // Our products are non-consumable
       });
-
-      console.log("✅ Purchase processed successfully");
     } catch (error) {
-      console.error("❌ Error processing purchase:", error);
       setLastError(`Error processing purchase: ${error}`);
     }
   };
 
   // Handle purchase error
   const handlePurchaseError = (error: any) => {
-    console.error("❌ Purchase error:", error);
-    setLastError(`Purchase failed: ${error.message || error}`);
+
+    // Handle specific error cases
+    if (
+      error.code === "E_ALREADY_OWNED" ||
+      error.message?.includes("already owned")
+    ) {
+      setLastError("Product already owned");
+      setFetchStatus("✅ Product already owned");
+    } else if (error.code === "E_USER_CANCELLED") {
+      setLastError("Purchase cancelled by user");
+      setFetchStatus("Purchase cancelled");
+    } else {
+      setLastError(`Purchase failed: ${error.message || error}`);
+    }
   };
 
   // Load purchased products from AsyncStorage (offline-first approach)
@@ -268,16 +332,13 @@ export function IAPProvider({ children }: IAPProviderProps) {
       if (data) {
         const purchased = JSON.parse(data);
         setPurchasedProducts(new Set(purchased));
-        console.log("📦 Loaded purchased products from cache:", purchased);
 
         // If we have cached purchases, show them immediately (offline-first)
         if (purchased.length > 0) {
           setFetchStatus("✅ Products loaded from cache");
-          console.log("✅ Showing cached purchases for offline experience");
         }
       }
     } catch (error) {
-      console.error("❌ Failed to load purchased products:", error);
     }
   };
 
@@ -313,47 +374,30 @@ export function IAPProvider({ children }: IAPProviderProps) {
       }
 
       if (!connected) {
-        setFetchStatus("Not connected to store");
+        setFetchStatus("❌ Not connected to store");
         setLastError("Not connected to store");
         return [];
       }
 
       const productIds = Object.keys(PRODUCT_DEFINITIONS);
-      console.log("🛍️ Fetching products:", productIds);
 
-      await fetchProducts({
+      // Use the correct v2.8 API - requestProducts returns void, products are updated via state
+      await requestProducts({
         skus: productIds,
         type: "inapp",
       });
 
-      if (products && products.length > 0) {
-        setFetchStatus(`✅ Fetched ${products.length} products from store`);
+      // Wait for products to be loaded into state
+      await new Promise((resolve) => setTimeout(resolve, 3000));
 
-        // Enhance store products with our metadata
-        const enhancedProducts = products.map((storeProduct: any) => {
-          const productId = storeProduct.productId || storeProduct.id;
-          const def = PRODUCT_DEFINITIONS[productId];
-          return {
-            ...storeProduct,
-            productId: productId,
-            type: "individual",
-            unlocks: def?.unlocks || [],
-            isPurchased: isProductPurchased(productId),
-          };
-        });
 
-        return enhancedProducts;
-      } else {
-        setFetchStatus("❌ No products returned from store");
-        setLastError("No products returned from store");
-        return [];
-      }
+      // Return the current products from state (they should be populated by requestProducts)
+      return getCurrentProducts();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       setFetchStatus(`❌ Error: ${errorMessage}`);
       setLastError(`Exception during product fetch: ${errorMessage}`);
-      console.error("❌ Error fetching products:", error);
       return [];
     }
   };
@@ -362,11 +406,15 @@ export function IAPProvider({ children }: IAPProviderProps) {
   const purchaseProduct = async (productId: string): Promise<boolean> => {
     try {
       setLastError("");
-      console.log("🛒 Attempting to purchase:", productId);
+
+      // Check if already purchased (for non-consumable products)
+      if (isProductPurchased(productId)) {
+        setFetchStatus("✅ Product already owned");
+        return true; // Return true since the user already has it
+      }
 
       // Handle mock mode
       if (!isProd) {
-        console.log("🎭 Mock purchase successful for:", productId);
         // Simulate successful purchase
         const newPurchasedProducts = new Set(purchasedProducts);
         newPurchasedProducts.add(productId);
@@ -398,9 +446,6 @@ export function IAPProvider({ children }: IAPProviderProps) {
       });
 
       if (result) {
-        console.log(
-          "✅ Purchase initiated successfully - waiting for completion"
-        );
         return true;
       } else {
         setLastError("Purchase failed - no result returned");
@@ -410,7 +455,6 @@ export function IAPProvider({ children }: IAPProviderProps) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       setLastError(`Purchase failed: ${errorMessage}`);
-      console.error("❌ Purchase error:", error);
       return false;
     }
   };
@@ -418,7 +462,6 @@ export function IAPProvider({ children }: IAPProviderProps) {
   // Restore purchases with proper offline-first approach
   const restorePurchases = async (): Promise<boolean> => {
     try {
-      console.log("🔄 Restoring purchases...");
 
       // Handle mock mode - just load from storage
       if (!isProd) {
@@ -433,29 +476,43 @@ export function IAPProvider({ children }: IAPProviderProps) {
       }
 
       if (!connected) {
-        console.log("⚠️ Not connected to store, using cached data");
         setFetchStatus("✅ Using cached data (offline mode)");
         return purchasedProducts.size > 0;
       }
 
       // Get available purchases from store
-      const productIds = Object.keys(PRODUCT_DEFINITIONS);
-      await getAvailablePurchases(productIds);
-      const storePurchases = availablePurchases;
+      await getAvailablePurchases();
+
+      // Wait for state to update and get fresh data
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Get the current available purchases from state
+      const storePurchases = availablePurchases || [];
 
       if (storePurchases && storePurchases.length > 0) {
-        console.log("🔄 Found purchases in store:", storePurchases);
-
         // Merge store purchases with cached purchases
         const newPurchasedProducts = new Set(purchasedProducts);
         let restored = false;
 
         for (const purchase of storePurchases) {
-          const productId = purchase.id || purchase.productId;
+          // Handle different purchase data structures
+          const productId = purchase.productId || purchase.id || purchase.sku;
+          console.log("🔍 Processing purchase:", { purchase, productId });
+          
           if (productId) {
-            newPurchasedProducts.add(productId);
-            restored = true;
-            console.log("✅ Restored purchase:", productId);
+            // Check if this product ID exists in our PRODUCT_DEFINITIONS
+            if (PRODUCT_DEFINITIONS[productId]) {
+              console.log("✅ Adding product to purchased:", productId);
+              newPurchasedProducts.add(productId);
+              restored = true;
+              
+              // Process the purchase to unlock features
+              await processPurchase(purchase);
+            } else {
+              console.log("❌ Product not in definitions:", productId);
+            }
+          } else {
+            console.log("❌ No product ID found in purchase:", purchase);
           }
         }
 
@@ -466,24 +523,54 @@ export function IAPProvider({ children }: IAPProviderProps) {
           JSON.stringify(Array.from(newPurchasedProducts))
         );
 
-        console.log(
-          "✅ All restored purchases:",
-          Array.from(newPurchasedProducts)
-        );
         setFetchStatus(`✅ ${newPurchasedProducts.size} purchases restored`);
         return restored;
       } else {
-        console.log("ℹ️ No purchases found in store, using cached data");
         setFetchStatus("✅ Using cached data (no store purchases)");
         return purchasedProducts.size > 0;
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      console.log("⚠️ Store restoration failed, using cache:", errorMessage);
-      setFetchStatus("✅ Using cached data (restore failed)");
+      setFetchStatus(`✅ Using cached data (restore failed) ${errorMessage}`);
       return purchasedProducts.size > 0;
     }
+  };
+
+  // Get current products from state (for immediate access)
+  const getCurrentProducts = (): any[] => {
+    if (!isProd) {
+      // Return mock products
+      return Object.entries(PRODUCT_DEFINITIONS).map(([productId, def]) => ({
+        productId,
+        title: def.title,
+        description: def.description,
+        price: def.price,
+        priceString: def.price,
+        currency: "USD",
+        type: "inapp",
+        platform: "mock",
+        unlocks: def.unlocks,
+        isPurchased: isProductPurchased(productId),
+      }));
+    }
+
+    if (!connected || !products || products.length === 0) {
+      return [];
+    }
+
+    // Enhance store products with our metadata
+    return products.map((storeProduct: any) => {
+      const productId = storeProduct.productId || storeProduct.id;
+      const def = PRODUCT_DEFINITIONS[productId];
+      return {
+        ...storeProduct,
+        productId: productId,
+        type: "individual",
+        unlocks: def?.unlocks || [],
+        isPurchased: isProductPurchased(productId),
+      };
+    });
   };
 
   // Refresh products
@@ -502,9 +589,7 @@ export function IAPProvider({ children }: IAPProviderProps) {
       setPurchasedProducts(new Set());
       await AsyncStorage.removeItem(STORAGE_KEYS.PURCHASED_PRODUCTS);
       setFetchStatus("Purchase status cleared");
-      console.log("✅ Purchase status cleared");
     } catch (error) {
-      console.error("❌ Error clearing purchase status:", error);
     }
   };
 
@@ -515,6 +600,8 @@ export function IAPProvider({ children }: IAPProviderProps) {
       setFetchStatus(
         `✅ ${products.length} products available, ${purchasedCount} purchased`
       );
+      // Clear any previous errors when products load successfully
+      setLastError("");
     } else if (connected) {
       const purchasedCount = purchasedProducts.size;
       if (purchasedCount > 0) {
@@ -558,12 +645,15 @@ export function IAPProvider({ children }: IAPProviderProps) {
     connected,
     products,
     subscriptions,
+    availablePurchases,
     fetchStatus,
     lastError,
+    purchasedProducts,
     isProductPurchased,
     purchaseProduct,
     restorePurchases,
     getProducts,
+    getCurrentProducts,
     clearError,
     refreshProducts,
     clearPurchaseStatus,

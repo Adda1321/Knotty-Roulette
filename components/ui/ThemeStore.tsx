@@ -10,7 +10,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import {
   COLORS,
@@ -806,6 +806,7 @@ export default function ThemeStore() {
   return (
     <>
       <View style={styles.container}>
+        {/* Fixed Header */}
         <View style={[styles.header, { backgroundColor: COLORS.PRIMARY }]}>
           <TouchableOpacity
             onPress={() => {
@@ -818,18 +819,6 @@ export default function ThemeStore() {
             <Ionicons name="arrow-back" size={24} color={COLORS.YELLOW} />
           </TouchableOpacity>
           <Text style={styles.title}>Theme Store</Text>
-          {/* <View style={styles.headerButtons}>
-            <TouchableOpacity
-              onPress={() => {
-                audioService.playSound("buttonPress");
-                audioService.playHaptic("light");
-                setShowResetConfirmation(true);
-              }}
-              style={styles.resetButton}
-            >
-              <Ionicons name="refresh" size={20} color={COLORS.YELLOW} />
-            </TouchableOpacity>
-          </View> */}
         </View>
 
         {/* Store Status Display */}
@@ -848,17 +837,114 @@ export default function ThemeStore() {
               <Text style={styles.errorText}>Error: {lastError}</Text>
             </View>
           )}
-          {/* Debug Information */}
+          {/* Detailed Debug Information */}
           <View style={styles.debugContainer}>
-            <Text style={styles.debugText}>
-              IAP Connected: {iapContext.connected ? "✅" : "❌"} | Products:{" "}
-              {iapContext.products?.length || 0} | Premium:{" "}
-              {userService.isPremium() ? "✅" : "❌"}
-            </Text>
-          </View>
-        </View>
+            <Text style={styles.debugTitle}>🔍 IAP Debug Information</Text>
 
-        <View>
+            {/* Connection Status */}
+            <View style={styles.debugRow}>
+              <Text style={styles.debugLabel}>Connection:</Text>
+              <Text
+                style={[
+                  styles.debugValue,
+                  iapContext.connected
+                    ? styles.debugSuccess
+                    : styles.debugError,
+                ]}
+              >
+                {iapContext.connected ? "✅ Connected" : "❌ Disconnected"}
+              </Text>
+            </View>
+            {/* Fetch Status */}
+            <View style={styles.debugRow}>
+              <Text style={styles.debugLabel}>Status:</Text>
+              <Text
+                style={[
+                  styles.debugValue,
+                  iapContext.fetchStatus.includes("✅")
+                    ? styles.debugSuccess
+                    : styles.debugError,
+                ]}
+              >
+                {iapContext.fetchStatus}
+              </Text>
+            </View>
+
+            {/* Last Error */}
+            {iapContext.lastError && (
+              <View style={styles.debugRow}>
+                <Text style={styles.debugLabel}>Error:</Text>
+                <Text style={[styles.debugValue, styles.debugError]}>
+                  {iapContext.lastError}
+                </Text>
+              </View>
+            )}
+
+            {/* Premium Status */}
+            <View style={styles.debugRow}>
+              <Text style={styles.debugLabel}>Premium:</Text>
+              <Text
+                style={[
+                  styles.debugValue,
+                  userService.isPremium()
+                    ? styles.debugSuccess
+                    : styles.debugError,
+                ]}
+              >
+                {userService.isPremium() ? "✅ Premium" : "❌ Free"}
+              </Text>
+            </View>
+
+            {/* Purchased Products */}
+            <View style={styles.debugRow}>
+              <Text style={styles.debugLabel}>Purchased:</Text>
+              <Text style={styles.debugValue}>
+                {Array.from(iapContext.purchasedProducts || new Set()).join(
+                  ", "
+                ) || "None"}
+              </Text>
+            </View>
+
+            {/* Available Purchases (Raw) */}
+            <View style={styles.debugRow}>
+              <Text style={styles.debugLabel}>Available Purchases:</Text>
+              <Text style={styles.debugValue}>
+                {iapContext.availablePurchases
+                  ? JSON.stringify(
+                      iapContext.availablePurchases.map((p: any) => ({
+                        id: p.id,
+                        productId: p.productId,
+                        sku: p.sku,
+                        purchaseState: p.purchaseState,
+                      })),
+                      null,
+                      2
+                    )
+                  : "None"}
+              </Text>
+            </View>
+
+            {/* Environment Info */}
+            <View style={styles.debugRow}>
+              <Text style={styles.debugLabel}>Environment:</Text>
+              <Text style={styles.debugValue}>
+                {process.env.EXPO_PUBLIC_IS_PRODUCTION === "true"
+                  ? "Production"
+                  : "Development"}
+              </Text>
+            </View>
+
+            {/* Auto-restoration Info */}
+            <View style={styles.debugRow}>
+              <Text style={styles.debugLabel}>Auto-Restore:</Text>
+              <Text style={[styles.debugValue, styles.debugSuccess]}>
+                ✅ Enabled (happens on app start)
+              </Text>
+            </View>
+          </View>
+          {/* </View> */}
+
+          {/* Ad-Free Button */}
           {!userService.isPremium() &&
             !passiveOffers.some(
               (offer) => offer.primaryButton.action === "ad_free"
@@ -1102,11 +1188,46 @@ const styles = StyleSheet.create({
   },
   debugContainer: {
     marginTop: SIZES.PADDING_SMALL,
-    padding: SIZES.PADDING_SMALL,
-    backgroundColor: "#e3f2fd",
+    padding: SIZES.PADDING_MEDIUM,
+    backgroundColor: "#f5f5f5",
     borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    borderLeftWidth: 3,
-    borderLeftColor: "#2196f3",
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  debugTitle: {
+    fontSize: SIZES.SUBTITLE,
+    color: "#333",
+    fontFamily: FONTS.DOSIS_BOLD,
+    marginBottom: SIZES.PADDING_SMALL,
+    textAlign: "center",
+  },
+  debugRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: SIZES.PADDING_SMALL / 2,
+    flexWrap: "wrap",
+  },
+  debugLabel: {
+    fontSize: SIZES.SMALL,
+    color: "#666",
+    fontFamily: FONTS.DOSIS_BOLD,
+    flex: 1,
+    minWidth: 80,
+  },
+  debugValue: {
+    fontSize: SIZES.SMALL,
+    color: "#333",
+    flex: 2,
+    textAlign: "right",
+  },
+  debugSuccess: {
+    color: "#4caf50",
+    fontFamily: FONTS.DOSIS_BOLD,
+  },
+  debugError: {
+    color: "#f44336",
+    fontFamily: FONTS.DOSIS_BOLD,
   },
   debugText: {
     fontSize: SIZES.SMALL,

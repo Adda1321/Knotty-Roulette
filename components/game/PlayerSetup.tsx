@@ -1,4 +1,3 @@
-import Constants from "expo-constants";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useRef, useState } from "react";
 import { Surface } from "react-native-paper";
@@ -46,10 +45,6 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
     useState(false);
   const [shouldScroll, setShouldScroll] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-
-  // Add this for debugging
-  const buildProfile = Constants.expoConfig?.extra?.eas?.buildProfile;
-  const isDev = __DEV__;
   const envInfo = getEnvironmentInfo();
 
   const addPlayer = () => {
@@ -209,20 +204,7 @@ export default function PlayerSetup({ onStartGame }: PlayerSetupProps) {
             <Text style={[styles.subtitle, { color: COLORS.TEXT_PRIMARY }]}>
               Add Players to Begin
             </Text>
-
-            <View style={styles.debugInfo}>
-              <Text style={styles.debugText}>
-                Production: {envInfo.isProduction ? "✅" : "❌"}
-              </Text>
-              <Text style={styles.debugText}>
-                Environment Var: {envInfo.envVar || "undefined"}
-              </Text>
-              <Text style={styles.debugText}>
-                __DEV__: {envInfo.__DEV__ ? "true" : "false"}
-              </Text>
-            </View>
           </View>
-
           <ScrollView style={styles.content}>
             <View style={styles.playerList}>
               {shouldScroll ? (

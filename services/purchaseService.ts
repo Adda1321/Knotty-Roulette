@@ -5,7 +5,7 @@ import upsellService from "./upsellService";
 import userService from "./userService";
 
 
-// Product IDs - All the products mentioned in UPSELL_README.md
+// Product IDs - Must match Google Play Console exactly
 const PRODUCT_IDS = {
   // Individual products
   AD_FREE_REMOVAL: "ad_free_removal",
@@ -57,13 +57,11 @@ let iapContext: any = null;
 // Function to set the IAP context (called by IAPProvider)
 export const setIAPContext = (context: any) => {
   iapContext = context;
-  console.log("✅ IAP: Context set in purchase service");
 };
 
 // Get the IAP context
 const getIAPContext = () => {
   if (!iapContext) {
-    console.log("⚠️ IAP: Context not available - using fallback");
     return null;
   }
   return iapContext;
@@ -81,11 +79,8 @@ class PurchaseService {
     }
 
     try {
-      console.log("🔄 PurchaseService: Initializing...");
       this.isInitialized = true;
-      console.log("✅ PurchaseService: Initialized");
     } catch (error) {
-      console.error("❌ PurchaseService: Failed to initialize:", error);
       this.isInitialized = true;
     }
   }
@@ -155,7 +150,6 @@ class PurchaseService {
       const productDef = PRODUCT_DEFINITIONS[productId];
 
       if (!productDef) {
-        console.log(`⚠️ Unknown product: ${productId}`);
         return;
       }
 
@@ -177,9 +171,7 @@ class PurchaseService {
       // Check for post-purchase upsells
       await upsellService.checkPostPurchaseUpsell("ad_free");
 
-      console.log(`✅ Unlocked: ${productDef.title}`);
     } catch (error) {
-      console.error("❌ Error processing purchase:", error);
     }
   }
 
@@ -195,7 +187,6 @@ class PurchaseService {
     }
 
     // Fallback for when context is not available
-    console.log("⚠️ IAP context not available, returning mock products");
     return Object.entries(PRODUCT_DEFINITIONS).map(([productId, def]) => ({
       productId,
       title: def.title,
@@ -225,7 +216,6 @@ class PurchaseService {
     }
 
     // Fallback for when context is not available
-    console.log("⚠️ IAP context not available, simulating purchase");
     await this.processPurchase({ productId, id: productId });
     return true;
   }
@@ -277,7 +267,6 @@ class PurchaseService {
     }
 
     // Fallback for when context is not available
-    console.log("⚠️ IAP context not available, cannot restore purchases");
     return false;
   }
 
@@ -294,10 +283,8 @@ class PurchaseService {
         const AsyncStorage =
           require("@react-native-async-storage/async-storage").default;
         await AsyncStorage.removeItem(STORAGE_KEYS.PURCHASED_PRODUCTS);
-        console.log("✅ Purchase status cleared (fallback)");
       }
     } catch (error) {
-      console.error("❌ Error clearing purchase status:", error);
     }
   }
 

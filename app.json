@@ -10,7 +10,7 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.knottytimes.knottytimesroulette",
+      "bundleIdentifier": "com.knottytimes.knottyroulette",
       "icon": "./assets/images/knotty-times-updated.jpeg",
       "infoPlist": {
         "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
@@ -55,7 +55,6 @@
       },
       "icon": "./assets/images/favicon.png",
       "edgeToEdgeEnabled": true,
-      "versionCode": 2,
       "permissions": [
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",

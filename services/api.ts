@@ -53,11 +53,7 @@ export async function fetchAllChallenges(): Promise<Challenge[]> {
   try {
     const now = Date.now();
     if (allChallengesCache && now - lastFetchTime < CACHE_DURATION) {
-      console.log(
-        "📦 Using cached challenges (age:",
-        Math.round((now - lastFetchTime) / 1000),
-        "seconds)"
-      );
+     
       return allChallengesCache;
     }
 
@@ -72,18 +68,8 @@ export async function fetchAllChallenges(): Promise<Challenge[]> {
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
     const rawChallenges = await response.json();
-    console.log("📡 Raw API Response:", rawChallenges);
-    console.log("📡 Response type:", typeof rawChallenges);
-    console.log(
-      "📡 Response length:",
-      Array.isArray(rawChallenges) ? rawChallenges.length : "Not an array"
-    );
-
+   
     if (Array.isArray(rawChallenges) && rawChallenges.length > 0) {
-      console.log("✅ Processing challenges from API...");
-
-      // Log first few raw challenges to see structure
-      console.log("🔍 First 3 raw challenges:", rawChallenges.slice(0, 3));
 
       allChallengesCache = rawChallenges.map((challenge: any) => ({
         id: challenge.id,

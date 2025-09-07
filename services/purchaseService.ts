@@ -1,55 +1,10 @@
-import { STORAGE_KEYS } from "@/constants/storageKeys";
+import { PRODUCT_DEFINITIONS, PRODUCT_IDS } from "../constants/iapProducts";
 import { isProduction } from "../utils/environment";
 import themePackService from "./themePackService";
 import upsellService from "./upsellService";
 import userService from "./userService";
 
 
-// Product IDs - Must match Google Play Console exactly
-const PRODUCT_IDS = {
-  // Individual products
-  AD_FREE_REMOVAL: "ad_free_removal",
-  COLLEGE_THEME_PACK: "college_theme_pack",
-  COUPLE_THEME_PACK: "couple_theme_pack",
-
-  // Bundle products
-  COMPLETE_EXPERIENCE_BUNDLE: "complete_experience_bundle",
-  EXPAND_FUN_BUNDLE: "expand_fun_bundle",
-};
-
-// Product definitions with metadata - Used for mock data and feature unlocking
-const PRODUCT_DEFINITIONS = {
-  [PRODUCT_IDS.AD_FREE_REMOVAL]: {
-    title: "Remove Ads",
-    description: "Remove all ads and enjoy uninterrupted gameplay",
-    price: "$2.99",
-    unlocks: ["ad_free"],
-  },
-  [PRODUCT_IDS.COLLEGE_THEME_PACK]: {
-    title: "College Theme Pack",
-    description: "Unlock the exciting college theme for your wheel",
-    price: "$2.99",
-    unlocks: ["college_theme"],
-  },
-  [PRODUCT_IDS.COUPLE_THEME_PACK]: {
-    title: "Couple Theme Pack",
-    description: "Unlock the romantic couple theme for your wheel",
-    price: "$2.99",
-    unlocks: ["couple_theme"],
-  },
-  [PRODUCT_IDS.COMPLETE_EXPERIENCE_BUNDLE]: {
-    title: "Complete Experience Bundle",
-    description: "Get everything: All themes + Ad-free (Save $2)",
-    price: "$6.99",
-    unlocks: ["ad_free", "college_theme", "couple_theme"],
-  },
-  [PRODUCT_IDS.EXPAND_FUN_BUNDLE]: {
-    title: "Expand the Fun Bundle",
-    description: "Both theme packs (Save $1)",
-    price: "$4.99",
-    unlocks: ["college_theme", "couple_theme"],
-  },
-};
 
 // Global IAP context reference - will be set by the IAPProvider
 let iapContext: any = null;
@@ -220,32 +175,6 @@ class PurchaseService {
     return true;
   }
 
-  /**
-   * Purchase multiple products (Android) or single product (iOS)
-   * Handles platform differences automatically
-   */
-  async purchaseProducts(productIds: string[]): Promise<boolean> {
-    await this.initialize();
-
-    const context = getIAPContext();
-    if (context) {
-      const success = await context.purchaseProducts(productIds);
-      // Note: In production mode, processPurchase is handled by IAPProvider's event system
-      // In mock mode, we need to process it here
-      if (success && !isProduction()) {
-        for (const productId of productIds) {
-          await this.processPurchase({ productId, id: productId });
-        }
-      }
-      return success;
-    }
-
-    // Fallback for when context is not available
-    for (const productId of productIds) {
-      await this.processPurchase({ productId, id: productId });
-    }
-    return true;
-  }
 
   /**
    * Purchase ad-free removal (this makes user premium)
@@ -297,23 +226,6 @@ class PurchaseService {
     return false;
   }
 
-  /**
-   * Clear purchase status (for testing)
-   */
-  async clearPurchaseStatus(): Promise<void> {
-    try {
-      const context = getIAPContext();
-      if (context) {
-        await context.clearPurchaseStatus();
-      } else {
-        // Fallback: clear from AsyncStorage directly
-        const AsyncStorage =
-          require("@react-native-async-storage/async-storage").default;
-        await AsyncStorage.removeItem(STORAGE_KEYS.PURCHASED_PRODUCTS);
-      }
-    } catch (error) {
-    }
-  }
 
 }
 

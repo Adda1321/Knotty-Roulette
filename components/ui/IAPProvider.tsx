@@ -7,6 +7,7 @@ import React, {
   useState,
 } from "react";
 import { Platform } from "react-native";
+import { PRODUCT_DEFINITIONS } from "../../constants/iapProducts";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
 import adService from "../../services/adService";
 import { setIAPContext } from "../../services/purchaseService";
@@ -28,52 +29,6 @@ if (isProduction()) {
 
 // Supported platforms for IAP
 const SUPPORTED_PLATFORMS = ['ios', 'android'];
-
-// Product IDs - Must match Google Play Console exactly
-const PRODUCT_IDS = {
-  // Individual products
-  AD_FREE_REMOVAL: "ad_free_removal",
-  COLLEGE_THEME_PACK: "college_theme_pack",
-  COUPLE_THEME_PACK: "couple_theme_pack",
-
-  // Bundle products
-  COMPLETE_EXPERIENCE_BUNDLE: "complete_experience_bundle",
-  EXPAND_FUN_BUNDLE: "expand_fun_bundle",
-};
-
-// Product definitions with metadata
-const PRODUCT_DEFINITIONS = {
-  [PRODUCT_IDS.AD_FREE_REMOVAL]: {
-    title: "Remove Ads",
-    description: "Remove all ads and enjoy uninterrupted gameplay",
-    price: "$2.99",
-    unlocks: ["ad_free"],
-  },
-  [PRODUCT_IDS.COLLEGE_THEME_PACK]: {
-    title: "College Theme Pack",
-    description: "Unlock the exciting college theme for your wheel",
-    price: "$2.99",
-    unlocks: ["college_theme"],
-  },
-  [PRODUCT_IDS.COUPLE_THEME_PACK]: {
-    title: "Couple Theme Pack",
-    description: "Unlock the romantic couple theme for your wheel",
-    price: "$2.99",
-    unlocks: ["couple_theme"],
-  },
-  [PRODUCT_IDS.COMPLETE_EXPERIENCE_BUNDLE]: {
-    title: "Complete Experience Bundle",
-    description: "Get everything: All themes + Ad-free (Save $2)",
-    price: "$6.99",
-    unlocks: ["ad_free", "college_theme", "couple_theme"],
-  },
-  [PRODUCT_IDS.EXPAND_FUN_BUNDLE]: {
-    title: "Expand the Fun Bundle",
-    description: "Both theme packs (Save $1)",
-    price: "$4.99",
-    unlocks: ["college_theme", "couple_theme"],
-  },
-};
 
 interface IAPContextType {
   connected: boolean;
@@ -223,9 +178,9 @@ export function IAPProvider({ children }: IAPProviderProps) {
       // Auto-trigger restoration if we have available purchases but no mapped purchases
       const autoRestore = async () => {
         try {
-          // Add a small delay to ensure state is stable
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          await restorePurchases();
+        // Add a small delay to ensure state is stable
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await restorePurchases();
         } catch (error) {
           // Auto-restoration failed, user can try manual restore
         }
@@ -514,11 +469,11 @@ export function IAPProvider({ children }: IAPProviderProps) {
 
       // Get available purchases from store
       await getAvailablePurchases();
-
+      
       // Wait for state to update and get fresh data (longer wait for iOS)
       const waitTime = Platform.OS === 'ios' ? 3000 : 2000;
       await new Promise((resolve) => setTimeout(resolve, waitTime));
-
+      
       // Get the current available purchases from state
       const storePurchases = availablePurchases || [];
 
@@ -556,10 +511,17 @@ export function IAPProvider({ children }: IAPProviderProps) {
           JSON.stringify(Array.from(newPurchasedProducts))
         );
 
-        setFetchStatus(`✅ ${newPurchasedProducts.size} purchases restored`);
+        const statusMessage = connected 
+          ? `✅ ${newPurchasedProducts.size} purchases restored from store`
+          : `✅ ${newPurchasedProducts.size} purchases restored from cache (offline)`;
+        setFetchStatus(statusMessage);
         return restored;
       } else {
-        setFetchStatus("✅ Using cached data (no store purchases)");
+        // No store purchases, use cached data
+        const statusMessage = connected 
+          ? "✅ No store purchases found"
+          : "✅ Using cached data (offline mode)";
+        setFetchStatus(statusMessage);
         return purchasedProducts.size > 0;
       }
     } catch (error) {

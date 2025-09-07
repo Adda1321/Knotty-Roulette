@@ -1,4 +1,6 @@
+import userService from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -12,6 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { PRODUCT_DEFINITIONS } from "../../constants/iapProducts";
+import { STORAGE_KEYS } from "../../constants/storageKeys";
 import {
   COLORS,
   FONTS,
@@ -22,6 +26,7 @@ import {
   ThemePackId,
 } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext"; // Add useTheme hook
+import adService from "../../services/adService";
 import audioService from "../../services/audio";
 import purchaseService from "../../services/purchaseService";
 import { themePackService } from "../../services/themePackService";
@@ -82,6 +87,8 @@ export default function ThemeStore() {
   const [isThemeSwitching, setIsThemeSwitching] = useState(false);
   const [fetchStatus, setFetchStatus] = useState("");
   const [lastError, setLastError] = useState("");
+  const [restoreStatus, setRestoreStatus] = useState("");
+  const [restoreError, setRestoreError] = useState("");
 
   // Load theme packs with current status
   useEffect(() => {
@@ -114,6 +121,148 @@ export default function ThemeStore() {
       setFetchStatus(`❌ Refresh Error: ${errorMessage}`);
       setLastError(`Exception during refresh: ${errorMessage}`);
       console.error("❌ ThemeStore: Error refreshing IAP status:", error);
+    }
+  };
+
+  // Direct mapping fallback for when normal restore doesn't work
+  const handleDirectMapping = async (): Promise<boolean> => {
+    try {
+      if (!iapContext.availablePurchases || iapContext.availablePurchases.length === 0) {
+        return false;
+      }
+
+      // Get current purchased products
+      const currentPurchased = new Set(iapContext.purchasedProducts || []);
+      let mapped = false;
+
+      // Process each available purchase
+      for (const purchase of iapContext.availablePurchases) {
+        const productId = purchase.productId || purchase.id || purchase.sku;
+        
+        if (productId) {
+          // Check if this product should be mapped using the existing product definitions
+          let productDef = iapContext.getCurrentProducts().find(p => p.productId === productId);
+          
+          // Fallback to shared PRODUCT_DEFINITIONS if getCurrentProducts doesn't have the product
+          if (!productDef || !productDef.unlocks) {
+            productDef = PRODUCT_DEFINITIONS[productId as keyof typeof PRODUCT_DEFINITIONS];
+          }
+          
+          if (productDef && productDef.unlocks) {
+            // Add to purchased products
+            currentPurchased.add(productId);
+            mapped = true;
+
+            // Process the purchase to unlock features
+            for (const unlock of productDef.unlocks) {
+              switch (unlock) {
+                case "ad_free":
+                  await userService.setPremium("lifetime");
+                  await adService.onUserTierChange();
+                  break;
+                case "college_theme":
+                  await themePackService.purchasePack("college");
+                  break;
+                case "couple_theme":
+                  await themePackService.purchasePack("couple");
+                  break;
+              }
+            }
+          }
+        }
+      }
+
+      if (mapped) {
+        // Update the IAP context with the new purchased products
+        // This is a direct state update since we can't call the context method
+        const newPurchasedArray = Array.from(currentPurchased);
+        
+        // Save to AsyncStorage
+        await AsyncStorage.setItem(
+          STORAGE_KEYS.PURCHASED_PRODUCTS,
+          JSON.stringify(newPurchasedArray)
+        );
+
+        // Force a refresh by calling the context's restore method
+        await iapContext.restorePurchases();
+        
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("❌ Direct mapping failed:", error);
+      return false;
+    }
+  };
+
+  const handleManualRestore = async () => {
+    // Play audio and haptic feedback
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("light");
+
+    // Clear previous errors and set loading state
+    setRestoreError("");
+    setRestoreStatus("🔄 Starting restore...");
+
+    try {
+      // Check if we're connected to the store
+      if (!iapContext.connected) {
+        setRestoreStatus("❌ Offline - cannot restore");
+        setRestoreError("Store is not connected. Please check your internet connection.");
+        return;
+      }
+
+      setRestoreStatus("🔄 Fetching products...");
+
+      // Try to fetch products first
+      const products = await iapContext.getProducts();
+
+      if (products && products.length > 0) {
+        setRestoreStatus("🔄 Products loaded, checking purchases...");
+        
+        // Products fetched successfully, now try to restore purchases
+        const restoreSuccess = await iapContext.restorePurchases();
+
+        if (restoreSuccess) {
+          setRestoreStatus("✅ Restore successful!");
+          setRestoreError("");
+          
+          // Success - update UI
+          loadThemePacks();
+          loadPassiveOffers();
+        } else {
+          // Fallback: Try direct mapping if availablePurchases exist but restore failed
+          if (iapContext.availablePurchases && iapContext.availablePurchases.length > 0) {
+            setRestoreStatus("🔄 Fallback: Direct mapping available purchases...");
+            
+            const directMappingSuccess = await handleDirectMapping();
+            
+            if (directMappingSuccess) {
+              setRestoreStatus("✅ Direct mapping successful!");
+              setRestoreError("");
+              
+              // Success - update UI
+              loadThemePacks();
+              loadPassiveOffers();
+            } else {
+              setRestoreStatus("⚠️ No purchases found to restore");
+              setRestoreError("");
+            }
+          } else {
+            setRestoreStatus("⚠️ No purchases found to restore");
+            setRestoreError("");
+          }
+        }
+      } else {
+        setRestoreStatus("❌ Failed to load products");
+        setRestoreError("Could not fetch products from store. Please try again.");
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setRestoreStatus("❌ Restore failed");
+      setRestoreError(`Error: ${errorMessage}`);
+      console.error("❌ ThemeStore: Manual restore error:", error);
     }
   };
 
@@ -668,7 +817,19 @@ export default function ThemeStore() {
               >
                 <Text style={styles.selectButtonText}>Use This Theme</Text>
               </TouchableOpacity>
-            ) : null}
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.selectButton,
+                  {
+                    opacity: 0,
+                  },
+                ]}
+                disabled={true}
+              >
+                <Text style={styles.selectButtonText}>Use This Theme</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
       </LinearGradient>
@@ -818,139 +979,17 @@ export default function ThemeStore() {
             <Ionicons name="arrow-back" size={24} color={COLORS.YELLOW} />
           </TouchableOpacity>
           <Text style={styles.title}>Theme Store</Text>
-        </View>
-
-        {/* Store Status Display */}
-        {/* <View style={styles.statusContainer}>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusText}>Store Status: {fetchStatus}</Text>
+          <View style={styles.headerButtons}>
             <TouchableOpacity
-              onPress={updateFetchStatus}
-              style={styles.refreshStatusButton}
+              onPress={handleManualRestore}
+              style={styles.restoreButton}
+              accessibilityLabel="Restore Purchases"
+              accessibilityHint="Tap to restore your previous purchases from the store"
             >
-              <Ionicons name="refresh" size={16} color={COLORS.YELLOW} />
+              <Ionicons name="refresh" size={20} color={COLORS.YELLOW} />
             </TouchableOpacity>
           </View>
-          {lastError && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>Error: {lastError}</Text>
-            </View>
-          )}
-          <View style={styles.debugContainer}>
-            <Text style={styles.debugTitle}>🔍 IAP Debug Information</Text>
-
-            <View style={styles.debugRow}>
-              <Text style={styles.debugLabel}>Connection:</Text>
-              <Text
-                style={[
-                  styles.debugValue,
-                  iapContext.connected
-                    ? styles.debugSuccess
-                    : styles.debugError,
-                ]}
-              >
-                {iapContext.connected ? "✅ Connected" : "❌ Disconnected"}
-              </Text>
-            </View>
-            <View style={styles.debugRow}>
-              <Text style={styles.debugLabel}>Status:</Text>
-              <Text
-                style={[
-                  styles.debugValue,
-                  iapContext.fetchStatus.includes("✅")
-                    ? styles.debugSuccess
-                    : styles.debugError,
-                ]}
-              >
-                {iapContext.fetchStatus}
-              </Text>
-            </View>
-
-            {iapContext.lastError && (
-              <View style={styles.debugRow}>
-                <Text style={styles.debugLabel}>Error:</Text>
-                <Text style={[styles.debugValue, styles.debugError]}>
-                  {iapContext.lastError}
-                </Text>
-              </View>
-            )}
-            <View style={styles.debugRow}>
-              <Text style={styles.debugLabel}>Premium:</Text>
-              <Text
-                style={[
-                  styles.debugValue,
-                  userService.isPremium()
-                    ? styles.debugSuccess
-                    : styles.debugError,
-                ]}
-              >
-                {userService.isPremium() ? "✅ Premium" : "❌ Free"}
-              </Text>
-            </View>
-
-            <View style={styles.debugRow}>
-              <Text style={styles.debugLabel}>Purchased:</Text>
-              <Text style={styles.debugValue}>
-                {Array.from(iapContext.purchasedProducts || new Set()).join(
-                  ", "
-                ) || "None"}
-              </Text>
-            </View>
-
-            <View style={styles.debugRow}>
-              <Text style={styles.debugLabel}>Available Purchases:</Text>
-              <Text style={styles.debugValue}>
-                {iapContext.availablePurchases
-                  ? JSON.stringify(
-                      iapContext.availablePurchases.map((p: any) => ({
-                        id: p.id,
-                        productId: p.productId,
-                        sku: p.sku,
-                        purchaseState: p.purchaseState,
-                      })),
-                      null,
-                      2
-                    )
-                  : "None"}
-              </Text>
-            </View>
-
-            <View style={styles.debugRow}>
-              <Text style={styles.debugLabel}>Environment:</Text>
-              <Text style={styles.debugValue}>
-                {process.env.EXPO_PUBLIC_IS_PRODUCTION === "true"
-                  ? "Production"
-                  : "Development"}
-              </Text>
-            </View>
-
-            <View style={styles.debugRow}>
-              <Text style={styles.debugLabel}>Auto-Restore:</Text>
-              <Text style={[styles.debugValue, styles.debugSuccess]}>
-                ✅ Enabled (happens on app start)
-              </Text>
-            </View>
-          </View>
-
-          {!userService.isPremium() &&
-            !passiveOffers.some(
-              (offer) => offer.primaryButton.action === "ad_free"
-            ) && (
-              <TouchableOpacity
-                style={[
-                  styles.adFreeButton,
-                  isAdFreePurchasing && styles.adFreeButtonDisabled,
-                ]}
-                onPress={() => handleAdFreeOnlyPurchase()}
-                activeOpacity={0.8}
-                disabled={isAdFreePurchasing}
-              >
-                <Text style={styles.adFreeButtonText}>
-                  {isAdFreePurchasing ? "Purchasing..." : "Ad-Free Only"}
-                </Text>
-              </TouchableOpacity>
-            )}
-        </View> */}
+        </View>
 
         <View style={styles.contentContainer}>
           <ScrollView
@@ -958,6 +997,166 @@ export default function ThemeStore() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            {/* Store Status Display */}
+            {/* <View style={styles.statusContainer}>
+              <View style={styles.statusRow}>
+                <Text style={styles.statusText}>Store Status: {fetchStatus}</Text>
+                <TouchableOpacity
+                  onPress={updateFetchStatus}
+                  style={styles.refreshStatusButton}
+                >
+                  <Ionicons name="refresh" size={16} color={COLORS.YELLOW} />
+                </TouchableOpacity>
+              </View>
+              {lastError && (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>Error: {lastError}</Text>
+                </View>
+              )}
+              <View style={styles.debugContainer}>
+                <Text style={styles.debugTitle}>🔍 IAP Debug Information</Text>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Connection:</Text>
+                  <Text
+                    style={[
+                      styles.debugValue,
+                      iapContext.connected
+                        ? styles.debugSuccess
+                        : styles.debugError,
+                    ]}
+                  >
+                    {iapContext.connected ? "✅ Connected" : "❌ Disconnected"}
+                  </Text>
+                </View>
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Status:</Text>
+                  <Text
+                    style={[
+                      styles.debugValue,
+                      iapContext.fetchStatus.includes("✅")
+                        ? styles.debugSuccess
+                        : styles.debugError,
+                    ]}
+                  >
+                    {iapContext.fetchStatus}
+                  </Text>
+                </View>
+
+                {iapContext.lastError && (
+                  <View style={styles.debugRow}>
+                    <Text style={styles.debugLabel}>Error:</Text>
+                    <Text style={[styles.debugValue, styles.debugError]}>
+                      {iapContext.lastError}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Premium:</Text>
+                  <Text
+                    style={[
+                      styles.debugValue,
+                      userService.isPremium()
+                        ? styles.debugSuccess
+                        : styles.debugError,
+                    ]}
+                  >
+                    {userService.isPremium() ? "✅ Premium" : "❌ Free"}
+                  </Text>
+                </View>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Purchased:</Text>
+                  <Text style={styles.debugValue}>
+                    {Array.from(iapContext.purchasedProducts || new Set()).join(
+                      ", "
+                    ) || "None"}
+                  </Text>
+                </View>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Available Purchases:</Text>
+                  <Text style={styles.debugValue}>
+                    {iapContext.availablePurchases
+                      ? JSON.stringify(
+                          iapContext.availablePurchases.map((p: any) => ({
+                            id: p.id,
+                            productId: p.productId,
+                            sku: p.sku,
+                            purchaseState: p.purchaseState,
+                          })),
+                          null,
+                          2
+                        )
+                      : "None"}
+                  </Text>
+                </View>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Environment:</Text>
+                  <Text style={styles.debugValue}>
+                    {process.env.EXPO_PUBLIC_IS_PRODUCTION === "true"
+                      ? "Production"
+                      : "Development"}
+                  </Text>
+                </View>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Auto-Restore:</Text>
+                  <Text style={[styles.debugValue, styles.debugSuccess]}>
+                    ✅ Enabled (happens on app start)
+                  </Text>
+                </View>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Manual Restore:</Text>
+                  <Text
+                    style={[
+                      styles.debugValue,
+                      restoreStatus.includes("✅")
+                        ? styles.debugSuccess
+                        : restoreStatus.includes("❌")
+                        ? styles.debugError
+                        : styles.debugValue,
+                    ]}
+                  >
+                    {restoreStatus || "Ready"}
+                  </Text>
+                </View>
+
+                {restoreError && (
+                  <View style={styles.debugRow}>
+                    <Text style={styles.debugLabel}>Restore Error:</Text>
+                    <Text style={[styles.debugValue, styles.debugError]}>
+                      {restoreError}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View> */}
+
+            {/* Ad-Free Button */}
+            <View>
+              {!userService.isPremium() &&
+                !passiveOffers.some(
+                  (offer) => offer.primaryButton.action === "ad_free"
+                ) && (
+                  <TouchableOpacity
+                    style={[
+                      styles.adFreeButton,
+                      isAdFreePurchasing && styles.adFreeButtonDisabled,
+                    ]}
+                    onPress={() => handleAdFreeOnlyPurchase()}
+                    activeOpacity={0.8}
+                    disabled={isAdFreePurchasing}
+                  >
+                    <Text style={styles.adFreeButtonText}>
+                      {isAdFreePurchasing ? "Purchasing..." : "Ad-Free Only"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+            </View>
+
             {/* Bundle Deals at the top */}
             {renderBundleDeals()}
 
@@ -965,7 +1164,11 @@ export default function ThemeStore() {
             <View style={styles.themesSection}>
               <Text style={styles.sectionTitle}>Theme Packs</Text>
               <View style={styles.themesGrid}>
-                {themePacks.map(renderThemeCard)}
+                {themePacks.map((pack) => (
+                  <View key={pack.id}>
+                    {renderThemeCard(pack)}
+                  </View>
+                ))}
               </View>
             </View>
           </ScrollView>
@@ -1132,7 +1335,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  resetButton: {
+  restoreButton: {
     padding: SIZES.PADDING_SMALL,
     marginRight: SIZES.PADDING_SMALL,
   },
@@ -1254,6 +1457,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2,
     borderLeftColor: COLORS.CARD_BORDER,
     marginTop: 15,
+    marginRight: -SIZES.PADDING_MEDIUM,
+     
     zIndex: 1, // Ensure button appears above other elements
   },
   adFreeButtonDisabled: {

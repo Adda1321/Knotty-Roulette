@@ -48,14 +48,14 @@ if (isNativeEnvironment()) {
 const getAdConfig = () => {
   const isNative = isNativeEnvironment();
   const isProd = isProduction();
-  
+
   // Only load ads in native environment
   if (!isNative) {
     return { INTERSTITIAL_ID: null };
   }
-  
+  const showLiveAds = false; // Remove in PRODUCTION
   // In native environment, use test ads for non-production, real ads for production
-  if (isProd) {
+  if (showLiveAds && isProd) {
     // Production: Use real ad IDs
     return {
       INTERSTITIAL_ID: Platform.select({
@@ -90,14 +90,14 @@ class AdService {
     const isNative = isNativeEnvironment();
     const hasAdId = AD_CONFIG.INTERSTITIAL_ID !== null;
     const hasAdMob = InterstitialAd !== undefined;
-    
+
     console.log(`🔍 AdMob Availability Check:`, {
       isNative,
       hasAdId,
       hasAdMob,
       adId: AD_CONFIG.INTERSTITIAL_ID,
     });
-    
+
     return isNative && hasAdId && hasAdMob;
   }
 
@@ -117,23 +117,27 @@ class AdService {
   private shouldAttemptAdLoad(): boolean {
     const now = Date.now();
     const timeSinceLastAttempt = now - this.lastAdLoadAttempt;
-    
+
     // If we already have an ad ready, don't load another
     if (this.isAdReady) {
       return false;
     }
-    
+
     // If we're currently loading, don't start another load
     if (this.isAdLoading) {
       return false;
     }
-    
+
     // Rate limit ad loading attempts (especially important for offline scenarios)
     if (timeSinceLastAttempt < this.AD_RETRY_DELAY) {
-      console.log(`🎯 AdMob: Rate limiting ad load (${Math.round((this.AD_RETRY_DELAY - timeSinceLastAttempt) / 1000)}s remaining)`);
+      console.log(
+        `🎯 AdMob: Rate limiting ad load (${Math.round(
+          (this.AD_RETRY_DELAY - timeSinceLastAttempt) / 1000
+        )}s remaining)`
+      );
       return false;
     }
-    
+
     return true;
   }
 
@@ -145,7 +149,9 @@ class AdService {
     debugEnvironment();
 
     if (!this.isAdMobAvailable()) {
-      console.log("🚫 AdMob: Not available (not native environment or no ad ID)");
+      console.log(
+        "🚫 AdMob: Not available (not native environment or no ad ID)"
+      );
       return;
     }
 
@@ -165,7 +171,7 @@ class AdService {
    */
   private async loadInterstitialAd(): Promise<void> {
     if (!InterstitialAd || !AD_CONFIG.INTERSTITIAL_ID) return;
-    
+
     // Check if we should attempt to load an ad (rate limiting)
     if (!this.shouldAttemptAdLoad()) {
       return;
@@ -175,7 +181,7 @@ class AdService {
       this.isAdLoading = true;
       this.lastAdLoadAttempt = Date.now();
       console.log(`🎯 AdMob: Loading ad with ID: ${AD_CONFIG.INTERSTITIAL_ID}`);
-      
+
       this.interstitialAd = InterstitialAd.createForAdRequest(
         AD_CONFIG.INTERSTITIAL_ID,
         {
@@ -190,12 +196,18 @@ class AdService {
         console.log("✅ AdMob: Ad loaded successfully");
       });
 
-      this.interstitialAd.addAdEventListener(AdEventType.ERROR, (error: any) => {
-        this.isAdReady = false;
-        this.isAdLoading = false;
-        console.log("❌ AdMob: Ad failed to load:", error?.message || "Unknown error");
-        // Don't retry immediately - rate limiting will handle this
-      });
+      this.interstitialAd.addAdEventListener(
+        AdEventType.ERROR,
+        (error: any) => {
+          this.isAdReady = false;
+          this.isAdLoading = false;
+          console.log(
+            "❌ AdMob: Ad failed to load:",
+            error?.message || "Unknown error"
+          );
+          // Don't retry immediately - rate limiting will handle this
+        }
+      );
 
       this.interstitialAd.addAdEventListener(AdEventType.CLOSED, () => {
         this.isAdReady = false;
@@ -220,16 +232,22 @@ class AdService {
    */
   async trackSpin(): Promise<boolean> {
     if (!this.isAdMobAvailable() || this.isUserPremium()) {
-      console.log(`🎯 AdMob: Skipping ad (available: ${this.isAdMobAvailable()}, premium: ${this.isUserPremium()})`);
+      console.log(
+        `🎯 AdMob: Skipping ad (available: ${this.isAdMobAvailable()}, premium: ${this.isUserPremium()})`
+      );
       return false;
     }
 
     this.spinCount++;
-    console.log(`🎯 AdMob: Spin count: ${this.spinCount}/${this.SPINS_BEFORE_AD}`);
-    
+    console.log(
+      `🎯 AdMob: Spin count: ${this.spinCount}/${this.SPINS_BEFORE_AD}`
+    );
+
     if (this.spinCount >= this.SPINS_BEFORE_AD) {
-      console.log(`🎯 AdMob: Attempting to show ad after ${this.spinCount} spins`);
-      
+      console.log(
+        `🎯 AdMob: Attempting to show ad after ${this.spinCount} spins`
+      );
+
       // Try to show ad if available, otherwise try to load one
       if (this.isAdReady) {
         await this.showInterstitialAd();

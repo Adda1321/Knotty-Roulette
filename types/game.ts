@@ -10,6 +10,7 @@ export interface Challenge {
   id: number;
   challenge_text: string;
   has_bonus: boolean;
+  card_pack?: string; // Theme pack name (e.g., "Original Pack", "College Pack", "Couple Pack")
   created_at?: string;
 }
 

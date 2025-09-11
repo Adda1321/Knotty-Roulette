@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useEffect } from "react";
 import {
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
-} from 'react-native';
-import { COLORS, FONTS, SIZES } from '../../constants/theme';
-
+} from "react-native";
+import { COLORS, FONTS, SIZES } from "../../constants/theme"; // Fixed import
+import { useTheme } from "../../contexts/ThemeContext";
+import audioService from "../../services/audio";
+import Button from "../ui/Button";
 interface GameRulesProps {
   visible: boolean;
   onClose: () => void;
@@ -18,15 +20,15 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
   const rules = [
     {
       number: 1,
-      text: "Grab a Knotty Times - No drink? no play.",
+      text: "Grab a Knotty Times.",
     },
     {
       number: 2,
-      text: "Round up at least 2 players - The more, the knotty-er. 😏",
+      text: "Round up at least 2 players - The more, the knotty-er.😏",
     },
     {
       number: 3,
-      text: "Tap \"Spin\" - The wheel decides your fate!",
+      text: 'Tap "Spin" - The wheel decides your fate!',
     },
     {
       number: 4,
@@ -36,14 +38,23 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
     {
       number: 5,
       text: "Earn points",
-      subtext: "• Complete the action = 1 point\n• If the action has a \"Bonus\" challenge, nail it for 2 points!\n• First player to 11 points wins!",
+      subtext:
+        '• Complete the action = 1 point\n• If the action has a "Bonus" challenge, nail it for 2 points!\n• First player to 11 points wins!',
     },
     {
       number: 6,
       text: "Pass the phone - Next player spins, and the game rolls on!",
     },
   ];
+  const { COLORS, currentTheme } = useTheme();
 
+  // Debug logging
+  console.log("🎨 GameBoard: Current theme:", currentTheme);
+
+  // Monitor theme changes
+  useEffect(() => {
+    console.log("🎨 GameBoard: Theme changed to:", currentTheme);
+  }, [currentTheme]);
   return (
     <Modal
       visible={visible}
@@ -54,13 +65,16 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
       <View style={styles.overlay}>
         <View style={styles.container}>
           {/* Header */}
-          <View style={styles.header}>
+          <View style={[styles.header, { backgroundColor: COLORS.PRIMARY }]}>
             <Text style={styles.title}>Knotty Roulette</Text>
             <Text style={styles.subtitle}>(Party Game)</Text>
           </View>
 
           {/* Rules Content */}
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}
+          >
             {rules.map((rule, index) => (
               <View key={index} style={styles.ruleContainer}>
                 <View style={styles.ruleNumber}>
@@ -77,9 +91,20 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
           </ScrollView>
 
           {/* Close Button */}
-          <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-            <Text style={styles.closeButtonText}>Got it!</Text>
-          </TouchableOpacity>
+          <Button
+            text="Got it!"
+            onPress={() => {
+              audioService.playSound("buttonPress");
+              audioService.playHaptic("light");
+              onClose();
+            }}
+            backgroundColor={COLORS.YELLOW}
+            textColor={COLORS.TEXT_DARK}
+            fontSize={SIZES.TITLE}
+            // fontWeight="bold"
+            fontFamily={FONTS.DOSIS_BOLD}
+            style={styles.closeButton}
+          />
         </View>
       </View>
     </Modal>
@@ -89,64 +114,69 @@ export default function GameRules({ visible, onClose }: GameRulesProps) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   container: {
-    backgroundColor:COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.FIELDS,
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     margin: SIZES.PADDING_MEDIUM,
-    maxHeight: '80%',
-    width: '90%',
+    maxHeight: Platform.OS === "ios" ? "80%" : "90%",
+    width: "90%",
     maxWidth: 400,
-    height:"100%",
+    height: "100%",
     ...SIZES.SHADOW_LARGE,
   },
   header: {
-    backgroundColor: COLORS.DARK_GREEN,
+    // backgroundColor: COLORS.DARK_GREEN,
     borderTopLeftRadius: SIZES.BORDER_RADIUS_LARGE,
     borderTopRightRadius: SIZES.BORDER_RADIUS_LARGE,
-    alignItems: 'center',
+    alignItems: "center",
     padding: SIZES.PADDING_LARGE,
   },
   title: {
-    fontSize: SIZES.TITLE,
-    fontWeight: 'bold',
+      fontSize: Platform.select({
+      android: 28, // 👈 use a different size on Android
+      ios: 40,        // fallback for iOS
+    }),
     color: COLORS.YELLOW,
-    fontFamily: FONTS.PRIMARY,
-    textAlign: 'center',
+    fontFamily: FONTS.DOSIS_BOLD,
+    textAlign: "center",
     marginBottom: SIZES.PADDING_SMALL,
   },
   subtitle: {
-    fontSize: SIZES.CAPTION,
+    fontSize: Platform.select({
+      android: SIZES.SUBTITLE, // 👈 use a different size on Android
+      ios: SIZES.TITLE,        // fallback for iOS
+    }),
     color: COLORS.TEXT_PRIMARY,
     fontFamily: FONTS.PRIMARY,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   content: {
     flex: 1,
-    backgroundColor:COLORS.CARD_BACKGROUND,
+    backgroundColor: COLORS.FIELDS,
     padding: SIZES.PADDING_LARGE,
   },
   ruleContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: SIZES.PADDING_LARGE,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   ruleNumber: {
     width: 30,
     height: 30,
     borderRadius: 15,
     backgroundColor: COLORS.YELLOW,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: SIZES.PADDING_MEDIUM,
     ...SIZES.SHADOW_SMALL,
   },
   ruleNumberText: {
-    fontSize: SIZES.CAPTION,
-    fontWeight: 'bold',
+    fontSize: SIZES.BODY,
+    fontWeight: "bold",
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
   },
@@ -154,32 +184,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ruleText: {
-    fontSize: SIZES.CAPTION,
+    fontSize: SIZES.BODY,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
     lineHeight: 22,
     marginBottom: SIZES.PADDING_SMALL,
   },
   ruleSubtext: {
-    fontSize: SIZES.CAPTION,
-    color: '#666',
+    fontSize: SIZES.BODY,
+    color: "#666",
     fontFamily: FONTS.PRIMARY,
-    fontStyle: 'italic',
+    fontStyle: "italic",
     lineHeight: 18,
   },
   closeButton: {
-
-    backgroundColor: COLORS.YELLOW,
-    paddingVertical: SIZES.PADDING_MEDIUM,
-    margin: SIZES.PADDING_LARGE,
-    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
-    ...SIZES.SHADOW_MEDIUM,
+    margin: SIZES.PADDING_SMALL,
+    marginBottom: 14,
   },
-  closeButtonText: {
-    color: COLORS.TEXT_DARK,
-    fontSize: SIZES.SUBTITLE,
-    fontWeight: 'bold',
-    fontFamily: FONTS.PRIMARY,
-    textAlign: 'center',
-  },
-}); 
+});

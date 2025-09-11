@@ -1,0 +1,601 @@
+---
+description: Read its description for in app purchase related changes
+globs:
+alwaysApply: true
+---
+Purchases
+⚠️ Purchase Flow Redesign ⚠️
+
+The purchase flow has been updated as a result of the findings in issue #307. The resulting flow has been redesign to not rely on Promise or Callback.
+
+Below are some of the specific reasons for the redesign:
+
+There may be more than one response when requesting a payment.
+Purchases are inter-session asynchronuous meaning requests that are made may take several hours to complete and continue to exist even after the app has been closed or crashed.
+The purchase may be pending and hard to track what has been done (for example).
+The Billing Flow is an event pattern rather than a callback pattern.
+For a comprehensive understanding of the purchase lifecycle, see our Purchase Lifecycle Guide.
+
+Purchase Flow Overview
+Once you have called requestProducts(), and have a valid response, you can call requestPurchase(). Subscribable products can be purchased just like consumable products and users can cancel subscriptions by using the iOS System Settings.
+
+Before you request any purchase, you should set purchaseUpdatedListener from expo-iap. It is recommended that you start listening to updates as soon as your application launches. And don't forget that even at launch you may receive successful purchases that either completed while your app was closed or that failed to be finished, consumed or acknowledged due to network errors or bugs.
+
+Key Concepts
+Event-driven: Purchases are handled through events rather than promises
+Asynchronous: Purchases may complete after your app is closed or crashed
+Validation required: Always validate receipts on your server
+
+Using with Hooks (Recommended)
+For a more modern approach using React hooks, here's a comprehensive implementation:
+
+import React, {useEffect, useState, useCallback} from 'react';
+import {Platform, Alert, InteractionManager} from 'react-native';
+import {useIAP} from 'expo-iap';
+
+// Define your product SKUs
+const bulbPackSkus = ['dev.hyo.martie.10bulbs', 'dev.hyo.martie.30bulbs'];
+const subscriptionSkus = ['dev.hyo.martie.premium'];
+
+export default function PurchaseScreen() {
+  const {
+    connected,
+    products,
+    subscriptions,
+    currentPurchase,
+    currentPurchaseError,
+    requestProducts,
+    requestPurchase,
+    finishTransaction,
+    validateReceipt,
+  } = useIAP();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+
+  // Initialize products when IAP connection is established
+  useEffect(() => {
+    if (!connected) return;
+
+    const initializeIAP = async () => {
+      try {
+        // Get both products and subscriptions
+        await requestProducts({skus: bulbPackSkus, type: 'inapp'});
+        await requestProducts({skus: subscriptionSkus, type: 'subs'});
+        setIsReady(true);
+      } catch (error) {
+        console.error('Error initializing IAP:', error);
+      }
+    };
+
+    initializeIAP();
+  }, [connected, requestProducts]);
+
+  // Validate receipt helper
+  const handleValidateReceipt = useCallback(
+    async (sku: string, purchase: any) => {
+      try {
+        if (Platform.OS === 'ios') {
+          return await validateReceipt(sku);
+        } else if (Platform.OS === 'android') {
+          const purchaseToken = purchase.purchaseTokenAndroid;
+          const packageName =
+            purchase.packageNameAndroid || 'your.package.name';
+          const isSub = subscriptionSkus.includes(sku);
+
+          return await validateReceipt(sku, {
+            packageName,
+            productToken: purchaseToken,
+            isSub,
+          });
+        }
+        return {isValid: true}; // Default for unsupported platforms
+      } catch (error) {
+        console.error('Receipt validation failed:', error);
+        return {isValid: false};
+      }
+    },
+    [validateReceipt],
+  );
+
+  // Handle successful purchases
+  useEffect(() => {
+    if (currentPurchase) {
+      handlePurchaseUpdate(currentPurchase);
+    }
+  }, [currentPurchase]);
+
+  // Handle purchase errors
+  useEffect(() => {
+    if (currentPurchaseError) {
+      setIsLoading(false);
+
+      // Don't show error for user cancellation
+      if (currentPurchaseError.code === 'E_USER_CANCELLED') {
+        return;
+      }
+
+      Alert.alert(
+        'Purchase Error',
+        'Failed to complete purchase. Please try again.',
+      );
+      console.error('Purchase error:', currentPurchaseError);
+    }
+  }, [currentPurchaseError]);
+
+  const handlePurchaseUpdate = async (purchase: any) => {
+    try {
+      setIsLoading(true);
+      console.log('Processing purchase:', purchase);
+
+      const productId = purchase.id;
+
+      // Validate receipt on your server
+      const validationResult = await handleValidateReceipt(productId, purchase);
+
+      if (validationResult.isValid) {
+        // Determine if this is a consumable product
+        const isConsumable = bulbPackSkus.includes(productId);
+
+        // Finish the transaction
+        await finishTransaction({
+          purchase,
+          isConsumable, // Set to true for consumable products
+        });
+
+        // Record purchase in your database
+        await recordPurchaseInDatabase(purchase, productId);
+
+        // Update local state (e.g., add bulbs, enable premium features)
+        await updateLocalState(productId);
+
+        // Show success message
+        showSuccessMessage(productId);
+      } else {
+        Alert.alert(
+          'Validation Error',
+          'Purchase could not be validated. Please contact support.',
+        );
+      }
+    } catch (error) {
+      console.error('Error handling purchase:', error);
+      Alert.alert('Error', 'Failed to process purchase.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Request purchase for products
+  const handlePurchaseBulbs = async (productId: string) => {
+    if (!connected) {
+      Alert.alert(
+        'Not Connected',
+        'Store connection unavailable. Please try again later.',
+      );
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      // Platform-specific purchase request (v2.7.0+)
+      await requestPurchase({
+        request: {
+          ios: {
+            sku: productId,
+            andDangerouslyFinishTransactionAutomatically: false,
+          },
+          android: {
+            skus: [productId],
+          },
+        },
+      });
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Purchase request failed:', error);
+    }
+  };
+
+  // Request purchase for subscriptions
+  const handlePurchaseSubscription = async (subscriptionId: string) => {
+    if (!connected) {
+      Alert.alert(
+        'Not Connected',
+        'Store connection unavailable. Please try again later.',
+      );
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      // Find subscription to get offer details
+      const subscription = subscriptions.find((s) => s.id === subscriptionId);
+      const subscriptionOffers = subscription?.subscriptionOfferDetails?.map(
+        (offer) => ({
+          sku: subscriptionId,
+          offerToken: offer.offerToken,
+        }),
+      ) || [{sku: subscriptionId, offerToken: ''}];
+
+      // Platform-specific subscription request (v2.7.0+)
+      await requestPurchase({
+        request: {
+          ios: {
+            sku: subscriptionId,
+          },
+          android: {
+            skus: [subscriptionId],
+            subscriptionOffers,
+          },
+        },
+        type: 'subs',
+      });
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Subscription request failed:', error);
+    }
+  };
+
+  const recordPurchaseInDatabase = async (purchase: any, productId: string) => {
+    // Implement your database recording logic here
+    console.log('Recording purchase in database:', {purchase, productId});
+  };
+
+  const updateLocalState = async (productId: string) => {
+    // Update your local app state based on the purchase
+    if (bulbPackSkus.includes(productId)) {
+      // Add bulbs to user's account
+      const bulbCount = productId.includes('10bulbs') ? 10 : 30;
+      console.log(`Adding ${bulbCount} bulbs to user account`);
+    } else if (subscriptionSkus.includes(productId)) {
+      // Enable premium features
+      console.log('Enabling premium features');
+    }
+  };
+
+  const showSuccessMessage = (productId: string) => {
+    InteractionManager.runAfterInteractions(() => {
+      if (bulbPackSkus.includes(productId)) {
+        const bulbCount = productId.includes('10bulbs') ? 10 : 30;
+        Alert.alert(
+          'Thank You!',
+          `${bulbCount} bulbs have been added to your account.`,
+        );
+      } else if (subscriptionSkus.includes(productId)) {
+        Alert.alert(
+          'Thank You!',
+          'Premium subscription activated successfully.',
+        );
+      }
+    });
+  };
+
+  return (
+    <View>
+      {/* Your purchase UI components */}
+      <Text>Connection Status: {connected ? 'Connected' : 'Disconnected'}</Text>
+      <Text>Products Ready: {isReady ? 'Yes' : 'No'}</Text>
+      {/* Add your purchase buttons and UI here */}
+    </View>
+  );
+}
+
+3. Request a Purchase
+Important Platform Difference:
+
+iOS: Can only purchase one product at a time (single SKU)
+Android: Can purchase multiple products at once (array of SKUs)
+This fundamental difference requires platform-specific handling. Starting from v2.7.0, we provide a cleaner API:
+
+New Platform-Specific API (v2.7.0+)
+import {requestPurchase} from 'expo-iap';
+
+// Cleaner approach with platform-specific parameters
+const handleBuyProduct = async (productId: string) => {
+  try {
+    await requestPurchase({
+      request: {
+        ios: {
+          sku: productId,
+          appAccountToken: 'user-123', // Optional: for server-side validation
+        },
+        android: {
+          skus: [productId],
+          obfuscatedAccountIdAndroid: 'user-123', // Optional: user identifier
+        },
+      },
+    });
+  } catch (err) {
+    console.warn(err.code, err.message);
+  }
+};
+
+New Subscription API (v2.7.0+)
+const handleBuySubscription = async (subscriptionId: string) => {
+  try {
+    // Find the subscription product to get offer details (Android)
+    const subscription = subscriptions.find((s) => s.id === subscriptionId);
+
+    await requestPurchase({
+      request: {
+        ios: {
+          sku: subscriptionId,
+          appAccountToken: 'user-123', // Optional: for server-side validation
+        },
+        android: {
+          skus: [subscriptionId],
+          subscriptionOffers:
+            subscription?.subscriptionOfferDetails?.map((offer) => ({
+              sku: subscriptionId,
+              offerToken: offer.offerToken,
+            })) || [],
+          obfuscatedAccountIdAndroid: 'user-123', // Optional: user identifier
+        },
+      },
+      type: 'subs',
+    });
+  } catch (err) {
+    console.warn(err.code, err.message);
+  }
+};
+
+Getting Product Information
+Retrieving Product Prices
+Here's how to get product prices across platforms:
+
+// Get product price by ID with proper platform checking
+const getProductPrice = (productId: string): string => {
+  if (!isReady || products.length === 0) {
+    return Platform.OS === 'ios' ? '$0.99' : '₩1,200'; // Default prices
+  }
+
+  const product = products.find((p) => p.id === productId);
+  if (!product) return Platform.OS === 'ios' ? '$0.99' : '₩1,200';
+
+  if (Platform.OS === 'ios') {
+    return product.displayPrice || '$0.99';
+  } else {
+    // Android
+    const androidProduct = product as ProductAndroid;
+    return (
+      androidProduct.oneTimePurchaseOfferDetails?.formattedPrice || '₩1,200'
+    );
+  }
+};
+
+// Get subscription price by ID with proper platform checking
+const getSubscriptionPrice = (subscriptionId: string): string => {
+  if (!isReady || subscriptions.length === 0) {
+    return Platform.OS === 'ios' ? '$9.99' : '₩11,000'; // Default prices
+  }
+
+  const subscription = subscriptions.find((s) => s.id === subscriptionId);
+  if (!subscription) return Platform.OS === 'ios' ? '$9.99' : '₩11,000';
+
+  if (Platform.OS === 'ios') {
+    return subscription.displayPrice || '$9.99';
+  } else {
+    // Android
+    const androidSubscription = subscription as ProductAndroid;
+    if (androidSubscription.subscriptionOfferDetails?.length > 0) {
+      const firstOffer = androidSubscription.subscriptionOfferDetails[0];
+      if (firstOffer.pricingPhases.pricingPhaseList.length > 0) {
+        return (
+          firstOffer.pricingPhases.pricingPhaseList[0].formattedPrice ||
+          '₩11,000'
+        );
+      }
+    }
+    return '₩11,000'; // Default Android price
+  }
+};
+
+Platform Support
+Checking Platform Compatibility
+// Define supported platforms
+const SUPPORTED_PLATFORMS = ['ios', 'android'];
+
+export default function PurchaseScreen() {
+  const isPlatformSupported = SUPPORTED_PLATFORMS.includes(Platform.OS);
+
+  if (!isPlatformSupported) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <Text>Platform Not Supported</Text>
+        <Text>In-app purchases are only available on iOS and Android.</Text>
+      </View>
+    );
+  }
+
+  // Rest of your purchase implementation
+}
+
+Product Types
+Consumable Products
+Consumable products can be purchased multiple times (e.g., coins, gems):
+
+const buyConsumable = async (productId) => {
+  await requestPurchase({sku: productId});
+  // After successful validation and finishing transaction,
+  // the product can be purchased again
+};
+
+Non-Consumable Products
+Non-consumable products are purchased once and remain available (e.g., premium features):
+
+const buyNonConsumable = async (productId) => {
+  await requestPurchase({sku: productId});
+  // After purchase, check availablePurchases to restore
+};
+
+Advanced Purchase Handling
+Purchase Restoration
+For non-consumable products and subscriptions, implement purchase restoration:
+
+const {getAvailablePurchases} = useIAP();
+
+const restorePurchases = async () => {
+  try {
+    const purchases = await getAvailablePurchases();
+
+    for (const purchase of purchases) {
+      // Validate and restore each purchase
+      const isValid = await validateReceiptOnServer(purchase);
+      if (isValid) {
+        await grantPurchaseToUser(purchase);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to restore purchases:', error);
+  }
+};
+
+Connection Management with useIAP
+The useIAP hook automatically manages the connection lifecycle for you, but it's important to understand what happens under the hood.
+
+Automatic Connection
+When you use the useIAP hook, it automatically:
+
+Initializes the connection to the store
+Sets up purchase listeners
+Manages connection state
+Cleans up when the component unmounts
+import {useIAP} from 'expo-iap';
+
+export default function App() {
+  const {connected, products, requestProducts} = useIAP();
+
+  useEffect(() => {
+    // Connection is automatically established
+    if (connected) {
+      console.log('Connected to store');
+      // You can now safely call store methods
+      requestProducts({ skus: ['product1', 'product2'], type: 'inapp' });
+    }
+  }, [connected, requestProducts]);
+
+  return <YourAppContent />;
+}
+
+Connection States
+The connection can be in several states:
+
+Disconnected: Initial state, no connection to store
+Connecting: Attempting to establish connection
+Connected: Successfully connected, ready for operations
+Error: Connection failed
+const {connected, connectionError} = useIAP();
+
+if (connectionError) {
+  return <ErrorView error={connectionError} />;
+}
+
+if (!connected) {
+  return <LoadingView message="Connecting to store..." />;
+}
+
+return <StoreView />;
+
+Component Lifecycle Integration
+Functional Components
+import React, {useEffect, useRef} from 'react';
+import {
+  initConnection,
+  endConnection,
+  purchaseUpdatedListener,
+  purchaseErrorListener,
+} from 'expo-iap';
+
+export default function StoreComponent() {
+  const listenersRef = useRef([]);
+
+  useEffect(() => {
+    const setupStore = async () => {
+      try {
+        await initConnection();
+
+        // Set up listeners
+        const purchaseUpdateSubscription = purchaseUpdatedListener(
+          (purchase) => {
+            handlePurchaseUpdate(purchase);
+          },
+        );
+
+        const purchaseErrorSubscription = purchaseErrorListener((error) => {
+          handlePurchaseError(error);
+        });
+
+        // Store references for cleanup
+        listenersRef.current = [
+          purchaseUpdateSubscription,
+          purchaseErrorSubscription,
+        ];
+      } catch (error) {
+        console.error('Failed to setup store:', error);
+      }
+    };
+
+    setupStore();
+
+    // Cleanup function
+    return () => {
+      // Remove listeners
+      listenersRef.current.forEach((subscription) => {
+        if (subscription && subscription.remove) {
+          subscription.remove();
+        }
+      });
+
+      // End connection
+      endConnection();
+    };
+  }, []);
+
+  const handlePurchaseUpdate = (purchase) => {
+    // Handle purchase updates
+  };
+
+  const handlePurchaseError = (error) => {
+    // Handle purchase errors
+  };
+
+  return <div>Your store UI</div>;
+}
+
+Best Practices
+✅ Do:
+Use useIAP hook: Simplifies lifecycle management
+Initialize early: Connect to store as early as possible in app lifecycle
+Handle connection states: Provide feedback to users about connection status
+Clean up properly: Always remove listeners and end connections
+// ✅ Good: Using useIAP hook
+function MyApp() {
+  const {connected, products, requestProducts} = useIAP();
+
+  useEffect(() => {
+    if (connected) {
+      requestProducts({ skus: productIds, type: 'inapp' });
+    }
+  }, [connected]);
+
+  return <AppContent />;
+}
+
+❌ Don't:
+Initialize and end repeatedly: Don't call initConnection/endConnection for every operation
+Ignore connection state: Don't attempt store operations when disconnected
+Forget cleanup: Always clean up listeners to prevent memory leaks
+// ❌ Bad: Initializing for every operation
+const badPurchaseFlow = async (productId) => {
+  await initConnection(); // Don't do this
+  await requestPurchase({sku: productId});
+  await endConnection(); // Don't do this
+};
+
+// ✅ Good: Use existing connection
+const goodPurchaseFlow = async (productId) => {
+  if (connected) {
+    await requestPurchase({sku: productId});
+  }
+};

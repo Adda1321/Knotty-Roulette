@@ -136,6 +136,23 @@ The app uses React's built-in state management with:
 - Responsive design for different screen sizes
 - Consistent color scheme throughout
 
+## Environment Matrix
+
+The app supports different environments with specific configurations for IAP, Ads, and development features:
+
+| Environment | Expo Go | Native | IAP | Ads | Purpose |
+|-------------|---------|--------|-----|-----|---------|
+| **Development** | ✅ | ❌ | Mock | Test | Local development with Expo Go |
+| **Preview** | ❌ | ✅ | Mock | Test | Testing on native builds |
+| **Production** | ❌ | ✅ | Real | Real | Live app store builds |
+
+### Environment Configuration
+
+- **IAP System**: Uses mock data in development/preview, real purchases in production
+- **Ad Service**: Test ads in development/preview, real ads in production
+- **Offline Support**: Cached purchases and graceful degradation across all environments
+- **Debug Logging**: Comprehensive logging for troubleshooting
+
 ## Deployment
 
 ### Expo Build
@@ -145,6 +162,21 @@ The app uses React's built-in state management with:
 ```bash
 expo build:android
 expo build:ios
+```
+
+For Development:
+```bash
+eas build --platform android --profile development
+
+eas build --profile preview --platform android
+
+eas build --platform android --profile production
+
+eas build --platform android
+
+eas build -p ios
+eas submit --platform ios
+
 ```
 
 ### Store Submission

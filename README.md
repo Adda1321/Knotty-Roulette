@@ -174,6 +174,9 @@ eas build --platform android --profile production
 
 eas build --platform android
 
+eas build -p ios
+eas submit --platform ios
+
 ```
 
 ### Store Submission

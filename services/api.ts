@@ -506,7 +506,7 @@ function getFallbackChallenges(themeId?: string): Challenge[] {
       {
         id: 31,
         challenge_text:
-          "The group picks three people (real or fictional) and presents them to the chosen player. That player must decide who to Fuck, Marry, or Kill - no backing out!",
+          "The group picks three people (real or fictional) and presents them to the chosen player. That player must decide who to Kiss, Marry, or Kill - no backing out!",
         has_bonus: false,
       },
       {

@@ -11,9 +11,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.knottytimes.knottyroulette",
-      "icon": "./assets/images/knotty-times-updated.jpeg",
+      "icon": "./assets/images/knotty-times-app-icon.jpeg",
       "infoPlist": {
-        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
         "SKAdNetworkItems": [
           {
             "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork"
@@ -201,8 +200,7 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-9976626838955349~5710120462",
-          "iosAppId": "ca-app-pub-9976626838955349~7843166076",
-          "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
+          "iosAppId": "ca-app-pub-9976626838955349~7843166076"
         }
       ],
       "expo-iap"

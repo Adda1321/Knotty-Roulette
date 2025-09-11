@@ -55,7 +55,7 @@ const getAdConfig = () => {
   }
   const showLiveAds = false; // Remove in PRODUCTION
   // In native environment, use test ads for non-production, real ads for production
-  if (showLiveAds && isProd) {
+  if (isProd) {
     // Production: Use real ad IDs
     return {
       INTERSTITIAL_ID: Platform.select({

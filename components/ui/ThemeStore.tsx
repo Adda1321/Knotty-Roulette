@@ -266,6 +266,43 @@ export default function ThemeStore() {
     }
   };
 
+  const handleResetAllData = async () => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium");
+
+    try {
+      // Get all storage keys from STORAGE_KEYS
+      const allStorageKeys = Object.values(STORAGE_KEYS);
+      
+
+      // Remove all storage items
+      await Promise.all(
+        allStorageKeys.map(key => AsyncStorage.removeItem(key))
+      );
+
+      // Reset theme pack service
+      await themePackService.resetPurchases();
+
+      // Reset user service
+      await userService.forceResetForTesting();
+
+      // Reset upsell service
+      await upsellService.resetUpsellState();
+
+      
+
+      console.log("✅ ThemeStore: All data reset successfully");
+    } catch (error) {
+      console.error("❌ ThemeStore: Error resetting data:", error);
+      setPurchaseSuccessData({
+        title: "❌ Reset Failed",
+        message: "Failed to reset all data completely. Please try again.",
+        action: "OK",
+      });
+      setShowPurchaseSuccessModal(true);
+    }
+  };
+
   const checkShopEntryUpsell = async () => {
     try {
       console.log("🛍️ ThemeStore: Checking shop entry upsell...");
@@ -400,26 +437,34 @@ export default function ThemeStore() {
         closePreview();
       } else {
         const errorMsg = iapContext.lastError || "Unknown error occurred";
+        // Store error data to show after preview modal closes
         setPurchaseSuccessData({
           title: "❌ Purchase Failed",
           message: `Unable to complete purchase: ${errorMsg}`,
           action: "OK",
         });
-        setShowPurchaseSuccessModal(true);
-        console.error("❌ ThemeStore: Theme purchase failed:", {
-          pack: pack.id,
-          error: errorMsg,
-        });
+        // Close preview modal first, then show error
+        closePreview();
+        // Show error modal after preview closes
+        setTimeout(() => {
+          setShowPurchaseSuccessModal(true);
+        }, 300);
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+      // Store error data to show after preview modal closes
       setPurchaseSuccessData({
         title: "❌ Error",
         message: `Exception during purchase: ${errorMessage}`,
         action: "OK",
       });
-      setShowPurchaseSuccessModal(true);
+      // Close preview modal first, then show error
+      closePreview();
+      // Show error modal after preview closes
+      setTimeout(() => {
+        setShowPurchaseSuccessModal(true);
+      }, 300);
     } finally {
       setIsPurchasing(false);
     }
@@ -980,6 +1025,14 @@ export default function ThemeStore() {
           </TouchableOpacity>
           <Text style={styles.title}>Theme Store</Text>
           <View style={styles.headerButtons}>
+            {/* <TouchableOpacity
+              onPress={handleResetAllData}
+              style={styles.resetButton}
+              accessibilityLabel="Reset All Data"
+              accessibilityHint="Tap to clear all local data and reset the app to default state"
+            >
+              <Ionicons name="trash-outline" size={20} color={COLORS.YELLOW} />
+            </TouchableOpacity> */}
             <TouchableOpacity
               onPress={handleManualRestore}
               style={styles.restoreButton}
@@ -1335,6 +1388,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  // resetButton: {
+  //   padding: SIZES.PADDING_SMALL,
+  //   marginRight: SIZES.PADDING_SMALL,
+  // },
   restoreButton: {
     padding: SIZES.PADDING_SMALL,
     marginRight: SIZES.PADDING_SMALL,

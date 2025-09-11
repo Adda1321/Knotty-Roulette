@@ -432,7 +432,6 @@ export default function GameBoard({
     // setShowPurchaseCelebrationModal(true); // This line is no longer needed
   };
   */
-
   return (
     <SafeAreaView
       style={[
@@ -549,6 +548,9 @@ export default function GameBoard({
                       : COLORS.YELLOW,
                 },
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.7}
             >
               KNOTTY ROULETTE
             </Text>
@@ -828,10 +830,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   title: {
-    fontSize:
-      Platform.OS === "android"
-        ? Math.min(SIZES.EXTRALARGE, width * 0.072)
-        : Math.min(SIZES.EXTRALARGE * 1.0, width),
+    fontSize: Platform.OS === "android" 
+      ? Math.min(SIZES.EXTRALARGE, width * 0.082)
+      : Math.min(SIZES.EXTRALARGE, width),
     fontFamily: FONTS.DOSIS_BOLD,
     marginBottom: SIZES.PADDING_MEDIUM,
     ...SIZES.TEXT_SHADOW_MEDIUM,

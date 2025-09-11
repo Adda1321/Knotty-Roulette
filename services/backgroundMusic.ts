@@ -320,32 +320,6 @@ class BackgroundMusicService {
     return Object.keys(this.themeAudioFiles) as ThemePackId[];
   }
 
-  async cleanup() {
-    try {
-      // Remove app state listener
-      if (this.appStateListener) {
-        this.appStateListener.remove();
-        this.appStateListener = null;
-      }
-
-      // Clean up background music
-      if (this.backgroundMusic) {
-        try {
-          await this.backgroundMusic.stopAsync();
-          await this.backgroundMusic.unloadAsync();
-        } catch (error) {
-          console.log('Error cleaning up background music:', error);
-        }
-        this.backgroundMusic = null;
-      }
-
-      this.isPlaying = false;
-      this.isInitialized = false;
-      console.log('Background music service cleaned up');
-    } catch (error) {
-      console.error('Failed to cleanup background music service:', error);
-    }
-  }
 }
 
 // Singleton instance

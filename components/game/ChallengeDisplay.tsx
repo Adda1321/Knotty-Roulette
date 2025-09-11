@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 import { Surface } from "react-native-paper";
-import Toast from "react-native-toast-message";
 import {
   ANIMATION_CONFIGS,
   ANIMATION_VALUES,
@@ -22,6 +21,7 @@ import { logVote } from "../../services/api";
 import audioService from "../../services/audio";
 import { Challenge } from "../../types/game";
 import Button from "../ui/Button";
+import CustomModal from "../ui/CustomModal";
 import SparkleEffect from "../ui/SparkleEffect";
 
 interface ChallengeDisplayProps {
@@ -36,15 +36,6 @@ export default function ChallengeDisplay({
   onComplete,
 }: ChallengeDisplayProps) {
   // Debug logging for challenge display
-  useEffect(() => {
-    console.log(`📱 ChallengeDisplay showing challenge:`, {
-      id: challenge.id,
-      text: challenge.challenge_text.substring(0, 60) + "...",
-      card_pack: challenge.card_pack,
-      has_bonus: challenge.has_bonus,
-      playerName: playerName,
-    });
-  }, [challenge, playerName]);
 
   const [hasVoted, setHasVoted] = useState(false);
   const [isVoting, setIsVoting] = useState(false);
@@ -52,15 +43,16 @@ export default function ChallengeDisplay({
     null
   );
 
+  // Modal state management
+  const [showModal, setShowModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState<"success" | "error" | "info">(
+    "info"
+  );
+
   const { COLORS, currentTheme } = useTheme();
 
-  // Debug logging
-  console.log("🎨 GameBoard: Current theme:", currentTheme);
-
-  // Monitor theme changes
-  useEffect(() => {
-    console.log("🎨 GameBoard: Theme changed to:", currentTheme);
-  }, [currentTheme]);
   // Animation values
   const cardScale = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -68,6 +60,25 @@ export default function ChallengeDisplay({
 
   // Sparkle effect state
   const [showSparkles, setShowSparkles] = useState(false);
+
+  // Helper function to show modal
+  const showModalMessage = (
+    title: string,
+    message: string,
+    type: "success" | "error" | "info" = "info"
+  ) => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalType(type);
+    setShowModal(true);
+  };
+
+  // Handle modal close
+  const handleModalClose = () => {
+    audioService.playHaptic("medium");
+    audioService.playSound("buttonPress");
+    setShowModal(false);
+  };
 
   // Card reveal animation on mount
   useEffect(() => {
@@ -87,8 +98,6 @@ export default function ChallengeDisplay({
   }, [cardOpacity, cardScale]);
 
   const handleVote = async (voteType: "upvote" | "downvote") => {
-    audioService.playSound("buttonPress");
-    audioService.playHaptic("medium");
     if (hasVoted || isVoting) return;
 
     setIsVoting(true);
@@ -107,37 +116,21 @@ export default function ChallengeDisplay({
       // Handle the response based on the documented API behavior
       if (voteResponse.already_voted) {
         // User already voted on this challenge - show appropriate message
-        Toast.show({
-          type: "info",
-          text1: "Already Voted",
-          text2: "You've already voted on this challenge",
-          position: "top",
-          visibilityTime: 2000,
-        });
-
-        console.log("Vote response - already voted:", voteResponse);
+        showModalMessage(
+          "Already Voted",
+          "You've already voted on this challenge",
+          "info"
+        );
+        audioService.playSound("passChallenge");
       } else {
         // New vote submitted successfully
-        Toast.show({
-          type: "success",
-          text1: "Vote Submitted!",
-          text2:
-            "You just made Knotty Times even better - thanks for your input!",
-          position: "top",
-          visibilityTime: 2000,
-        });
-
-        console.log("Vote response - new vote:", voteResponse);
-        console.log(
-          "Updated counts - Likes:",
-          voteResponse.likes,
-          "Dislikes:",
-          voteResponse.dislikes
+        showModalMessage(
+          "Vote Submitted!",
+          "You just made Knotty Times even better - thanks for your input!",
+          "success"
         );
+        audioService.playSound("challengeComplete");
       }
-
-      // Note: The API returns updated like/dislike counts that could be used
-      // to update the UI if you want to show real-time vote counts
     } catch (error) {
       console.error("Error logging vote:", error);
 
@@ -161,15 +154,6 @@ export default function ChallengeDisplay({
           errorMessage = error.message;
         }
       }
-
-      // Show error notification
-      Toast.show({
-        type: "error",
-        text1: "Vote Failed",
-        text2: errorMessage,
-        position: "top",
-        visibilityTime: 4000,
-      });
 
       // Don't set hasVoted to true if the vote failed
       setHasVoted(false);
@@ -479,6 +463,17 @@ export default function ChallengeDisplay({
           </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Custom Modal for notifications */}
+      <CustomModal
+        visible={showModal}
+        onClose={handleModalClose}
+        title={modalTitle}
+        message={modalMessage}
+        showCloseButton={true}
+        closeButtonText="OK"
+        showSparkles={modalType === "success"}
+      />
     </View>
   );
 }

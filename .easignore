@@ -1,0 +1,57 @@
+# Documentation files
+*.md
+README.md
+ADMOB_INTEGRATION.md
+AUDIO_IMPROVEMENTS.md
+DEVELOPMENT_BUILD_DEBUG.md
+IAP_IMPLEMENTATION.md
+IAP_README.md
+IN_APP_PURCHASES.md
+TROUBLESHOOTING.md
+UPSELL_README.md
+
+# Game Rules and Assets folder
+Game Rules and Requirements and Assets/
+
+# Cursor and IDE files
+.cursor/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Development and debugging files
+scripts/
+knotty-roulette-keystore.jks
+upload_certificate.pem
+
+# Node modules (already ignored by default)
+node_modules/
+
+# Build artifacts
+dist/
+build/
+.expo/
+.expo-shared/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.cache

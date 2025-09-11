@@ -1,11 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { THEME_PACK_DATA, THEME_PACKS, ThemePackId } from '../constants/theme';
 import upsellService from './upsellService';
-
-const STORAGE_KEYS = {
-  PURCHASED_PACKS: 'knotty_roulette_purchased_packs',
-  CURRENT_PACK: 'knotty_roulette_current_pack',
-} as const;
 
 export interface ThemePackPurchase {
   id: ThemePackId;

@@ -10,10 +10,9 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.adda1325.knottyroulette",
-      "icon": "./assets/images/knotty-times-updated.jpeg",
+      "bundleIdentifier": "com.knottytimes.knottyroulette",
+      "icon": "./assets/images/knotty-times-app-icon.jpeg",
       "infoPlist": {
-        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you.",
         "SKAdNetworkItems": [
           {
             "SKAdNetworkIdentifier": "cstr6suwn9.skadnetwork"
@@ -44,8 +43,126 @@
           },
           {
             "SKAdNetworkIdentifier": "c6k4g5qg8m.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "s39g8k73mm.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "3qy4746246.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "f38h382jlk.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "hs6bdukanm.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "mlmmfzh3r3.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "v4nxqhlyqp.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "wzmmz9fp6w.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "su67r6k2v3.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "yclnxrl5pm.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "t38b2kh725.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "7ug5zh24hu.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "gta9lk7p23.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "vutu7akeur.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "y5ghdn5j9k.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "v9wttpbfk9.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "n38lu8286q.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "47vhws6wlr.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "kbd757ywx3.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "9t245vhmpl.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "a2p9lx4jpn.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "22mmun2rn5.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "44jx6755aq.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "k674qkevps.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "4468km3ulz.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "2u9pt9hc89.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "8s468mfl3y.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "klf5c3l5u5.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "ppxm28t8ap.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "kbmxgpxpgc.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "uw77j35x4d.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "578prtvx9j.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "4dzt52r2t5.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "tl55sbb4fm.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "c3frkrj4fj.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "e5fvkxwrpn.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "8c4e2ghe7u.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "3rd42ekr43.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "97r2b46745.skadnetwork"
+          },
+          {
+            "SKAdNetworkIdentifier": "3qcr597p9d.skadnetwork"
           }
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -60,7 +177,7 @@
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "com.android.vending.BILLING"
       ],
-      "package": "com.adda1325.knottyroulette"
+      "package": "com.knottytimes.knottytimesroulette"
     },
     "web": {
       "bundler": "metro",
@@ -74,7 +191,7 @@
         {
           "image": "./assets/images/knotty-roulette.png",
           "imageWidth": 150,
-          "resizeMode": "center",
+          "resizeMode": "contain",
           "backgroundColor": "#6bc26e"
         }
       ],
@@ -83,8 +200,7 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-9976626838955349~5710120462",
-          "iosAppId": "ca-app-pub-9976626838955349~7843166076",
-          "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
+          "iosAppId": "ca-app-pub-9976626838955349~7843166076"
         }
       ],
       "expo-iap"
@@ -97,7 +213,7 @@
       "eas": {
         "projectId": "25e3a310-8fd2-4cfa-939a-86a1eef596e8"
       },
-      "useTestAds": true
+      "privacyPolicyUrl": "https://docs.google.com/document/d/1FbH_Iu_VFmUGqaeVy80wZ4MzQ0u8lgAOsROSN36uGyI/edit?usp=sharing"
     },
     "owner": "adda1325"
   }

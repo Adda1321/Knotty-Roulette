@@ -206,21 +206,6 @@ class AudioService {
     return this.vibrationEnabled;
   }
 
-  async cleanup() {
-    try {
-      for (const sound of Object.values(this.sounds)) {
-        try {
-          await sound.unloadAsync();
-        } catch (error) {
-          console.log('Error unloading sound:', error);
-        }
-      }
-      this.sounds = {};
-      this.isLoaded = false;
-    } catch (error) {
-      console.error('Failed to cleanup audio service:', error);
-    }
-  }
 }
 
 // Singleton instance

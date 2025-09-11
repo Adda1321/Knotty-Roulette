@@ -1,9 +1,10 @@
+import userService from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Alert,
   Dimensions,
   Image,
   Modal,
@@ -13,6 +14,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { PRODUCT_DEFINITIONS } from "../../constants/iapProducts";
+import { STORAGE_KEYS } from "../../constants/storageKeys";
 import {
   COLORS,
   FONTS,
@@ -23,14 +26,15 @@ import {
   ThemePackId,
 } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext"; // Add useTheme hook
+import adService from "../../services/adService";
 import audioService from "../../services/audio";
 import purchaseService from "../../services/purchaseService";
-import themePackService from "../../services/themePackService";
+import { themePackService } from "../../services/themePackService";
 import upsellService from "../../services/upsellService";
-import userService from "../../services/userService";
 import { getSampleChallenges } from "../../utils/themeHelpers";
 import Button from "./Button";
 import CustomModal from "./CustomModal";
+import { useIAPContext } from "./IAPProvider";
 import PurchaseCelebrationModal from "./PurchaseCelebrationModal";
 import UpsellModal from "./UpsellModal";
 
@@ -60,6 +64,7 @@ export default function ThemeStore() {
   const [packToSwitch, setPackToSwitch] = useState<ThemePack | null>(null);
   const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const { COLORS, switchTheme, currentTheme, refreshTheme } = useTheme();
+  const iapContext = useIAPContext();
   const [showUpsellModal, setShowUpsellModal] = useState(false);
   const [currentUpsellOffer, setCurrentUpsellOffer] = useState<any>(null);
   const [showPurchaseSuccessModal, setShowPurchaseSuccessModal] =
@@ -80,12 +85,223 @@ export default function ThemeStore() {
     "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null | null
   >(null);
   const [isThemeSwitching, setIsThemeSwitching] = useState(false);
+  const [fetchStatus, setFetchStatus] = useState("");
+  const [lastError, setLastError] = useState("");
+  const [restoreStatus, setRestoreStatus] = useState("");
+  const [restoreError, setRestoreError] = useState("");
 
   // Load theme packs with current status
   useEffect(() => {
     loadThemePacks();
     checkShopEntryUpsell();
+    updateFetchStatus();
   }, []);
+
+  const updateFetchStatus = async () => {
+    // Clear previous errors
+    setLastError("");
+
+    // Get status from IAP context
+    setFetchStatus(iapContext.fetchStatus);
+    setLastError(iapContext.lastError);
+
+    // Refresh products to get updated status
+    try {
+      console.log("🔄 ThemeStore: Refreshing IAP status...");
+      await iapContext.refreshProducts();
+      setFetchStatus(iapContext.fetchStatus);
+      setLastError(iapContext.lastError);
+      console.log("✅ ThemeStore: IAP status refreshed:", {
+        status: iapContext.fetchStatus,
+        error: iapContext.lastError,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      setFetchStatus(`❌ Refresh Error: ${errorMessage}`);
+      setLastError(`Exception during refresh: ${errorMessage}`);
+      console.error("❌ ThemeStore: Error refreshing IAP status:", error);
+    }
+  };
+
+  // Direct mapping fallback for when normal restore doesn't work
+  const handleDirectMapping = async (): Promise<boolean> => {
+    try {
+      if (!iapContext.availablePurchases || iapContext.availablePurchases.length === 0) {
+        return false;
+      }
+
+      // Get current purchased products
+      const currentPurchased = new Set(iapContext.purchasedProducts || []);
+      let mapped = false;
+
+      // Process each available purchase
+      for (const purchase of iapContext.availablePurchases) {
+        const productId = purchase.productId || purchase.id || purchase.sku;
+        
+        if (productId) {
+          // Check if this product should be mapped using the existing product definitions
+          let productDef = iapContext.getCurrentProducts().find(p => p.productId === productId);
+          
+          // Fallback to shared PRODUCT_DEFINITIONS if getCurrentProducts doesn't have the product
+          if (!productDef || !productDef.unlocks) {
+            productDef = PRODUCT_DEFINITIONS[productId as keyof typeof PRODUCT_DEFINITIONS];
+          }
+          
+          if (productDef && productDef.unlocks) {
+            // Add to purchased products
+            currentPurchased.add(productId);
+            mapped = true;
+
+            // Process the purchase to unlock features
+            for (const unlock of productDef.unlocks) {
+              switch (unlock) {
+                case "ad_free":
+                  await userService.setPremium("lifetime");
+                  await adService.onUserTierChange();
+                  break;
+                case "college_theme":
+                  await themePackService.purchasePack("college");
+                  break;
+                case "couple_theme":
+                  await themePackService.purchasePack("couple");
+                  break;
+              }
+            }
+          }
+        }
+      }
+
+      if (mapped) {
+        // Update the IAP context with the new purchased products
+        // This is a direct state update since we can't call the context method
+        const newPurchasedArray = Array.from(currentPurchased);
+        
+        // Save to AsyncStorage
+        await AsyncStorage.setItem(
+          STORAGE_KEYS.PURCHASED_PRODUCTS,
+          JSON.stringify(newPurchasedArray)
+        );
+
+        // Force a refresh by calling the context's restore method
+        await iapContext.restorePurchases();
+        
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("❌ Direct mapping failed:", error);
+      return false;
+    }
+  };
+
+  const handleManualRestore = async () => {
+    // Play audio and haptic feedback
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("light");
+
+    // Clear previous errors and set loading state
+    setRestoreError("");
+    setRestoreStatus("🔄 Starting restore...");
+
+    try {
+      // Check if we're connected to the store
+      if (!iapContext.connected) {
+        setRestoreStatus("❌ Offline - cannot restore");
+        setRestoreError("Store is not connected. Please check your internet connection.");
+        return;
+      }
+
+      setRestoreStatus("🔄 Fetching products...");
+
+      // Try to fetch products first
+      const products = await iapContext.getProducts();
+
+      if (products && products.length > 0) {
+        setRestoreStatus("🔄 Products loaded, checking purchases...");
+        
+        // Products fetched successfully, now try to restore purchases
+        const restoreSuccess = await iapContext.restorePurchases();
+
+        if (restoreSuccess) {
+          setRestoreStatus("✅ Restore successful!");
+          setRestoreError("");
+          
+          // Success - update UI
+          loadThemePacks();
+          loadPassiveOffers();
+        } else {
+          // Fallback: Try direct mapping if availablePurchases exist but restore failed
+          if (iapContext.availablePurchases && iapContext.availablePurchases.length > 0) {
+            setRestoreStatus("🔄 Fallback: Direct mapping available purchases...");
+            
+            const directMappingSuccess = await handleDirectMapping();
+            
+            if (directMappingSuccess) {
+              setRestoreStatus("✅ Direct mapping successful!");
+              setRestoreError("");
+              
+              // Success - update UI
+              loadThemePacks();
+              loadPassiveOffers();
+            } else {
+              setRestoreStatus("⚠️ No purchases found to restore");
+              setRestoreError("");
+            }
+          } else {
+            setRestoreStatus("⚠️ No purchases found to restore");
+            setRestoreError("");
+          }
+        }
+      } else {
+        setRestoreStatus("❌ Failed to load products");
+        setRestoreError("Could not fetch products from store. Please try again.");
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setRestoreStatus("❌ Restore failed");
+      setRestoreError(`Error: ${errorMessage}`);
+      console.error("❌ ThemeStore: Manual restore error:", error);
+    }
+  };
+
+  const handleResetAllData = async () => {
+    audioService.playSound("buttonPress");
+    audioService.playHaptic("medium");
+
+    try {
+      // Get all storage keys from STORAGE_KEYS
+      const allStorageKeys = Object.values(STORAGE_KEYS);
+      
+
+      // Remove all storage items
+      await Promise.all(
+        allStorageKeys.map(key => AsyncStorage.removeItem(key))
+      );
+
+      // Reset theme pack service
+      await themePackService.resetPurchases();
+
+      // Reset user service
+      await userService.forceResetForTesting();
+
+      // Reset upsell service
+      await upsellService.resetUpsellState();
+
+      
+
+      console.log("✅ ThemeStore: All data reset successfully");
+    } catch (error) {
+      console.error("❌ ThemeStore: Error resetting data:", error);
+      setPurchaseSuccessData({
+        title: "❌ Reset Failed",
+        message: "Failed to reset all data completely. Please try again.",
+        action: "OK",
+      });
+      setShowPurchaseSuccessModal(true);
+    }
+  };
 
   const checkShopEntryUpsell = async () => {
     try {
@@ -173,32 +389,6 @@ export default function ThemeStore() {
   const loadPassiveOffers = () => {
     const offers = upsellService.getPassiveUpsells();
     setPassiveOffers(offers);
-
-    // Debug: Log user status and passive offers
-    const isPremium = userService.isPremium();
-    const purchasedPacks = themePackService.getPurchasedPacks();
-    const hasAdFreeBundle = offers.some(
-      (offer) => offer.primaryButton.action === "ad_free"
-    );
-
-    console.log("🔍 ThemeStore Debug:", {
-      userStatus: isPremium ? "Premium (Ad-Free)" : "Free User",
-      ownedThemePacks: purchasedPacks.length,
-      totalThemePacks: Object.keys(themePackService.getAllPacksWithStatus())
-        .length,
-      passiveOffersCount: offers.length,
-      passiveOffers: offers.map((o) => ({
-        id: o.id,
-        title: o.title,
-        price: o.primaryButton.price,
-        action: o.primaryButton.action,
-      })),
-      hasAdFreeBundle: hasAdFreeBundle,
-      adFreeButtonVisible: !isPremium && !hasAdFreeBundle,
-      adFreeButtonReason: hasAdFreeBundle
-        ? "Hidden - Ad-Free bundle available"
-        : "Visible - No Ad-Free bundle",
-    });
   };
 
   const openPreview = (pack: ThemePack) => {
@@ -222,7 +412,17 @@ export default function ThemeStore() {
     audioService.playHaptic("medium");
     setIsPurchasing(true);
     try {
-      const success = await themePackService.purchasePack(pack.id as any);
+      let success = false;
+
+      // Use proper purchase service methods based on theme type
+      if (pack.id === "college") {
+        success = await purchaseService.purchaseCollegeTheme();
+      } else if (pack.id === "couple") {
+        success = await purchaseService.purchaseCoupleTheme();
+      }
+      // else {
+      //   success = await themePackService.purchasePack(pack.id as any);
+      // }
 
       if (success) {
         setPurchasedPackName(pack.name);
@@ -236,20 +436,35 @@ export default function ThemeStore() {
         loadPassiveOffers(); // Refresh passive offers
         closePreview();
       } else {
+        const errorMsg = iapContext.lastError || "Unknown error occurred";
+        // Store error data to show after preview modal closes
         setPurchaseSuccessData({
           title: "❌ Purchase Failed",
-          message: "Unable to complete purchase. Please try again.",
+          message: `Unable to complete purchase: ${errorMsg}`,
           action: "OK",
         });
-        setShowPurchaseSuccessModal(true);
+        // Close preview modal first, then show error
+        closePreview();
+        // Show error modal after preview closes
+        setTimeout(() => {
+          setShowPurchaseSuccessModal(true);
+        }, 300);
       }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      // Store error data to show after preview modal closes
       setPurchaseSuccessData({
         title: "❌ Error",
-        message: "An error occurred during purchase.",
+        message: `Exception during purchase: ${errorMessage}`,
         action: "OK",
       });
-      setShowPurchaseSuccessModal(true);
+      // Close preview modal first, then show error
+      closePreview();
+      // Show error modal after preview closes
+      setTimeout(() => {
+        setShowPurchaseSuccessModal(true);
+      }, 300);
     } finally {
       setIsPurchasing(false);
     }
@@ -346,7 +561,7 @@ export default function ThemeStore() {
     setIsAdFreePurchasing(true);
 
     try {
-      const success = await purchaseService.purchasePremiumPack();
+      const success = await purchaseService.purchaseAdFree();
 
       if (success) {
         // Refresh passive offers and theme packs
@@ -365,17 +580,20 @@ export default function ThemeStore() {
         });
         setShowPurchaseSuccessModal(true);
       } else {
+        const errorMsg = iapContext.lastError || "Unknown error occurred";
         setPurchaseSuccessData({
           title: "❌ Purchase Failed",
-          message: "Unable to complete purchase. Please try again.",
+          message: `Unable to complete purchase: ${errorMsg}`,
           action: "OK",
         });
         setShowPurchaseSuccessModal(true);
       }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       setPurchaseSuccessData({
         title: "❌ Error",
-        message: "An error occurred during purchase.",
+        message: `Exception during purchase: ${errorMessage}`,
         action: "OK",
       });
       setShowPurchaseSuccessModal(true);
@@ -401,22 +619,28 @@ export default function ThemeStore() {
       let success = false;
 
       if (offer.primaryButton.action === "ad_free") {
-        success = await purchaseService.purchasePremiumPack();
+        success = await purchaseService.purchaseAdFree();
       } else if (offer.primaryButton.action === "theme_packs") {
-        success = await themePackService.purchasePack("college");
-        if (success) {
-          success = await themePackService.purchasePack("couple");
-        }
+        // Buy both theme packs (expand fun bundle)
+        success = await purchaseService.purchaseExpandBundle();
       } else if (offer.primaryButton.action === "complete_set") {
-        success = await themePackService.purchasePack("couple");
-      } else if (offer.primaryButton.action === "all_in_bundle") {
-        success = await purchaseService.purchasePremiumPack();
-        if (success) {
-          success = await themePackService.purchasePack("college");
-          if (success) {
-            success = await themePackService.purchasePack("couple");
-          }
+        // Buy the remaining theme pack to complete the collection
+        const purchasedPacks = themePackService.getPurchasedPacks();
+        const hasCollege = purchasedPacks.includes("college");
+        const hasCouple = purchasedPacks.includes("couple");
+
+        if (!hasCollege) {
+          success = await purchaseService.purchaseCollegeTheme();
+        } else if (!hasCouple) {
+          success = await purchaseService.purchaseCoupleTheme();
+        } else {
+          // User already has all themes, this shouldn't happen
+          console.warn(
+            "⚠️ ThemeStore: User already has all themes but complete_set action triggered"
+          );
         }
+      } else if (offer.primaryButton.action === "all_in_bundle") {
+        success = await purchaseService.purchaseCompleteBundle();
       }
 
       if (success) {
@@ -435,17 +659,20 @@ export default function ThemeStore() {
         });
         setShowPurchaseSuccessModal(true);
       } else {
+        const errorMsg = iapContext.lastError || "Unknown error occurred";
         setPurchaseSuccessData({
           title: "❌ Purchase Failed",
-          message: "Unable to complete purchase. Please try again.",
+          message: `Unable to complete purchase: ${errorMsg}`,
           action: "OK",
         });
         setShowPurchaseSuccessModal(true);
       }
     } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       setPurchaseSuccessData({
         title: "❌ Error",
-        message: "An error occurred during purchase.",
+        message: `Exception during purchase: ${errorMessage}`,
         action: "OK",
       });
       setShowPurchaseSuccessModal(true);
@@ -454,56 +681,48 @@ export default function ThemeStore() {
     }
   };
 
-  const handleBundlePurchase = (bundle: any) => {
-    audioService.playHaptic("medium");
-    audioService.playSound("buttonPress");
+  // const handleResetStore = async () => {
+  //   audioService.playSound("buttonPress");
+  //   audioService.playHaptic("medium");
 
-    // Mock bundle purchase - replace with actual IAP logic later
-    console.log(`Mock bundle purchase initiated for ${bundle.title}`);
-  };
+  //   try {
+  //     // Reset theme pack purchases
+  //     await themePackService.resetPurchases();
 
-  const handleResetStore = async () => {
-    audioService.playSound("buttonPress");
-    audioService.playHaptic("medium");
+  //     // Reset user premium status (Ad-Free)
+  //     await userService.forceResetForTesting();
 
-    try {
-      // Reset theme pack purchases
-      await themePackService.resetPurchases();
+  //     // Reset upsell service state
+  //     await upsellService.resetUpsellState();
 
-      // Reset user premium status (Ad-Free)
-      await userService.forceResetForTesting();
+  //     // Force theme refresh to ensure context updates
+  //     await refreshTheme();
 
-      // Reset upsell service state
-      await upsellService.resetUpsellState();
+  //     // Small delay to ensure theme context updates
+  //     await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Force theme refresh to ensure context updates
-      await refreshTheme();
+  //     // Refresh all data
+  //     loadThemePacks();
+  //     loadPassiveOffers();
 
-      // Small delay to ensure theme context updates
-      await new Promise((resolve) => setTimeout(resolve, 100));
+  //     // Show success feedback
+  //     audioService.playSound("buttonPress");
+  //     audioService.playHaptic("medium");
 
-      // Refresh all data
-      loadThemePacks();
-      loadPassiveOffers();
-
-      // Show success feedback
-      audioService.playSound("buttonPress");
-      audioService.playHaptic("medium");
-
-      // Show success message
-      Alert.alert(
-        "🔄 Store Reset Complete!",
-        "All purchases and premium status have been reset. You're now a free user again and back to the default theme.",
-        [{ text: "Got it!" }]
-      );
-    } catch (error) {
-      console.error("❌ ThemeStore: Error resetting store:", error);
-      Alert.alert(
-        "Error",
-        "Failed to reset store completely. Please try again."
-      );
-    }
-  };
+  //     // Show success message
+  //     Alert.alert(
+  //       "🔄 Store Reset Complete!",
+  //       "All purchases and premium status have been reset. You're now a free user again and back to the default theme.",
+  //       [{ text: "Got it!" }]
+  //     );
+  //   } catch (error) {
+  //     console.error("❌ ThemeStore: Error resetting store:", error);
+  //     Alert.alert(
+  //       "Error",
+  //       "Failed to reset store completely. Please try again."
+  //     );
+  //   }
+  // };
 
   const renderBundleDeals = () => {
     return (
@@ -579,7 +798,7 @@ export default function ThemeStore() {
         online: themeColors.ONLINE,
         yellow: themeColors.YELLOW,
         dark: themeColors.DARK,
-      light: themeColors.LIGHT
+        light: themeColors.LIGHT,
       };
     };
 
@@ -587,19 +806,12 @@ export default function ThemeStore() {
 
     return (
       <LinearGradient
-        colors={[
-          themeColors.primary,
-          themeColors.light,
-          themeColors.dark
-        ]}
+        colors={[themeColors.primary, themeColors.light, themeColors.dark]}
         style={[{ borderRadius: SIZES.BORDER_RADIUS_LARGE }]}
       >
         <TouchableOpacity
           key={pack.id}
-          style={[
-            styles.themeCard,
-            pack.isLocked && styles.lockedCard,
-          ]}
+          style={[styles.themeCard, pack.isLocked && styles.lockedCard]}
           onPress={() => openPreview(pack)}
           activeOpacity={0.8}
         >
@@ -650,7 +862,19 @@ export default function ThemeStore() {
               >
                 <Text style={styles.selectButtonText}>Use This Theme</Text>
               </TouchableOpacity>
-            ) : null}
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.selectButton,
+                  {
+                    opacity: 0,
+                  },
+                ]}
+                disabled={true}
+              >
+                <Text style={styles.selectButtonText}>Use This Theme</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </TouchableOpacity>
       </LinearGradient>
@@ -773,6 +997,7 @@ export default function ThemeStore() {
     console.log("🛍️ ThemeStore: Upsell purchase successful!");
     loadThemePacks(); // Refresh theme packs after purchase
     loadPassiveOffers(); // Refresh passive offers
+    updateFetchStatus(); // Refresh IAP status
     setShowUpsellModal(false);
   };
 
@@ -786,6 +1011,7 @@ export default function ThemeStore() {
   return (
     <>
       <View style={styles.container}>
+        {/* Fixed Header */}
         <View style={[styles.header, { backgroundColor: COLORS.PRIMARY }]}>
           <TouchableOpacity
             onPress={() => {
@@ -799,44 +1025,191 @@ export default function ThemeStore() {
           </TouchableOpacity>
           <Text style={styles.title}>Theme Store</Text>
           <View style={styles.headerButtons}>
-            <TouchableOpacity
-              onPress={() => {
-                audioService.playSound("buttonPress");
-                audioService.playHaptic("light");
-                setShowResetConfirmation(true);
-              }}
+            {/* <TouchableOpacity
+              onPress={handleResetAllData}
               style={styles.resetButton}
+              accessibilityLabel="Reset All Data"
+              accessibilityHint="Tap to clear all local data and reset the app to default state"
+            >
+              <Ionicons name="trash-outline" size={20} color={COLORS.YELLOW} />
+            </TouchableOpacity> */}
+            <TouchableOpacity
+              onPress={handleManualRestore}
+              style={styles.restoreButton}
+              accessibilityLabel="Restore Purchases"
+              accessibilityHint="Tap to restore your previous purchases from the store"
             >
               <Ionicons name="refresh" size={20} color={COLORS.YELLOW} />
             </TouchableOpacity>
           </View>
         </View>
-        <View>
-          {!userService.isPremium() &&
-            !passiveOffers.some(
-              (offer) => offer.primaryButton.action === "ad_free"
-            ) && (
-              <TouchableOpacity
-                style={[
-                  styles.adFreeButton,
-                  isAdFreePurchasing && styles.adFreeButtonDisabled,
-                ]}
-                onPress={() => handleAdFreeOnlyPurchase()}
-                activeOpacity={0.8}
-                disabled={isAdFreePurchasing}
-              >
-                <Text style={styles.adFreeButtonText}>
-                  {isAdFreePurchasing ? "Purchasing..." : "Ad-Free Only"}
-                </Text>
-              </TouchableOpacity>
-            )}
-        </View>
+
         <View style={styles.contentContainer}>
           <ScrollView
             style={styles.content}
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            {/* Store Status Display */}
+            {/* <View style={styles.statusContainer}>
+              <View style={styles.statusRow}>
+                <Text style={styles.statusText}>Store Status: {fetchStatus}</Text>
+                <TouchableOpacity
+                  onPress={updateFetchStatus}
+                  style={styles.refreshStatusButton}
+                >
+                  <Ionicons name="refresh" size={16} color={COLORS.YELLOW} />
+                </TouchableOpacity>
+              </View>
+              {lastError && (
+                <View style={styles.errorContainer}>
+                  <Text style={styles.errorText}>Error: {lastError}</Text>
+                </View>
+              )}
+              <View style={styles.debugContainer}>
+                <Text style={styles.debugTitle}>🔍 IAP Debug Information</Text>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Connection:</Text>
+                  <Text
+                    style={[
+                      styles.debugValue,
+                      iapContext.connected
+                        ? styles.debugSuccess
+                        : styles.debugError,
+                    ]}
+                  >
+                    {iapContext.connected ? "✅ Connected" : "❌ Disconnected"}
+                  </Text>
+                </View>
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Status:</Text>
+                  <Text
+                    style={[
+                      styles.debugValue,
+                      iapContext.fetchStatus.includes("✅")
+                        ? styles.debugSuccess
+                        : styles.debugError,
+                    ]}
+                  >
+                    {iapContext.fetchStatus}
+                  </Text>
+                </View>
+
+                {iapContext.lastError && (
+                  <View style={styles.debugRow}>
+                    <Text style={styles.debugLabel}>Error:</Text>
+                    <Text style={[styles.debugValue, styles.debugError]}>
+                      {iapContext.lastError}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Premium:</Text>
+                  <Text
+                    style={[
+                      styles.debugValue,
+                      userService.isPremium()
+                        ? styles.debugSuccess
+                        : styles.debugError,
+                    ]}
+                  >
+                    {userService.isPremium() ? "✅ Premium" : "❌ Free"}
+                  </Text>
+                </View>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Purchased:</Text>
+                  <Text style={styles.debugValue}>
+                    {Array.from(iapContext.purchasedProducts || new Set()).join(
+                      ", "
+                    ) || "None"}
+                  </Text>
+                </View>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Available Purchases:</Text>
+                  <Text style={styles.debugValue}>
+                    {iapContext.availablePurchases
+                      ? JSON.stringify(
+                          iapContext.availablePurchases.map((p: any) => ({
+                            id: p.id,
+                            productId: p.productId,
+                            sku: p.sku,
+                            purchaseState: p.purchaseState,
+                          })),
+                          null,
+                          2
+                        )
+                      : "None"}
+                  </Text>
+                </View>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Environment:</Text>
+                  <Text style={styles.debugValue}>
+                    {process.env.EXPO_PUBLIC_IS_PRODUCTION === "true"
+                      ? "Production"
+                      : "Development"}
+                  </Text>
+                </View>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Auto-Restore:</Text>
+                  <Text style={[styles.debugValue, styles.debugSuccess]}>
+                    ✅ Enabled (happens on app start)
+                  </Text>
+                </View>
+
+                <View style={styles.debugRow}>
+                  <Text style={styles.debugLabel}>Manual Restore:</Text>
+                  <Text
+                    style={[
+                      styles.debugValue,
+                      restoreStatus.includes("✅")
+                        ? styles.debugSuccess
+                        : restoreStatus.includes("❌")
+                        ? styles.debugError
+                        : styles.debugValue,
+                    ]}
+                  >
+                    {restoreStatus || "Ready"}
+                  </Text>
+                </View>
+
+                {restoreError && (
+                  <View style={styles.debugRow}>
+                    <Text style={styles.debugLabel}>Restore Error:</Text>
+                    <Text style={[styles.debugValue, styles.debugError]}>
+                      {restoreError}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View> */}
+
+            {/* Ad-Free Button */}
+            <View>
+              {!userService.isPremium() &&
+                !passiveOffers.some(
+                  (offer) => offer.primaryButton.action === "ad_free"
+                ) && (
+                  <TouchableOpacity
+                    style={[
+                      styles.adFreeButton,
+                      isAdFreePurchasing && styles.adFreeButtonDisabled,
+                    ]}
+                    onPress={() => handleAdFreeOnlyPurchase()}
+                    activeOpacity={0.8}
+                    disabled={isAdFreePurchasing}
+                  >
+                    <Text style={styles.adFreeButtonText}>
+                      {isAdFreePurchasing ? "Purchasing..." : "Ad-Free Only"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+            </View>
+
             {/* Bundle Deals at the top */}
             {renderBundleDeals()}
 
@@ -844,7 +1217,11 @@ export default function ThemeStore() {
             <View style={styles.themesSection}>
               <Text style={styles.sectionTitle}>Theme Packs</Text>
               <View style={styles.themesGrid}>
-                {themePacks.map(renderThemeCard)}
+                {themePacks.map((pack) => (
+                  <View key={pack.id}>
+                    {renderThemeCard(pack)}
+                  </View>
+                ))}
               </View>
             </View>
           </ScrollView>
@@ -904,7 +1281,7 @@ export default function ThemeStore() {
       />
 
       {/* Store Reset Confirmation Modal */}
-      <CustomModal
+      {/* <CustomModal
         visible={showResetConfirmation}
         onClose={() => {
           audioService.playSound("buttonPress");
@@ -924,7 +1301,7 @@ export default function ThemeStore() {
         showCloseButton={true}
         closeButtonText="Cancel"
         destructive={true}
-      />
+      /> */}
 
       {/* Upsell Modal */}
       {currentUpsellOffer && (
@@ -1011,9 +1388,100 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  resetButton: {
+  // resetButton: {
+  //   padding: SIZES.PADDING_SMALL,
+  //   marginRight: SIZES.PADDING_SMALL,
+  // },
+  restoreButton: {
     padding: SIZES.PADDING_SMALL,
     marginRight: SIZES.PADDING_SMALL,
+  },
+  statusContainer: {
+    backgroundColor: COLORS.CARD_BACKGROUND,
+    padding: SIZES.PADDING_SMALL,
+    marginHorizontal: SIZES.PADDING_MEDIUM,
+    marginVertical: SIZES.PADDING_SMALL,
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    borderWidth: 1,
+    borderColor: COLORS.CARD_BORDER,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  statusText: {
+    fontSize: SIZES.SMALL,
+    color: COLORS.TEXT_DARK,
+    fontFamily: FONTS.DOSIS_BOLD,
+    flex: 1,
+  },
+  refreshStatusButton: {
+    padding: SIZES.PADDING_SMALL,
+    marginLeft: SIZES.PADDING_SMALL,
+  },
+  errorContainer: {
+    marginTop: SIZES.PADDING_SMALL,
+    padding: SIZES.PADDING_SMALL,
+    backgroundColor: "#ffebee",
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    borderLeftWidth: 3,
+    borderLeftColor: "#f44336",
+  },
+  errorText: {
+    fontSize: SIZES.SMALL,
+    color: "#d32f2f",
+    fontFamily: FONTS.DOSIS_BOLD,
+    lineHeight: 16,
+  },
+  debugContainer: {
+    marginTop: SIZES.PADDING_SMALL,
+    padding: SIZES.PADDING_MEDIUM,
+    backgroundColor: "#f5f5f5",
+    borderRadius: SIZES.BORDER_RADIUS_SMALL,
+    borderWidth: 1,
+    borderColor: "#ddd",
+  },
+  debugTitle: {
+    fontSize: SIZES.SUBTITLE,
+    color: "#333",
+    fontFamily: FONTS.DOSIS_BOLD,
+    marginBottom: SIZES.PADDING_SMALL,
+    textAlign: "center",
+  },
+  debugRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: SIZES.PADDING_SMALL / 2,
+    flexWrap: "wrap",
+  },
+  debugLabel: {
+    fontSize: SIZES.SMALL,
+    color: "#666",
+    fontFamily: FONTS.DOSIS_BOLD,
+    flex: 1,
+    minWidth: 80,
+  },
+  debugValue: {
+    fontSize: SIZES.SMALL,
+    color: "#333",
+    flex: 2,
+    textAlign: "right",
+  },
+  debugSuccess: {
+    color: "#4caf50",
+    fontFamily: FONTS.DOSIS_BOLD,
+  },
+  debugError: {
+    color: "#f44336",
+    fontFamily: FONTS.DOSIS_BOLD,
+  },
+  debugText: {
+    fontSize: SIZES.SMALL,
+    color: "#1976d2",
+    fontFamily: FONTS.DOSIS_BOLD,
+    lineHeight: 16,
   },
   contentContainer: {
     flex: 1,
@@ -1046,6 +1514,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2,
     borderLeftColor: COLORS.CARD_BORDER,
     marginTop: 15,
+    marginRight: -SIZES.PADDING_MEDIUM,
+     
     zIndex: 1, // Ensure button appears above other elements
   },
   adFreeButtonDisabled: {

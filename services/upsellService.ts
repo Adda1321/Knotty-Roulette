@@ -1,17 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { UPSELL_CONFIG } from '../constants/theme';
 import { themePackService } from './themePackService';
 import userService from './userService';
-
-const STORAGE_KEYS = {
-  AD_COUNT: 'knotty_roulette_ad_count',
-  LAST_UPSELL_SHOWN: 'knotty_roulette_last_upsell_shown',
-  UPSELL_DISMISSED_COUNT: 'knotty_roulette_upsell_dismissed_count',
-  GAME_OVER_COUNT: 'knotty_roulette_game_over_count',
-  LAST_GAME_OVER_UPSELL: 'knotty_roulette_last_game_over_upsell',
-  SHOP_ENTRY_COUNT: 'knotty_roulette_shop_entry_count',
-  LAST_SHOP_UPSELL: 'knotty_roulette_last_shop_upsell',
-} as const;
 
 export interface UpsellOffer {
   id: string;
@@ -385,33 +376,6 @@ class UpsellService {
     await this.saveAdCount();
   }
 
-  /**
-   * Get current ad count
-   */
-  getAdCount(): number {
-    return this.adCount;
-  }
-
-  /**
-   * Get current game over count
-   */
-  getGameOverCount(): number {
-    return this.gameOverCount;
-  }
-
-  /**
-   * Get current shop entry count
-   */
-  getShopEntryCount(): number {
-    return this.shopEntryCount;
-  }
-
-  /**
-   * Check if user has seen the maximum number of upsells
-   */
-  hasReachedMaxUpsells(): boolean {
-    return this.upsellDismissedCount >= 3; // Limit to 3 dismissals
-  }
 
   /**
    * Reset upsell state (for testing)
@@ -533,16 +497,6 @@ class UpsellService {
     return passiveOffers;
   }
 
-  /**
-   * Get the best passive offer for the current user (for featured display)
-   */
-  getFeaturedPassiveOffer(): UpsellOffer | null {
-    const passiveOffers = this.getPassiveUpsells();
-    
-    // Return the first offer with "Best Deal" badge, or the first offer
-    const bestDealOffer = passiveOffers.find(offer => offer.showBestDeal);
-    return bestDealOffer || passiveOffers[0] || null;
-  }
 
   private async saveAdCount(): Promise<void> {
     try {

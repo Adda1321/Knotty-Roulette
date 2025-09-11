@@ -9,7 +9,8 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { CustomThemeProvider } from '../contexts/ThemeContext';
+import { IAPProvider } from "../components/ui/IAPProvider";
+import { CustomThemeProvider } from "../contexts/ThemeContext";
 import audioService from "../services/audio";
 import backgroundMusic from "../services/backgroundMusic";
 
@@ -17,30 +18,37 @@ import backgroundMusic from "../services/backgroundMusic";
 const fontConfig = {
   "Dosis-Regular": require("../assets/fonts/Dosis-Regular.ttf"),
   "Dosis-Bold": require("../assets/fonts/Dosis-Bold.ttf"),
-  "Dosis-Medium":require('../assets/fonts/Dosis-Medium.ttf'),
+  "Dosis-Medium": require("../assets/fonts/Dosis-Medium.ttf"),
   FontdinerSwanky: require("../assets/fonts/FontdinerSwanky-Regular.ttf"),
   SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
 };
 
-// Initialize audio services immediately when app starts
-const initializeAudioServices = async () => {
+// Initialize services immediately when app starts
+const initializeServices = async () => {
   try {
-    // Initialize audio service first
+    // Initialize audio service
     await audioService.initialize();
     console.log("🎵 Audio service initialized immediately");
 
-    // Initialize background music
+    // Wait a bit for audio service to fully initialize
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    // Initialize background music with default theme
     await backgroundMusic.initialize();
     await backgroundMusic.loadBackgroundMusic();
+    
+    // Wait a bit more before starting background music
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
     await backgroundMusic.playBackgroundMusic();
     console.log("🎵 Background music initialized immediately");
   } catch (error) {
-    console.error("❌ Failed to initialize audio services immediately:", error);
+    console.error("❌ Failed to initialize services immediately:", error);
   }
 };
 
-// Start audio initialization immediately
-initializeAudioServices();
+// Start service initialization immediately
+initializeServices();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -53,14 +61,16 @@ export default function RootLayout() {
 
   return (
     <CustomThemeProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="theme-store" options={{ headerShown: false }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style="auto" />
-      </ThemeProvider>
+      <IAPProvider>
+        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="theme-store" options={{ headerShown: false }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style="auto" />
+        </ThemeProvider>
+      </IAPProvider>
     </CustomThemeProvider>
   );
 }

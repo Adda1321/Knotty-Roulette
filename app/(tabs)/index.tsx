@@ -14,10 +14,18 @@ import PurchaseCelebrationModal from "../../components/ui/PurchaseCelebrationMod
 import { COLORS, FONTS, GAME_CONFIG, SIZES } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import adService from "../../services/adService";
-import { fetchAllChallenges, fetchChallenges, getChallengesByTheme, trackPlay } from "../../services/api";
+import {
+    fetchAllChallenges,
+    fetchChallenges,
+    getChallengesByTheme,
+    trackPlay,
+} from "../../services/api";
 import audioService from "../../services/audio";
 import { themePackService } from "../../services/themePackService";
-import upsellService, { UpsellOffer, UpsellType } from "../../services/upsellService";
+import upsellService, {
+    UpsellOffer,
+    UpsellType,
+} from "../../services/upsellService";
 import userService from "../../services/userService";
 import { Challenge, GameState, Player } from "../../types/game";
 
@@ -31,10 +39,11 @@ export default function HomeScreen() {
   const [showGameOverModal, setShowGameOverModal] = useState(false);
   const [winner, setWinner] = useState<Player | null>(null);
   const [isNewGame, setIsNewGame] = useState(false);
-  
+
   // Upsell state
   const [showUpsellModal, setShowUpsellModal] = useState(false);
-  const [currentUpsellOffer, setCurrentUpsellOffer] = useState<UpsellOffer | null>(null);
+  const [currentUpsellOffer, setCurrentUpsellOffer] =
+    useState<UpsellOffer | null>(null);
   const [isGameOverUpsell, setIsGameOverUpsell] = useState(false);
 
   // Purchase celebration state
@@ -44,8 +53,9 @@ export default function HomeScreen() {
     "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null
   >(null);
 
-  // Get theme context
-  const { onThemeChange } = useTheme();
+  // Get theme context safely
+  const themeContext = useTheme();
+  const onThemeChange = themeContext?.onThemeChange;
 
   // Handle purchase completion from upsell modal
   const handlePurchaseComplete = (
@@ -75,21 +85,24 @@ export default function HomeScreen() {
   }, []);
 
   // New function to refresh challenges when theme changes (much faster)
-  const refreshChallengesForTheme = useCallback((themeId?: string) => {
-    try {
-      const currentTheme = themeId || themePackService.getCurrentPack();
-      console.log("🎨 Refreshing challenges for theme:", currentTheme);
-      
-      // Use cached data for instant theme switching
-      const themeChallenges = getChallengesByTheme(currentTheme);
-      setChallenges(themeChallenges);
-      setIsOnline(true);
-    } catch (error) {
-      console.error("Error refreshing challenges for theme:", error);
-      // Fallback to full reload if needed
-      loadChallenges();
-    }
-  }, [loadChallenges]);
+  const refreshChallengesForTheme = useCallback(
+    (themeId?: string) => {
+      try {
+        const currentTheme = themeId || themePackService.getCurrentPack();
+        console.log("🎨 Refreshing challenges for theme:", currentTheme);
+
+        // Use cached data for instant theme switching
+        const themeChallenges = getChallengesByTheme(currentTheme);
+        setChallenges(themeChallenges);
+        setIsOnline(true);
+      } catch (error) {
+        console.error("Error refreshing challenges for theme:", error);
+        // Fallback to full reload if needed
+        loadChallenges();
+      }
+    },
+    [loadChallenges]
+  );
 
   const initializeServices = useCallback(async () => {
     try {
@@ -103,7 +116,7 @@ export default function HomeScreen() {
       // Pre-load all challenges for fast theme switching
       console.log("🚀 Pre-loading all challenges for fast theme switching...");
       await fetchAllChallenges();
-      
+
       // Load challenges with current theme
       await loadChallenges();
     } catch (error) {
@@ -119,6 +132,11 @@ export default function HomeScreen() {
 
   // Listen for theme changes and refresh challenges
   useEffect(() => {
+    if (!onThemeChange) {
+      console.log("Theme change callback not available yet");
+      return;
+    }
+
     const unsubscribe = onThemeChange(async (newThemeId) => {
       console.log(
         "🎨 Theme changed to:",
@@ -167,15 +185,15 @@ export default function HomeScreen() {
 
     // Reset ad service spin counter for new game
     adService.resetSpinCounter();
-    
+
     // Track the game start with the backend
     try {
       const playStats = await trackPlay();
       if (playStats) {
-        console.log('🎮 Game play tracked:', playStats);
+        console.log("🎮 Game play tracked:", playStats);
       }
     } catch (error) {
-      console.error('Failed to track game play:', error);
+      console.error("Failed to track game play:", error);
       // Don't block the game start if tracking fails
     }
   };
@@ -255,13 +273,13 @@ export default function HomeScreen() {
   const handleGameOverModalClose = async () => {
     audioService.playHaptic("medium");
     setShowGameOverModal(false);
-    
+
     // Check for game over upsell AFTER modal is closed
     // This prevents modal-over-modal issues on iOS
     setTimeout(async () => {
       await checkGameOverUpsell();
     }, 100); // Small delay to ensure modal is fully closed
-    
+
     // Don't reset game immediately - wait for upsell flow to complete
   };
 
@@ -269,7 +287,7 @@ export default function HomeScreen() {
   const handleUpsellModalClose = () => {
     setShowUpsellModal(false);
     setCurrentUpsellOffer(null);
-    
+
     // If this was a game over upsell, reset the game
     if (isGameOverUpsell) {
       setIsGameOverUpsell(false);

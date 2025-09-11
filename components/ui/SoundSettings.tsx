@@ -26,7 +26,8 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
-    audioService.initialize();
+    // Audio service is already initialized in app layout
+    // No need to initialize again here
     setIsMusicMuted(backgroundMusic.isMusicMuted());
     setIsSoundsMuted(audioService.isSoundsMuted());
     setIsVibrationEnabled(audioService.isVibrationEnabled());
@@ -237,7 +238,9 @@ export default function SoundSettings({ onPress }: SoundSettingsProps) {
                   }}
                   backgroundColor={COLORS.YELLOW}
                   textColor={COLORS.TEXT_DARK}
-                  fontSize={SIZES.BODY}
+                  fontSize={
+                    Platform.OS === "android" ? SIZES.SUBTITLE : SIZES.TITLE
+                  }
                   shadowIntensity={5}
                   fontFamily={FONTS.DOSIS_BOLD}
                   shadowRadius={10}
@@ -284,7 +287,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: SIZES.TITLE,
+    fontSize: SIZES.EXTRALARGE,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -305,7 +308,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   settingText: {
-    fontSize: SIZES.BODY,
+    fontSize: Platform.select({
+      android: SIZES.SUBTITLE - 1, // 👈 use a different size on Android
+      ios: SIZES.SUBTITLE + 2, // fallback for iOS
+      default: SIZES.TITLE, // for web/other
+    }),
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
     marginLeft: SIZES.PADDING_MEDIUM,

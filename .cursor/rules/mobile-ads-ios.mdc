@@ -1,0 +1,197 @@
+---
+description: Documentation for reference for running Google Mobile Ads on IOS
+globs:
+alwaysApply: true
+---
+
+Enable SKAdNetwork to track conversions (iOS)
+The Google Mobile Ads SDK supports conversion tracking using Apple's SKAdNetwork, which lets Google and participating third-party buyers attribute an app install even when the IDFA is not available. Add the advised SKAdNetwork identifiers to your project as described below. Note that these identifiers are subject to change and should be updated regularly.
+
+// <project-root>/app.json
+{
+  "expo": {
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-xxxxxxxx~xxxxxxxx",
+          "iosAppId": "ca-app-pub-xxxxxxxx~xxxxxxxx",
+          "skAdNetworkItems": [
+            "cstr6suwn9.skadnetwork",
+            "4fzdc2evr5.skadnetwork",
+            "2fnua5tdw4.skadnetwork",
+            "ydx93a7ass.skadnetwork",
+            "p78axxw29g.skadnetwork",
+            "v72qych5uu.skadnetwork",
+            "ludvb6z3bs.skadnetwork",
+            "cp8zw746q7.skadnetwork",
+            "3sh42y64q3.skadnetwork",
+            "c6k4g5qg8m.skadnetwork",
+            "s39g8k73mm.skadnetwork",
+            "3qy4746246.skadnetwork",
+            "f38h382jlk.skadnetwork",
+            "hs6bdukanm.skadnetwork",
+            "mlmmfzh3r3.skadnetwork",
+            "v4nxqhlyqp.skadnetwork",
+            "wzmmz9fp6w.skadnetwork",
+            "su67r6k2v3.skadnetwork",
+            "yclnxrl5pm.skadnetwork",
+            "t38b2kh725.skadnetwork",
+            "7ug5zh24hu.skadnetwork",
+            "gta9lk7p23.skadnetwork",
+            "vutu7akeur.skadnetwork",
+            "y5ghdn5j9k.skadnetwork",
+            "v9wttpbfk9.skadnetwork",
+            "n38lu8286q.skadnetwork",
+            "47vhws6wlr.skadnetwork",
+            "kbd757ywx3.skadnetwork",
+            "9t245vhmpl.skadnetwork",
+            "a2p9lx4jpn.skadnetwork",
+            "22mmun2rn5.skadnetwork",
+            "44jx6755aq.skadnetwork",
+            "k674qkevps.skadnetwork",
+            "4468km3ulz.skadnetwork",
+            "2u9pt9hc89.skadnetwork",
+            "8s468mfl3y.skadnetwork",
+            "klf5c3l5u5.skadnetwork",
+            "ppxm28t8ap.skadnetwork",
+            "kbmxgpxpgc.skadnetwork",
+            "uw77j35x4d.skadnetwork",
+            "578prtvx9j.skadnetwork",
+            "4dzt52r2t5.skadnetwork",
+            "tl55sbb4fm.skadnetwork",
+            "c3frkrj4fj.skadnetwork",
+            "e5fvkxwrpn.skadnetwork",
+            "8c4e2ghe7u.skadnetwork",
+            "3rd42ekr43.skadnetwork",
+            "97r2b46745.skadnetwork",
+            "3qcr597p9d.skadnetwork"
+          ]
+        }
+      ]
+    ]
+  }
+}
+
+
+App Tracking Transparency (iOS)
+Apple requires apps to display the App Tracking Transparency authorization request for accessing the IDFA (leaving the choice to the user, whether to use personalized or non-personalized ads). Within your projects configuration file, you have to provide a user tracking usage description:
+
+// <project-root>/app.json
+{
+  "expo": {
+    "plugins": [
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-xxxxxxxx~xxxxxxxx",
+          "iosAppId": "ca-app-pub-xxxxxxxx~xxxxxxxx",
+          "userTrackingUsageDescription": "This identifier will be used to deliver personalized ads to you."
+        }
+      ]
+    ]
+  }
+}
+
+Test ads
+Whilst developing your app with AdMob, you'll want to make sure you use test ads rather than production ads from your Google AdMob account - otherwise your account may be disabled!
+
+Although usage of different advert types is explained later, when creating your adverts the "Ad Unit ID" being used whilst testing can be set to a testing ID. The code snippet below shows how to initialize each advert type with a test ID:
+
+import { AppOpenAd, InterstitialAd, RewardedAd, BannerAd, TestIds } from 'react-native-google-mobile-ads';
+
+# App Open
+AppOpenAd.createForAdRequest(TestIds.APP_OPEN);
+
+# Interstitial
+InterstitialAd.createForAdRequest(TestIds.INTERSTITIAL);
+
+# Rewarded
+RewardedAd.createForAdRequest(TestIds.REWARDED);
+
+# Banners
+<BannerAd unitId={TestIds.BANNER} />
+
+Interstitial Ads (WE ARE USING THIS)
+Interstitials are full-screen ads that cover the interface of an app until closed by the user. These types of ads are programmatically loaded and then shown at a suitable point during your application flow (e.g. after a level on a gaming app has been completed, or game over). The ads can be preloaded in the background to ensure they're ready to go when needed.
+
+To create a new interstitial, call the createForAdRequest method from the InterstitialAd class. The first argument of the method is the "Ad Unit ID". For testing, we can use a Test ID, however for production the ID from the Google AdMob dashboard under "Ad units" should be used:
+
+import { InterstitialAd, TestIds, AdEventType } from 'react-native-google-mobile-ads';
+
+const adUnitId = __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy';
+
+const interstitial = InterstitialAd.createForAdRequest(adUnitId, {
+  keywords: ['fashion', 'clothing'],
+});
+
+The second argument is additional optional request options object to be sent whilst loading an advert, such as keywords & location. Setting additional request options helps AdMob choose better tailored ads from the network. View the RequestOptions source code to see the full range of options available.
+
+The call to createForAdRequest returns an instance of the InterstitialAd class, which provides a number of utilities for loading and displaying interstitials.
+
+To listen to events, such as when the advert from the network has loaded or when an error occurs, we can subscribe via the addAdEventListener method:
+
+import React, { useEffect, useState } from 'react';
+import { Button, Platform, StatusBar } from 'react-native';
+import { InterstitialAd, AdEventType, TestIds } from 'react-native-google-mobile-ads';
+
+const adUnitId = __DEV__ ? TestIds.INTERSTITIAL : 'ca-app-pub-xxxxxxxxxxxxx/yyyyyyyyyyyyyy';
+
+const interstitial = InterstitialAd.createForAdRequest(adUnitId, {
+  keywords: ['fashion', 'clothing'],
+});
+
+function App() {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
+      setLoaded(true);
+    });
+
+    const unsubscribeOpened = interstitial.addAdEventListener(AdEventType.OPENED, () => {
+      if (Platform.OS === 'ios') {
+        // Prevent the close button from being unreachable by hiding the status bar on iOS
+        StatusBar.setHidden(true);
+      }
+    });
+
+    const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+      if (Platform.OS === 'ios') {
+        StatusBar.setHidden(false);
+      }
+    });
+
+    // Start loading the interstitial straight away
+    interstitial.load();
+
+    // Unsubscribe from events on unmount
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeOpened();
+      unsubscribeClosed();
+    };
+  }, []);
+
+  // No advert ready to show yet
+  if (!loaded) {
+    return null;
+  }
+
+  return (
+    <Button
+      title="Show Interstitial"
+      onPress={() => {
+        interstitial.show();
+      }}
+    />
+  );
+}
+
+
+The code above subscribes to the interstitial events (via addAdEventListener()) and immediately starts to load a new advert from the network (via load()). Once an advert is available, local state is set, re-rendering the component showing a Button. When pressed, the show method on the interstitial instance is called and the advert is shown over-the-top of your application.
+
+You can subscribe to other various events with addAdEventListener listener such as if the user clicks the advert, or closes the advert and returns back to your app. To see the full list of available events, view the AdEventType source code.
+
+If needed, you can reuse the existing instance of the InterstitialAd class to load more adverts and show them when required.
+

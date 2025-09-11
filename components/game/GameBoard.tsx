@@ -432,7 +432,6 @@ export default function GameBoard({
     // setShowPurchaseCelebrationModal(true); // This line is no longer needed
   };
   */
-
   return (
     <SafeAreaView
       style={[
@@ -509,7 +508,7 @@ export default function GameBoard({
               onPress={() => {
                 audioService.playSound("buttonPress");
                 audioService.playHaptic("medium");
-                router.push("/theme-store?isGameActive=true");
+                router.push("/theme-store");
               }}
             />
 
@@ -549,6 +548,9 @@ export default function GameBoard({
                       : COLORS.YELLOW,
                 },
               ]}
+              numberOfLines={1}
+              adjustsFontSizeToFit={true}
+              minimumFontScale={0.7}
             >
               KNOTTY ROULETTE
             </Text>
@@ -593,8 +595,9 @@ export default function GameBoard({
                   {`${currentPlayer.name}'s Turn`}
                 </Text>
                 <Text
-                  style={[styles.passInstruction, 
-                     {
+                  style={[
+                    styles.passInstruction,
+                    {
                       color:
                         currentTheme === THEME_PACKS.COUPLE
                           ? "#333333"
@@ -812,7 +815,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "flex-start",
-    maxHeight: "88%",
+    maxHeight: "90%",
   },
   header: {
     alignItems: "center",
@@ -827,10 +830,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   title: {
-    fontSize:
-      Platform.OS === "android"
-        ? Math.min(SIZES.EXTRALARGE, width * 0.072)
-        : Math.min(SIZES.EXTRALARGE * 1.0, width),
+    fontSize: Platform.OS === "android" 
+      ? Math.min(SIZES.EXTRALARGE, width * 0.082)
+      : Math.min(SIZES.EXTRALARGE, width),
     fontFamily: FONTS.DOSIS_BOLD,
     marginBottom: SIZES.PADDING_MEDIUM,
     ...SIZES.TEXT_SHADOW_MEDIUM,
@@ -840,7 +842,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   currentPlayer: {
-    fontSize: SIZES.SUBTITLE,
+    fontSize: SIZES.SUBTITLE + 4,
     fontFamily: FONTS.DOSIS_BOLD,
     paddingTop: 5,
   },
@@ -868,8 +870,8 @@ const styles = StyleSheet.create({
     overflow: "visible",
   },
   wheel: {
-    width: width * 0.6,
-    height: 240,
+    width: width * 0.9,
+    height: 260,
   },
   spinButton: {
     borderRadius: SIZES.BORDER_RADIUS_MEDIUM,

@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { STORAGE_KEYS } from "../constants/storageKeys";
 import upsellService from "./upsellService";
 
 export interface UserTier {
@@ -14,7 +15,7 @@ class UserService {
 
   async initialize(): Promise<void> {
     try {
-      const storedTier = await AsyncStorage.getItem("userTier");
+      const storedTier = await AsyncStorage.getItem(STORAGE_KEYS.USER_TIER);
       if (storedTier) {
         this.userTier = JSON.parse(storedTier);
       }
@@ -26,9 +27,6 @@ class UserService {
     }
   }
 
-  getUserTier(): UserTier {
-    return this.userTier;
-  }
 
   isPremium(): boolean {
     return this.userTier.tier === "premium";
@@ -40,7 +38,7 @@ class UserService {
 
   async updateUserTier(tier: UserTier): Promise<void> {
     this.userTier = tier;
-    await AsyncStorage.setItem("userTier", JSON.stringify(tier));
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_TIER, JSON.stringify(tier));
 
     // Notify all callbacks about tier change
     this.tierChangeCallbacks.forEach((callback) => callback());
@@ -78,7 +76,7 @@ class UserService {
     this.userTier = { tier: "free" };
     
     // Persist the reset to AsyncStorage
-    await AsyncStorage.setItem("userTier", JSON.stringify(this.userTier));
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_TIER, JSON.stringify(this.userTier));
     
     this.isInitialized = true;
     console.log("✅ User tier force reset to free for testing");

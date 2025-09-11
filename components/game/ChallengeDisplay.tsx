@@ -11,7 +11,6 @@ import {
   View,
 } from "react-native";
 import { Surface } from "react-native-paper";
-import Toast from "react-native-toast-message";
 import {
   ANIMATION_CONFIGS,
   ANIMATION_VALUES,
@@ -22,6 +21,7 @@ import { logVote } from "../../services/api";
 import audioService from "../../services/audio";
 import { Challenge } from "../../types/game";
 import Button from "../ui/Button";
+import CustomModal from "../ui/CustomModal";
 import SparkleEffect from "../ui/SparkleEffect";
 
 interface ChallengeDisplayProps {
@@ -31,21 +31,11 @@ interface ChallengeDisplayProps {
 }
 
 export default function ChallengeDisplay({
-
   challenge,
   playerName,
   onComplete,
 }: ChallengeDisplayProps) {
   // Debug logging for challenge display
-  useEffect(() => {
-    console.log(`📱 ChallengeDisplay showing challenge:`, {
-      id: challenge.id,
-      text: challenge.challenge_text.substring(0, 60) + "...",
-      card_pack: challenge.card_pack,
-      has_bonus: challenge.has_bonus,
-      playerName: playerName
-    });
-  }, [challenge, playerName]);
 
   const [hasVoted, setHasVoted] = useState(false);
   const [isVoting, setIsVoting] = useState(false);
@@ -53,15 +43,16 @@ export default function ChallengeDisplay({
     null
   );
 
- const { COLORS, currentTheme } = useTheme();
-  
-  // Debug logging
-  console.log("🎨 GameBoard: Current theme:", currentTheme);
-  
-  // Monitor theme changes
-  useEffect(() => {
-    console.log("🎨 GameBoard: Theme changed to:", currentTheme);
-  }, [currentTheme]);
+  // Modal state management
+  const [showModal, setShowModal] = useState(false);
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalMessage, setModalMessage] = useState("");
+  const [modalType, setModalType] = useState<"success" | "error" | "info">(
+    "info"
+  );
+
+  const { COLORS, currentTheme } = useTheme();
+
   // Animation values
   const cardScale = useRef(new Animated.Value(0)).current;
   const cardOpacity = useRef(new Animated.Value(0)).current;
@@ -69,6 +60,25 @@ export default function ChallengeDisplay({
 
   // Sparkle effect state
   const [showSparkles, setShowSparkles] = useState(false);
+
+  // Helper function to show modal
+  const showModalMessage = (
+    title: string,
+    message: string,
+    type: "success" | "error" | "info" = "info"
+  ) => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalType(type);
+    setShowModal(true);
+  };
+
+  // Handle modal close
+  const handleModalClose = () => {
+    audioService.playHaptic("medium");
+    audioService.playSound("buttonPress");
+    setShowModal(false);
+  };
 
   // Card reveal animation on mount
   useEffect(() => {
@@ -88,8 +98,6 @@ export default function ChallengeDisplay({
   }, [cardOpacity, cardScale]);
 
   const handleVote = async (voteType: "upvote" | "downvote") => {
-    audioService.playSound("buttonPress");
-    audioService.playHaptic("medium");
     if (hasVoted || isVoting) return;
 
     setIsVoting(true);
@@ -102,38 +110,27 @@ export default function ChallengeDisplay({
         playerName,
         voteType,
       });
-      
+
       setHasVoted(true);
 
       // Handle the response based on the documented API behavior
       if (voteResponse.already_voted) {
         // User already voted on this challenge - show appropriate message
-        Toast.show({
-          type: "info",
-          text1: "Already Voted",
-          text2: "You've already voted on this challenge",
-          position: "top",
-          visibilityTime: 2000,
-        });
-        
-        console.log('Vote response - already voted:', voteResponse);
+        showModalMessage(
+          "Already Voted",
+          "You've already voted on this challenge",
+          "info"
+        );
+        audioService.playSound("passChallenge");
       } else {
         // New vote submitted successfully
-        Toast.show({
-          type: "success",
-          text1: "Vote Submitted!",
-          text2: `Your ${voteType} has been recorded`,
-          position: "top",
-          visibilityTime: 2000,
-        });
-        
-        console.log('Vote response - new vote:', voteResponse);
-        console.log('Updated counts - Likes:', voteResponse.likes, 'Dislikes:', voteResponse.dislikes);
+        showModalMessage(
+          "Vote Submitted!",
+          "You just made Knotty Times even better - thanks for your input!",
+          "success"
+        );
+        audioService.playSound("challengeComplete");
       }
-
-      // Note: The API returns updated like/dislike counts that could be used
-      // to update the UI if you want to show real-time vote counts
-      
     } catch (error) {
       console.error("Error logging vote:", error);
 
@@ -157,15 +154,6 @@ export default function ChallengeDisplay({
           errorMessage = error.message;
         }
       }
-
-      // Show error notification
-      Toast.show({
-        type: "error",
-        text1: "Vote Failed",
-        text2: errorMessage,
-        position: "top",
-        visibilityTime: 4000,
-      });
 
       // Don't set hasVoted to true if the vote failed
       setHasVoted(false);
@@ -203,31 +191,40 @@ export default function ChallengeDisplay({
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-    <Animated.View
-  style={[
-    styles.challengeCard,
-    {
-    backgroundColor: COLORS.FIELDS,
-      borderColor:
-        currentTheme === THEME_PACKS.DEFAULT ? "#2B7B33" : COLORS.YELLOW,
-    },
-  ]}
->
-                      <View style={[styles.playerContainer,{                      
-                        backgroundColor:COLORS.PRIMARY}]}>
-            
+        <Animated.View
+          style={[
+            styles.challengeCard,
+            {
+              backgroundColor: COLORS.FIELDS,
+              borderColor:
+                currentTheme === THEME_PACKS.DEFAULT
+                  ? "#2B7B33"
+                  : COLORS.YELLOW,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.playerContainer,
+              {
+                backgroundColor: COLORS.PRIMARY,
+              },
+            ]}
+          >
             <View>
-          <Text
-  style={[
-    styles.playerName,
-    { color: COLORS.YELLOW }
-  ]}
->{playerName},</Text>
-              <Text style={[styles.turnText,
-                {
-    color: COLORS.YELLOW,
-                }]
-              }>YOUR TURN</Text>
+              <Text style={[styles.playerName, { color: COLORS.YELLOW }]}>
+                {playerName},
+              </Text>
+              <Text
+                style={[
+                  styles.turnText,
+                  {
+                    color: COLORS.YELLOW,
+                  },
+                ]}
+              >
+                YOUR TURN
+              </Text>
             </View>
             <View style={styles.mascotContainer}>
               <Image
@@ -256,11 +253,14 @@ export default function ChallengeDisplay({
             }}
           >
             <View style={styles.challengeTextContainer}>
-              <Text style={[styles.challengeText,
-                {
-    color: COLORS.TEXT_DARK,
-                }
-              ]}>
+              <Text
+                style={[
+                  styles.challengeText,
+                  {
+                    color: COLORS.TEXT_DARK,
+                  },
+                ]}
+              >
                 {challenge.challenge_text}
               </Text>
             </View>
@@ -277,10 +277,10 @@ export default function ChallengeDisplay({
                       {
                         borderRadius: 10,
                       },
-                      styles.upvoteButton,{
-                        backgroundColor:COLORS.ONLINE,
-                        borderColor:COLORS.PRIMARY
-
+                      styles.upvoteButton,
+                      {
+                        backgroundColor: COLORS.ONLINE,
+                        borderColor: COLORS.PRIMARY,
                       },
                       styles.voteButton,
                     ]}
@@ -308,9 +308,16 @@ export default function ChallengeDisplay({
                           size="small"
                         />
                       ) : (
-                        <Text style={[styles.voteButtonText,{
-    color: COLORS.TEXT_PRIMARY,
-                        }]}>👍</Text>
+                        <Text
+                          style={[
+                            styles.voteButtonText,
+                            {
+                              color: COLORS.TEXT_PRIMARY,
+                            },
+                          ]}
+                        >
+                          👍
+                        </Text>
                       )}
                     </TouchableOpacity>
                   </Surface>
@@ -320,9 +327,12 @@ export default function ChallengeDisplay({
                       {
                         borderRadius: 10,
                       },
-                      styles.downvoteButton,{
-                    backgroundColor: currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :"#EE562B"
-
+                      styles.downvoteButton,
+                      {
+                        backgroundColor:
+                          currentTheme === THEME_PACKS.COUPLE
+                            ? COLORS.LIGHT
+                            : "#EE562B",
                       },
                       styles.voteButton,
                     ]}
@@ -358,29 +368,30 @@ export default function ChallengeDisplay({
             )}
             <View>
               <View style={styles.actionButtons}>
-            <Surface
-  elevation={3}
-  style={{
-    borderRadius: 11,
-    borderWidth: 3, // Add border width
-    borderColor:
-      currentTheme === THEME_PACKS.DEFAULT
-        ? "#18752A"
-        : COLORS.PRIMARY,
-    overflow: "hidden", // Ensures border radius clips content
-  }}
->
-
+                <Surface
+                  elevation={3}
+                  style={{
+                    borderRadius: 11,
+                    borderWidth: 3, // Add border width
+                    borderColor:
+                      currentTheme === THEME_PACKS.DEFAULT
+                        ? "#18752A"
+                        : COLORS.PRIMARY,
+                    overflow: "hidden", // Ensures border radius clips content
+                  }}
+                >
                   <Animated.View
                     style={{ transform: [{ scale: buttonScale }] }}
                   >
                     <Button
                       text="COMPLETE CHALLENGE +1" // Uppercase to match image
                       onPress={handleComplete}
- backgroundColor=
-    {  currentTheme === THEME_PACKS.DEFAULT
-        ? "#3A983D"
-        : COLORS.ONLINE}                    textColor={COLORS.YELLOW}
+                      backgroundColor={
+                        currentTheme === THEME_PACKS.DEFAULT
+                          ? "#3A983D"
+                          : COLORS.ONLINE
+                      }
+                      textColor={COLORS.YELLOW}
                       fontSize={SIZES.SUBTITLE}
                       fontFamily={FONTS.DOSIS_BOLD}
                       // fontWeight="800" // Bolder to match image
@@ -404,7 +415,11 @@ export default function ChallengeDisplay({
                   <Button
                     text="Pass (-1 point)"
                     onPress={handleOnPass}
-                    backgroundColor={currentTheme === THEME_PACKS.COUPLE? COLORS.LIGHT :"#EE562B"}
+                    backgroundColor={
+                      currentTheme === THEME_PACKS.COUPLE
+                        ? COLORS.LIGHT
+                        : "#EE562B"
+                    }
                     textColor={COLORS.YELLOW}
                     fontSize={SIZES.SUBTITLE}
                     fontFamily={FONTS.DOSIS_BOLD}
@@ -448,6 +463,17 @@ export default function ChallengeDisplay({
           </View>
         </Animated.View>
       </ScrollView>
+
+      {/* Custom Modal for notifications */}
+      <CustomModal
+        visible={showModal}
+        onClose={handleModalClose}
+        title={modalTitle}
+        message={modalMessage}
+        showCloseButton={true}
+        closeButtonText="OK"
+        showSparkles={modalType === "success"}
+      />
     </View>
   );
 }
@@ -541,7 +567,7 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   voteQuestion: {
-    fontSize: 14,
+    fontSize: SIZES.BODY,
     color: "#504f4fff",
     marginBottom: 12,
     textAlign: "center",

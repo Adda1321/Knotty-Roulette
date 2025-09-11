@@ -1,8 +1,8 @@
 import React, { useEffect } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
-import { Player } from "../../types/game";
-import { COLORS as THEME_COLORS,COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme"; // Fixed import
+import { FlatList, Platform, StyleSheet, Text, View } from "react-native";
+import { COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme"; // Fixed import
 import { useTheme } from "../../contexts/ThemeContext";
+import { Player } from "../../types/game";
 
 interface ScoreboardProps {
   players: Player[];
@@ -14,10 +14,10 @@ export default function Scoreboard({
   currentPlayerIndex,
 }: ScoreboardProps) {
   const { COLORS, currentTheme } = useTheme();
-  
+
   // Debug logging
   console.log("🎨 GameBoard: Current theme:", currentTheme);
-  
+
   // Monitor theme changes
   useEffect(() => {
     console.log("🎨 GameBoard: Theme changed to:", currentTheme);
@@ -33,15 +33,14 @@ export default function Scoreboard({
     index: number;
   }) => (
     <View
-         style={[
-    styles.playerCard,
-    player.id === currentPlayerIndex && {
-      backgroundColor: COLORS.PRIMARY,
-      borderWidth: 2,
-    borderColor: COLORS.YELLOW,
-    },
-  ]}
-
+      style={[
+        styles.playerCard,
+        player.id === currentPlayerIndex && {
+          backgroundColor: COLORS.PRIMARY,
+          borderWidth: 2,
+          borderColor: COLORS.YELLOW,
+        },
+      ]}
     >
       <Text
         style={[
@@ -56,7 +55,7 @@ export default function Scoreboard({
       <Text
         style={[
           styles.playerScore,
-          {color: COLORS.PRIMARY},
+          { color: COLORS.PRIMARY },
           player.id === currentPlayerIndex && styles.currentPlayerScore,
         ]}
       >
@@ -66,17 +65,17 @@ export default function Scoreboard({
   );
 
   return (
-  <View
-  style={[
-    styles.container,
-    {
-      backgroundColor:
-        currentTheme === THEME_PACKS.COUPLE
-          ? COLORS.GAMEBOARDPRIMARY
-          : COLORS.SCOREBOARD,
-    },
-  ]}
->
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor:
+            currentTheme === THEME_PACKS.COUPLE
+              ? COLORS.GAMEBOARDPRIMARY
+              : COLORS.SCOREBOARD,
+        },
+      ]}
+    >
       <Text style={styles.title}>Scoreboard</Text>
 
       <FlatList
@@ -103,14 +102,21 @@ const styles = StyleSheet.create({
     // backgroundColor: "#5aad5d", // Darker shade of 6bc26e - more sophisticated
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     padding: SIZES.PADDING_SMALL,
+    paddingBottom: SIZES.PADDING_MEDIUM,
     marginTop: 14,
     maxHeight: 150,
-    paddingVertical: 12,
+     paddingVertical: Platform.select({
+          android: 5, // 👈 use a different size on Android
+          ios: 12,        // fallback for iOS
+        }),
     width: "100%",
     ...SIZES.SHADOW_SMALL,
   },
   title: {
-    fontSize: SIZES.SUBTITLE,
+      fontSize: Platform.select({
+          android: SIZES.SUBTITLE, // 👈 use a different size on Android
+          ios: SIZES.SUBTITLE + 4,        // fallback for iOS
+        }),
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -136,9 +142,8 @@ const styles = StyleSheet.create({
     height: 60,
     alignItems: "center",
     justifyContent: "center",
-    ...SIZES.SHADOW_SMALL,  
-    backgroundColor:COLORS.FIELDS,
-
+    ...SIZES.SHADOW_SMALL,
+    backgroundColor: COLORS.FIELDS,
   },
   currentPlayerCard: {
     backgroundColor: COLORS.DARK_GREEN,
@@ -146,7 +151,10 @@ const styles = StyleSheet.create({
     borderColor: COLORS.YELLOW,
   },
   playerName: {
-    fontSize: SIZES.SMALL,
+     fontSize: Platform.select({
+          android: SIZES.SMALL, // 👈 use a different size on Android
+          ios: SIZES.CAPTION,        // fallback for iOS
+        }),
     fontWeight: "600",
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_MEDIUM,
@@ -155,9 +163,16 @@ const styles = StyleSheet.create({
   },
   currentPlayerName: {
     color: COLORS.TEXT_PRIMARY,
+     fontSize: Platform.select({
+          android: SIZES.SMALL, // 👈 use a different size on Android
+          ios: SIZES.CAPTION,        // fallback for iOS
+        }),
   },
   playerScore: {
-    fontSize: SIZES.SUBTITLE,
+     fontSize: Platform.select({
+          android: SIZES.CAPTION, // 👈 use a different size on Android
+          ios: SIZES.SUBTITLE,        // fallback for iOS
+        }),
     fontWeight: "bold",
     // color: COLORS.DARK_GREEN,
     fontFamily: FONTS.DOSIS_MEDIUM,

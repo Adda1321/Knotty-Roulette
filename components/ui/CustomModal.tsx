@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  ActivityIndicator,
   Modal,
   Platform,
   StyleSheet,
@@ -11,6 +12,7 @@ import { Surface } from "react-native-paper";
 import { COLORS, FONTS, SIZES, THEME_PACKS } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import ModalSparkles from "./ModalSparkles";
+
 interface CustomModalProps {
   visible: boolean;
   onClose: () => void;
@@ -29,6 +31,7 @@ interface CustomModalProps {
   sparkleFadeDuration?: number;
   sparkleAppearDuration?: number;
   disabled?: boolean; // New prop to disable buttons
+  isLoading?: boolean; // New prop to show loading state
 }
 
 export default function CustomModal({
@@ -49,6 +52,7 @@ export default function CustomModal({
   sparkleFadeDuration = 300,
   sparkleAppearDuration = 300,
   disabled = false,
+  isLoading = false,
 }: CustomModalProps) {
   // Don't render anything if modal is not visible
   const { COLORS, currentTheme } = useTheme();
@@ -103,7 +107,15 @@ export default function CustomModal({
               (Platform.OS === "ios" ? (
                 <View style={styles.buttonContainerIOS}>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                    style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          closeButtonText === "Maybe Later"
+                            ? "#f05b59ff"
+                            : COLORS.YELLOW,
+                      },
+                    ]}
                     onPress={onClose}
                   >
                     <Text style={styles.closeButtonText}>
@@ -114,7 +126,15 @@ export default function CustomModal({
               ) : (
                 <Surface elevation={3} style={styles.buttonSurface}>
                   <TouchableOpacity
-                    style={styles.closeButton}
+                  style={[
+                      styles.closeButton,
+                      {
+                        backgroundColor:
+                          closeButtonText === "Maybe Later"
+                            ? "#f05b59ff"
+                            : COLORS.YELLOW,
+                      },
+                    ]}
                     onPress={onClose}
                   >
                     <Text style={styles.closeButtonText}>
@@ -132,19 +152,36 @@ export default function CustomModal({
                     style={[
                       styles.confirmButton,
                       destructive && styles.destructiveButton,
-                      disabled && styles.disabledButton,
+                      (disabled || isLoading) && styles.disabledButton,
                     ]}
                     onPress={onConfirm}
-                    disabled={disabled} // Disable button if prop is true
+                    disabled={disabled || isLoading} // Disable button if prop is true or loading
                   >
-                    <Text
-                      style={[
-                        styles.confirmButtonText,
-                        disabled && styles.disabledButtonText,
-                      ]}
-                    >
-                      {confirmButtonText}
-                    </Text>
+                    {isLoading ? (
+                      <View style={styles.loadingContainer}>
+                        <ActivityIndicator
+                          size="small"
+                          color={COLORS.TEXT_PRIMARY}
+                        />
+                        <Text
+                          style={[
+                            styles.confirmButtonText,
+                            styles.loadingButtonText,
+                          ]}
+                        >
+                          Loading...
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text
+                        style={[
+                          styles.confirmButtonText,
+                          (disabled || isLoading) && styles.disabledButtonText,
+                        ]}
+                      >
+                        {confirmButtonText}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -153,19 +190,36 @@ export default function CustomModal({
                     style={[
                       styles.confirmButton,
                       destructive && styles.destructiveButton,
-                      disabled && styles.disabledButton,
+                      (disabled || isLoading) && styles.disabledButton,
                     ]}
                     onPress={onConfirm}
-                    disabled={disabled} // Disable button if prop is true
+                    disabled={disabled || isLoading} // Disable button if prop is true or loading
                   >
-                    <Text
-                      style={[
-                        styles.confirmButtonText,
-                        disabled && styles.disabledButtonText,
-                      ]}
-                    >
-                      {confirmButtonText}
-                    </Text>
+                    {isLoading ? (
+                      <View style={styles.loadingContainer}>
+                        <ActivityIndicator
+                          size="small"
+                          color={COLORS.TEXT_PRIMARY}
+                        />
+                        <Text
+                          style={[
+                            styles.confirmButtonText,
+                            styles.loadingButtonText,
+                          ]}
+                        >
+                          Loading...
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text
+                        style={[
+                          styles.confirmButtonText,
+                          (disabled || isLoading) && styles.disabledButtonText,
+                        ]}
+                      >
+                        {confirmButtonText}
+                      </Text>
+                    )}
                   </TouchableOpacity>
                 </Surface>
               ))}
@@ -207,7 +261,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    fontSize: SIZES.TITLE,
+    fontSize: SIZES.TITLE + 2,
     color: COLORS.YELLOW,
     fontFamily: FONTS.DOSIS_BOLD,
     textAlign: "center",
@@ -218,7 +272,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   message: {
-    fontSize: SIZES.BODY,
+    fontSize: SIZES.SUBTITLE,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.PRIMARY,
     textAlign: "center",
@@ -244,7 +298,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   closeButton: {
-    backgroundColor: COLORS.YELLOW,
+    // backgroundColor: COLORS.YELLOW,
     paddingHorizontal: SIZES.PADDING_MEDIUM,
     paddingVertical: SIZES.PADDING_MEDIUM,
     alignItems: "center",
@@ -273,5 +327,13 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_PRIMARY,
     fontFamily: FONTS.PRIMARY,
     fontWeight: "600",
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingButtonText: {
+    marginLeft: SIZES.PADDING_MEDIUM,
   },
 });

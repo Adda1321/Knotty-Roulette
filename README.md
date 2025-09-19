@@ -164,6 +164,7 @@ expo build:android
 expo build:ios
 ```
 
+
 For Development:
 ```bash
 eas build --platform android --profile development

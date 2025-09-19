@@ -3,19 +3,19 @@ import { Surface } from "react-native-paper";
 
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Animated,
-  Dimensions,
-  Easing,
-  Image,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
+    Animated,
+    Dimensions,
+    Easing,
+    Image,
+    Platform,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  ANIMATION_CONFIGS,
-  ANIMATION_VALUES,
+    ANIMATION_CONFIGS,
+    ANIMATION_VALUES,
 } from "../../constants/animations";
 import { FONTS, GAME_CONFIG, SIZES, THEME_PACKS } from "../../constants/theme"; // Fixed import
 import { useTheme } from "../../contexts/ThemeContext";
@@ -569,135 +569,135 @@ export default function GameBoard({
             </View>
           </View>
 
-          {/* Game Area */}
-          <LinearGradient
+            {/* Game Area */}
+            <LinearGradient
             colors={[COLORS.GAMEBOARDSECONDARY, COLORS.GAMEBOARDPRIMARY]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.gameArea}
-          >
-            {/* Rest of your content */}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.gameArea}
+            >
+              {/* Rest of your content */}
 
-            {/* Spinning Wheel */}
-            <View style={styles.wheelContainer}>
-              <View style={styles.header}>
-                <Text
-                  style={[
-                    styles.currentPlayer,
-                    {
-                      color:
-                        currentTheme === THEME_PACKS.COUPLE
-                          ? "#333333"
-                          : COLORS.TEXT_DARK,
-                    },
-                  ]}
-                >
-                  {`${currentPlayer.name}'s Turn`}
-                </Text>
-                <Text
-                  style={[
-                    styles.passInstruction,
-                    {
-                      color:
-                        currentTheme === THEME_PACKS.COUPLE
-                          ? "#333333"
-                          : COLORS.TEXT_DARK,
-                    },
-                  ]}
-                >
-                  Pass Phone to Next Player
-                </Text>
-              </View>
-              <Animated.View
-                style={[
-                  styles.wheelShadowContainer,
-                  {
-                    transform: [{ scale: wheelScale }],
-                  },
-                ]}
-              >
-                <Animated.Image
-                  source={require("../../assets/images/knotty-logo.png")}
-                  style={[
-                    styles.wheel,
-                    {
-                      transform: [
-                        {
-                          rotate: rotation.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: ["0deg", "360deg"],
-                          }),
-                        },
-                      ],
-                      opacity: 0.8,
-                    },
-                  ]}
-                  resizeMode="contain"
-                />
-              </Animated.View>
-            </View>
-
-            <Animated.View style={{ transform: [{ translateY }] }}>
-              <Surface
-                elevation={5}
-                style={{
-                  borderRadius: 14,
-                  marginVertical: 4,
-                }}
-              >
-                <View
-                  style={{
-                    borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
-                    overflow: "hidden",
-                  }}
-                >
-                  {/* Shine Layer 1 */}
-                  <Animated.View
-                    pointerEvents="none"
+              {/* Spinning Wheel */}
+              <View style={styles.wheelContainer}>
+                <View style={styles.header}>
+                  <Text
                     style={[
-                      styles.glareLayer1,
+                      styles.currentPlayer,
                       {
-                        transform: [
-                          { translateX: shineAnim1 },
-                          Platform.OS === "ios"
-                            ? { skewX: "-15deg" }
-                            : { rotate: "15deg" },
-                        ],
+                        color:
+                          currentTheme === THEME_PACKS.COUPLE
+                            ? "#333333"
+                            : COLORS.TEXT_DARK,
                       },
                     ]}
-                  />
-
-                  <Button
-                    text={
-                      isSpinning
-                        ? "Spinning..."
-                        : pendingUpsell
-                        ? "Check Special Offer!"
-                        : "Spin the Wheel"
-                    }
-                    onPress={spinWheel}
-                    disabled={isSpinning}
-                    backgroundGradient={
-                      currentTheme === THEME_PACKS.DEFAULT
-                        ? ([COLORS.PRIMARY, COLORS.YELLOW] as const)
-                        : currentTheme === THEME_PACKS.COLLEGE
-                        ? ([COLORS.LIGHT, COLORS.YELLOW] as const)
-                        : ([COLORS.LIGHT, COLORS.YELLOW] as const)
-                    }
-                    textColor={COLORS.TEXT_DARK}
-                    fontSize={SIZES.SUBTITLE}
-                    fontFamily={FONTS.DOSIS_BOLD}
-                    paddingHorizontal={SIZES.PADDING_LARGE}
-                    paddingVertical={SIZES.PADDING_MEDIUM}
+                  >
+                    {`${currentPlayer.name}'s Turn`}
+                  </Text>
+                  <Text
                     style={[
-                      styles.spinButton,
-                      isSpinning && styles.spinButtonDisabled,
+                      styles.passInstruction,
+                      {
+                        color:
+                          currentTheme === THEME_PACKS.COUPLE
+                            ? "#333333"
+                            : COLORS.TEXT_DARK,
+                      },
                     ]}
-                  />
+                  >
+                    Pass Phone to Next Player
+                  </Text>
                 </View>
-              </Surface>
-            </Animated.View>
-          </LinearGradient>
+                <Animated.View
+                  style={[
+                    styles.wheelShadowContainer,
+                    {
+                      transform: [{ scale: wheelScale }],
+                    },
+                  ]}
+                >
+                  <Animated.Image
+                    source={require("../../assets/images/knotty-logo.png")}
+                    style={[
+                      styles.wheel,
+                      {
+                        transform: [
+                          {
+                            rotate: rotation.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ["0deg", "360deg"],
+                            }),
+                          },
+                        ],
+                        opacity: 0.8,
+                      },
+                    ]}
+                    resizeMode="contain"
+                  />
+                </Animated.View>
+              </View>
+
+              <Animated.View style={{ transform: [{ translateY }] }}>
+                <Surface
+                  elevation={5}
+                  style={{
+                    borderRadius: 14,
+                    marginVertical: 4,
+                  }}
+                >
+                  <View
+                    style={{
+                      borderRadius: SIZES.BORDER_RADIUS_MEDIUM,
+                      overflow: "hidden",
+                    }}
+                  >
+                    {/* Shine Layer 1 */}
+                    <Animated.View
+                      pointerEvents="none"
+                      style={[
+                        styles.glareLayer1,
+                        {
+                          transform: [
+                            { translateX: shineAnim1 },
+                            Platform.OS === "ios"
+                              ? { skewX: "-15deg" }
+                              : { rotate: "15deg" },
+                          ],
+                        },
+                      ]}
+                    />
+
+                    <Button
+                      text={
+                        isSpinning
+                          ? "Spinning..."
+                          : pendingUpsell
+                          ? "Check Special Offer!"
+                          : "Spin the Wheel"
+                      }
+                      onPress={spinWheel}
+                      disabled={isSpinning}
+                      backgroundGradient={
+                        currentTheme === THEME_PACKS.DEFAULT
+                          ? ([COLORS.PRIMARY, COLORS.YELLOW] as const)
+                          : currentTheme === THEME_PACKS.COLLEGE
+                          ? ([COLORS.LIGHT, COLORS.YELLOW] as const)
+                          : ([COLORS.LIGHT, COLORS.YELLOW] as const)
+                      }
+                      textColor={COLORS.TEXT_DARK}
+                      fontSize={SIZES.SUBTITLE}
+                      fontFamily={FONTS.DOSIS_BOLD}
+                      paddingHorizontal={SIZES.PADDING_LARGE}
+                      paddingVertical={SIZES.PADDING_MEDIUM}
+                      style={[
+                        styles.spinButton,
+                        isSpinning && styles.spinButtonDisabled,
+                      ]}
+                    />
+                  </View>
+                </Surface>
+              </Animated.View>
+            </LinearGradient>
 
           {/* Scoreboard */}
           <Scoreboard
@@ -814,7 +814,7 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "flex-start",
+    alignItems: "center",
     maxHeight: "90%",
   },
   header: {
@@ -856,9 +856,9 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderRadius: SIZES.BORDER_RADIUS_LARGE,
     alignItems: "center",
+    justifyContent: "center",
     marginTop: -45,
     width: "100%",
-    maxWidth: 400,
     zIndex: -1,
   },
   wheelContainer: {

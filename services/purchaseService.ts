@@ -156,7 +156,7 @@ class PurchaseService {
   /**
    * Purchase any product by ID
    */
-  async purchaseProduct(productId: string): Promise<boolean> {
+  async purchaseProduct(productId: string): Promise<{ success: boolean; result?: any }> {
     await this.initialize();
 
     const context = getIAPContext();
@@ -167,48 +167,62 @@ class PurchaseService {
       if (success && !isProduction()) {
         await this.processPurchase({ productId, id: productId });
       }
-      return success;
+      return { success, result: success ? "purchase_initiated" : null };
     }
 
     // Fallback for when context is not available
     await this.processPurchase({ productId, id: productId });
-    return true;
+    return { success: true, result: "mock_purchase" };
   }
 
 
   /**
    * Purchase ad-free removal (this makes user premium)
    */
-  async purchaseAdFree(): Promise<boolean> {
+  async purchaseAdFree(): Promise<{ success: boolean; result?: any }> {
     return this.purchaseProduct(PRODUCT_IDS.AD_FREE_REMOVAL);
   }
 
   /**
    * Purchase college theme individually
    */
-  async purchaseCollegeTheme(): Promise<boolean> {
+  async purchaseCollegeTheme(): Promise<{ success: boolean; result?: any }> {
     return this.purchaseProduct(PRODUCT_IDS.COLLEGE_THEME_PACK);
   }
 
   /**
    * Purchase couple theme individually
    */
-  async purchaseCoupleTheme(): Promise<boolean> {
+  async purchaseCoupleTheme(): Promise<{ success: boolean; result?: any }> {
     return this.purchaseProduct(PRODUCT_IDS.COUPLE_THEME_PACK);
   }
 
   /**
    * Purchase complete experience bundle (ad-free + both themes)
    */
-  async purchaseCompleteBundle(): Promise<boolean> {
+  async purchaseCompleteBundle(): Promise<{ success: boolean; result?: any }> {
     return this.purchaseProduct(PRODUCT_IDS.COMPLETE_EXPERIENCE_BUNDLE);
   }
 
   /**
    * Purchase expand fun bundle (both themes only, no ad-free)
    */
-  async purchaseExpandBundle(): Promise<boolean> {
+  async purchaseExpandBundle(): Promise<{ success: boolean; result?: any }> {
     return this.purchaseProduct(PRODUCT_IDS.EXPAND_FUN_BUNDLE);
+  }
+
+  /**
+   * Purchase fake theme individually
+   */
+  async purchaseFakeTheme(): Promise<{ success: boolean; result?: any }> {
+    return this.purchaseProduct(PRODUCT_IDS.TEST_THEME_FAKE);
+  }
+
+  /**
+   * Purchase angry theme individually
+   */
+  async purchaseAngryTheme(): Promise<{ success: boolean; result?: any }> {
+    return this.purchaseProduct(PRODUCT_IDS.TEST_THEME_ANGRY);
   }
 
   /**

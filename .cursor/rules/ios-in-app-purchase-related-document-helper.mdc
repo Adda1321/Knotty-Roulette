@@ -1,0 +1,64 @@
+---
+description: These rules are actually the content from ios docs related to resolve and implement and test in app purhase
+globs:
+alwaysApply: true
+---
+
+Enter server URLs for App Store Server Notifications
+App Store Server Notifications provide information about key events related to your in-app purchases, such as changes to a subscription's status or the refund of an in-app purchase. In order to receive these notifications from the App Store, you must provide a URL in App Store Connect that links to your server. You can enter URLs for both production and sandbox endpoints.
+
+To receive App Store Server Notifications, configure your server and visit Enabling App Store Server Notifications. For more details on notifications and their meanings, see the App Store Server Notifications.
+
+Note: It may take up to 1 hour for changes you make to product metadata to appear in the sandbox environment.
+
+Required role: Account Holder, Admin, App Manager, or Marketing. View role permissions.
+
+
+Enter a production URL for App Store Server Notifications
+In Apps, select the app you want to view.
+
+In the sidebar, under General, click App information.
+
+Scroll down to General Information, then go to App Store Server Notifications.
+
+Under Production Server URL, click Set Up URL.
+
+Screenshot of the App Store Server Notifications section on the App Information page. An arrow points to the 'Set Up URL' link for Production Server URL.
+Enter the URL that you've determined for App Store Server Notifications.
+
+Choose either Version 1 (deprecated) or Version 2 notifications. Learn about versions of App Store Server Notifications.
+
+Click Save.
+
+
+Enter a URL for testing App Store Server Notifications in a Sandbox environment
+If you do not provide a Sandbox URL in App Store Connect, please note that the App Store will automatically send notifications for both environments to the Production URL provided. If you only provide a Sandbox URL, no notifications will be sent in production.
+
+In Apps, select the app you want to view.
+
+In the sidebar, under General, click App information.
+
+Scroll down to General Information, then go to App Store Server Notifications.
+
+Under Sandbox Server URL, click Set Up URL.
+
+Screenshot of the App Store Server Notifications section on the App Information page. An arrow points to the 'Set Up URL' link for Sandbox Server URL.
+Enter the URL that you've determined for App Store Server Notifications.
+
+Choose either Version 1 (deprecated) or Version 2 notifications. Learn about versions of App Store Server Notifications.
+
+Click Save.
+
+
+Edit your URL for App Store Server Notifications
+In Apps, select the app you want to view.
+
+In the sidebar, under General, click App information.
+
+Scroll down to General Information, then go to App Store Server Notifications.
+
+Next to the URL you want to edit, click Edit.
+
+Enter the desired URL and click Save.
+
+

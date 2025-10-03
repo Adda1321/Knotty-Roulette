@@ -167,6 +167,9 @@ expo build:ios
 
 For Development:
 ```bash
+eas build:version:set
+
+
 eas build --platform android --profile development
 
 eas build --profile preview --platform android
@@ -177,6 +180,9 @@ eas build --platform android
 
 eas build -p ios
 eas submit --platform ios
+
+Auto:
+eas build -p ios --profile production --auto-submit
 
 ```
 

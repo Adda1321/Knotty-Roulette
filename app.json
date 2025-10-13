@@ -2,7 +2,7 @@
   "expo": {
     "name": "Knotty Times",
     "slug": "knotty-roulette",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/knotty-times-updated.jpeg",
     "scheme": "knottyroulette",
@@ -11,6 +11,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.knottytimes.knottyroulette",
+      "buildNumber": "36",
       "icon": "./assets/images/knotty-times-app-icon.jpeg",
       "infoPlist": {
         "SKAdNetworkItems": [

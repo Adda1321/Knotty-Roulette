@@ -53,21 +53,21 @@ const getAdConfig = () => {
   if (!isNative) {
     return { INTERSTITIAL_ID: null };
   }
-  const showLiveAds = false; // Remove in PRODUCTION
+
   // In native environment, use test ads for non-production, real ads for production
   if (isProd) {
     // Production: Use real ad IDs
     return {
       INTERSTITIAL_ID: Platform.select({
         android: "ca-app-pub-9976626838955349/2586969967",
-        ios: "ca-app-pub-9976626838955349~7843166076",
-        default: "ca-app-pub-9976626838955349/2586969967",
+        ios: "ca-app-pub-9976626838955349/8529561786",
+        default: "ca-app-pub-9976626838955349/8529561786",
       }),
     };
   } else {
     // Non-production: Use test ad IDs
     return {
-      INTERSTITIAL_ID: TestIds?.INTERSTITIAL || "test-id",
+      INTERSTITIAL_ID: TestIds?.INTERSTITIAL || "ca-app-pub-9976626838955349/8529561786",
     };
   }
 };

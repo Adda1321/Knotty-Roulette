@@ -2,28 +2,28 @@ import userService from "@/services/userService";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  Dimensions,
-  Image,
-  Modal,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Dimensions,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { PRODUCT_DEFINITIONS } from "../../constants/iapProducts";
 import { STORAGE_KEYS } from "../../constants/storageKeys";
 import {
-  COLORS,
-  FONTS,
-  SIZES,
-  THEME_COLORS,
-  THEME_PACKS,
-  THEME_PACK_DATA,
-  ThemePackId,
+    COLORS,
+    FONTS,
+    SIZES,
+    THEME_COLORS,
+    THEME_PACKS,
+    THEME_PACK_DATA,
+    ThemePackId,
 } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext"; // Add useTheme hook
 import adService from "../../services/adService";
@@ -35,7 +35,6 @@ import { getSampleChallenges } from "../../utils/themeHelpers";
 import Button from "./Button";
 import CustomModal from "./CustomModal";
 import { useIAPContext } from "./IAPProvider";
-import PurchaseCelebrationModal from "./PurchaseCelebrationModal";
 import UpsellModal from "./UpsellModal";
 
 const { width: screenWidth } = Dimensions.get("window");
@@ -58,11 +57,8 @@ export default function ThemeStore() {
   const [selectedPack, setSelectedPack] = useState<ThemePack | null>(null);
   const [themePacks, setThemePacks] = useState<ThemePack[]>([]);
   const [isPurchasing, setIsPurchasing] = useState(false);
-  const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(false);
-  const [purchasedPackName, setPurchasedPackName] = useState("");
   const [showSwitchConfirmation, setShowSwitchConfirmation] = useState(false);
   const [packToSwitch, setPackToSwitch] = useState<ThemePack | null>(null);
-  const [showResetConfirmation, setShowResetConfirmation] = useState(false);
   const { COLORS, switchTheme, currentTheme, refreshTheme } = useTheme();
   const iapContext = useIAPContext();
   const [showUpsellModal, setShowUpsellModal] = useState(false);
@@ -85,49 +81,129 @@ export default function ThemeStore() {
     "ad_free" | "theme_packs" | "all_in_bundle" | "complete_set" | null | null
   >(null);
   const [isThemeSwitching, setIsThemeSwitching] = useState(false);
-  const [fetchStatus, setFetchStatus] = useState("");
-  const [lastError, setLastError] = useState("");
-  const [restoreStatus, setRestoreStatus] = useState("");
-  const [restoreError, setRestoreError] = useState("");
 
   // Load theme packs with current status
   useEffect(() => {
     loadThemePacks();
+    loadPassiveOffers();
     checkShopEntryUpsell();
-    updateFetchStatus();
   }, []);
 
-  const updateFetchStatus = async () => {
-    // Clear previous errors
-    setLastError("");
+  // Refresh passive offers when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadPassiveOffers();
+      loadThemePacks();
+    }, [])
+  );
 
-    // Get status from IAP context
-    setFetchStatus(iapContext.fetchStatus);
-    setLastError(iapContext.lastError);
+  // Listen for validation completion to close preview modal
+  useEffect(() => {
+    // Set up validation completion callback
+    const handleValidationComplete = (productId: string, success: boolean) => {
+      // Map theme pack IDs to their corresponding product IDs
+      const themePackProductMap: { [key: string]: string[] } = {
+        college: ["college"],
+        couple: ["couple"],
+        test_theme_fake: ["testthemeFakeupd_6"],
+        test_theme_angry: ["testthemeAngryupd_6"],
+      };
 
-    // Refresh products to get updated status
-    try {
-      console.log("🔄 ThemeStore: Refreshing IAP status...");
-      await iapContext.refreshProducts();
-      setFetchStatus(iapContext.fetchStatus);
-      setLastError(iapContext.lastError);
-      console.log("✅ ThemeStore: IAP status refreshed:", {
-        status: iapContext.fetchStatus,
-        error: iapContext.lastError,
-      });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-      setFetchStatus(`❌ Refresh Error: ${errorMessage}`);
-      setLastError(`Exception during refresh: ${errorMessage}`);
-      console.error("❌ ThemeStore: Error refreshing IAP status:", error);
+      // Check if this product ID corresponds to any theme pack
+      const isThemePackPurchase = Object.values(themePackProductMap).some(
+        (productIds) => productIds.includes(productId)
+      );
+
+      if (isThemePackPurchase) {
+        console.log(
+          `🎉 Server validation completed for ${productId} (success: ${success}), closing preview modal`
+        );
+        closePreview();
+      }
+    };
+
+    // Set the callback in IAP context
+    iapContext.setValidationCompleteCallback(handleValidationComplete);
+
+    // Cleanup function to remove callback
+    return () => {
+      iapContext.setValidationCompleteCallback(() => {});
+    };
+  }, []);
+
+  // Fallback: Listen for purchase state changes to close modal
+  useEffect(() => {
+    if (iapContext.currentPurchase && selectedPack && !selectedPack.isOwned) {
+      // Check if the current purchase matches our selected pack
+      const purchaseProductId =
+        iapContext.currentPurchase.productId ||
+        iapContext.currentPurchase.id ||
+        iapContext.currentPurchase.sku;
+
+      const themePackProductMap: { [key: string]: string[] } = {
+        college: ["college"],
+        couple: ["couple"],
+        test_theme_fake: ["testthemeFakeupd_6"],
+        test_theme_angry: ["testthemeAngryupd_6"],
+      };
+
+      const expectedProductIds = themePackProductMap[selectedPack.id] || [];
+
+      if (expectedProductIds.includes(purchaseProductId)) {
+        console.log(
+          `🎉 Purchase detected for ${purchaseProductId}, closing preview modal as fallback`
+        );
+        // Small delay to ensure the purchase is processed
+        setTimeout(() => {
+          closePreview();
+          loadThemePacks(); // Refresh to show updated ownership status
+        }, 500);
+      }
     }
-  };
+  }, [iapContext.currentPurchase, selectedPack]);
+
+  // Additional fallback: Listen for purchased products changes to close modal
+  useEffect(() => {
+    if (selectedPack && !selectedPack.isOwned && isPurchasing) {
+      // Map theme pack IDs to their corresponding product IDs
+      const themePackProductMap: { [key: string]: string[] } = {
+        college: ["college"],
+        couple: ["couple"],
+        test_theme_fake: ["testthemeFakeupd_6"],
+        test_theme_angry: ["testthemeAngryupd_6"],
+      };
+
+      // Check if the selected pack is now owned using the mapping
+      const expectedProductIds = themePackProductMap[selectedPack.id] || [];
+      const isNowOwned = expectedProductIds.some(productId => 
+        iapContext.isProductPurchased(productId)
+      );
+      
+      if (isNowOwned) {
+        console.log(
+          `🎉 Theme pack ${selectedPack.id} is now owned, closing preview modal`
+        );
+        setTimeout(() => {
+          closePreview();
+          loadThemePacks(); // Refresh to show updated ownership status
+        }, 300);
+      }
+    }
+  }, [iapContext.purchasedProducts, selectedPack, isPurchasing]);
+
+  // Reload theme packs when IAP context changes (for test products)
+  useEffect(() => {
+    loadThemePacks();
+    loadPassiveOffers(); // Also refresh passive offers when IAP context changes
+  }, [iapContext.purchasedProducts, iapContext.isProductPurchased]);
 
   // Direct mapping fallback for when normal restore doesn't work
   const handleDirectMapping = async (): Promise<boolean> => {
     try {
-      if (!iapContext.availablePurchases || iapContext.availablePurchases.length === 0) {
+      if (
+        !iapContext.availablePurchases ||
+        iapContext.availablePurchases.length === 0
+      ) {
         return false;
       }
 
@@ -138,16 +214,21 @@ export default function ThemeStore() {
       // Process each available purchase
       for (const purchase of iapContext.availablePurchases) {
         const productId = purchase.productId || purchase.id || purchase.sku;
-        
+
         if (productId) {
           // Check if this product should be mapped using the existing product definitions
-          let productDef = iapContext.getCurrentProducts().find(p => p.productId === productId);
-          
+          let productDef = iapContext
+            .getCurrentProducts()
+            .find((p) => p.productId === productId);
+
           // Fallback to shared PRODUCT_DEFINITIONS if getCurrentProducts doesn't have the product
           if (!productDef || !productDef.unlocks) {
-            productDef = PRODUCT_DEFINITIONS[productId as keyof typeof PRODUCT_DEFINITIONS];
+            productDef =
+              PRODUCT_DEFINITIONS[
+                productId as keyof typeof PRODUCT_DEFINITIONS
+              ];
           }
-          
+
           if (productDef && productDef.unlocks) {
             // Add to purchased products
             currentPurchased.add(productId);
@@ -166,6 +247,12 @@ export default function ThemeStore() {
                 case "couple_theme":
                   await themePackService.purchasePack("couple");
                   break;
+                case "test_theme_fake":
+                  await themePackService.purchasePack("test_theme_fake");
+                  break;
+                case "test_theme_angry":
+                  await themePackService.purchasePack("test_theme_angry");
+                  break;
               }
             }
           }
@@ -176,7 +263,7 @@ export default function ThemeStore() {
         // Update the IAP context with the new purchased products
         // This is a direct state update since we can't call the context method
         const newPurchasedArray = Array.from(currentPurchased);
-        
+
         // Save to AsyncStorage
         await AsyncStorage.setItem(
           STORAGE_KEYS.PURCHASED_PRODUCTS,
@@ -185,7 +272,7 @@ export default function ThemeStore() {
 
         // Force a refresh by calling the context's restore method
         await iapContext.restorePurchases();
-        
+
         return true;
       }
 
@@ -201,105 +288,52 @@ export default function ThemeStore() {
     audioService.playSound("buttonPress");
     audioService.playHaptic("light");
 
-    // Clear previous errors and set loading state
-    setRestoreError("");
-    setRestoreStatus("🔄 Starting restore...");
-
     try {
       // Check if we're connected to the store
       if (!iapContext.connected) {
-        setRestoreStatus("❌ Offline - cannot restore");
-        setRestoreError("Store is not connected. Please check your internet connection.");
+        console.log("❌ Store not connected - cannot restore");
         return;
       }
-
-      setRestoreStatus("🔄 Fetching products...");
 
       // Try to fetch products first
       const products = await iapContext.getProducts();
 
       if (products && products.length > 0) {
-        setRestoreStatus("🔄 Products loaded, checking purchases...");
-        
         // Products fetched successfully, now try to restore purchases
         const restoreSuccess = await iapContext.restorePurchases();
 
         if (restoreSuccess) {
-          setRestoreStatus("✅ Restore successful!");
-          setRestoreError("");
-          
+          console.log("✅ Restore successful!");
           // Success - update UI
           loadThemePacks();
           loadPassiveOffers();
         } else {
           // Fallback: Try direct mapping if availablePurchases exist but restore failed
-          if (iapContext.availablePurchases && iapContext.availablePurchases.length > 0) {
-            setRestoreStatus("🔄 Fallback: Direct mapping available purchases...");
-            
+          if (
+            iapContext.availablePurchases &&
+            iapContext.availablePurchases.length > 0
+          ) {
+            console.log("🔄 Fallback: Direct mapping available purchases...");
+
             const directMappingSuccess = await handleDirectMapping();
-            
+
             if (directMappingSuccess) {
-              setRestoreStatus("✅ Direct mapping successful!");
-              setRestoreError("");
-              
+              console.log("✅ Direct mapping successful!");
               // Success - update UI
               loadThemePacks();
               loadPassiveOffers();
             } else {
-              setRestoreStatus("⚠️ No purchases found to restore");
-              setRestoreError("");
+              console.log("⚠️ No purchases found to restore");
             }
           } else {
-            setRestoreStatus("⚠️ No purchases found to restore");
-            setRestoreError("");
+            console.log("⚠️ No purchases found to restore");
           }
         }
       } else {
-        setRestoreStatus("❌ Failed to load products");
-        setRestoreError("Could not fetch products from store. Please try again.");
+        console.log("❌ Failed to load products");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      setRestoreStatus("❌ Restore failed");
-      setRestoreError(`Error: ${errorMessage}`);
       console.error("❌ ThemeStore: Manual restore error:", error);
-    }
-  };
-
-  const handleResetAllData = async () => {
-    audioService.playSound("buttonPress");
-    audioService.playHaptic("medium");
-
-    try {
-      // Get all storage keys from STORAGE_KEYS
-      const allStorageKeys = Object.values(STORAGE_KEYS);
-      
-
-      // Remove all storage items
-      await Promise.all(
-        allStorageKeys.map(key => AsyncStorage.removeItem(key))
-      );
-
-      // Reset theme pack service
-      await themePackService.resetPurchases();
-
-      // Reset user service
-      await userService.forceResetForTesting();
-
-      // Reset upsell service
-      await upsellService.resetUpsellState();
-
-      
-
-      console.log("✅ ThemeStore: All data reset successfully");
-    } catch (error) {
-      console.error("❌ ThemeStore: Error resetting data:", error);
-      setPurchaseSuccessData({
-        title: "❌ Reset Failed",
-        message: "Failed to reset all data completely. Please try again.",
-        action: "OK",
-      });
-      setShowPurchaseSuccessModal(true);
     }
   };
 
@@ -377,6 +411,30 @@ export default function ThemeStore() {
         isCurrent: packsWithStatus[2].isCurrent,
         emoji: THEME_PACK_DATA[THEME_PACKS.COUPLE].emoji,
       },
+      // {
+      //   id: THEME_PACKS.TEST_THEME_FAKE,
+      //   name: THEME_PACK_DATA[THEME_PACKS.TEST_THEME_FAKE].name,
+      //   description: THEME_PACK_DATA[THEME_PACKS.TEST_THEME_FAKE].description,
+      //   price: `$${THEME_PACK_DATA[THEME_PACKS.TEST_THEME_FAKE].price}`,
+      //   image: require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs.png"), // Using default image for now
+      //   previewImage: require("../../assets/images/ThemedPacksImages/DefaultTheme.jpeg"), // Using default preview for now
+      //   isOwned: iapContext.isProductPurchased("testthemeFakeupd_6"),
+      //   isLocked: !iapContext.isProductPurchased("testthemeFakeupd_6"),
+      //   isCurrent: false,
+      //   emoji: THEME_PACK_DATA[THEME_PACKS.TEST_THEME_FAKE].emoji,
+      // },
+      // {
+      //   id: THEME_PACKS.TEST_THEME_ANGRY,
+      //   name: THEME_PACK_DATA[THEME_PACKS.TEST_THEME_ANGRY].name,
+      //   description: THEME_PACK_DATA[THEME_PACKS.TEST_THEME_ANGRY].description,
+      //   price: `$${THEME_PACK_DATA[THEME_PACKS.TEST_THEME_ANGRY].price}`,
+      //   image: require("../../assets/images/MascotImages/Default/Knotty-Mascot-no-legs.png"), // Using default image for now
+      //   previewImage: require("../../assets/images/ThemedPacksImages/DefaultTheme.jpeg"), // Using default preview for now
+      //   isOwned: iapContext.isProductPurchased("testthemeAngryupd_6"),
+      //   isLocked: !iapContext.isProductPurchased("testthemeAngryupd_6"),
+      //   isCurrent: false,
+      //   emoji: THEME_PACK_DATA[THEME_PACKS.TEST_THEME_ANGRY].emoji,
+      // },
     ];
     setThemePacks(packs);
   };
@@ -411,48 +469,64 @@ export default function ThemeStore() {
     audioService.playSound("buttonPress");
     audioService.playHaptic("medium");
     setIsPurchasing(true);
+
+    // Set a timeout to close the modal if purchase takes too long
+    const purchaseTimeout = setTimeout(() => {
+      console.log(
+        `⏰ Purchase timeout for ${pack.id}, closing modal as fallback`
+      );
+      closePreview();
+      setIsPurchasing(false);
+    }, 200000);
+
     try {
       let success = false;
+      let result: any = null;
 
       // Use proper purchase service methods based on theme type
       if (pack.id === "college") {
-        success = await purchaseService.purchaseCollegeTheme();
+        const purchaseResult = await purchaseService.purchaseCollegeTheme();
+        success = purchaseResult.success;
+        result = purchaseResult.result;
       } else if (pack.id === "couple") {
-        success = await purchaseService.purchaseCoupleTheme();
-      }
-      // else {
-      //   success = await themePackService.purchasePack(pack.id as any);
-      // }
-
-      if (success) {
-        setPurchasedPackName(pack.name);
-        setShowPurchaseSuccess(true);
-        // Play sound after modal is shown for better audio timing
-        setTimeout(() => {
-          audioService.playSound("bonusAchieved");
-          audioService.playHaptic("success");
-        }, 100);
-        loadThemePacks(); // Refresh the list
-        loadPassiveOffers(); // Refresh passive offers
-        closePreview();
+        const purchaseResult = await purchaseService.purchaseCoupleTheme();
+        success = purchaseResult.success;
+        result = purchaseResult.result;
+      } else if (pack.id === "test_theme_fake") {
+        const purchaseResult = await purchaseService.purchaseFakeTheme();
+        success = purchaseResult.success;
+        result = purchaseResult.result;
+      } else if (pack.id === "test_theme_angry") {
+        const purchaseResult = await purchaseService.purchaseAngryTheme();
+        success = purchaseResult.success;
+        result = purchaseResult.result;
       } else {
-        const errorMsg = iapContext.lastError || "Unknown error occurred";
-        // Store error data to show after preview modal closes
-        setPurchaseSuccessData({
-          title: "❌ Purchase Failed",
-          message: `Unable to complete purchase: ${errorMsg}`,
-          action: "OK",
-        });
-        // Close preview modal first, then show error
+        // Fallback for other theme types
+        const purchaseResult = await purchaseService.purchaseProduct(pack.id);
+        success = purchaseResult.success;
+        result = purchaseResult.result;
+      }
+
+      // Clear the timeout since we got a response
+      clearTimeout(purchaseTimeout);
+
+      // If purchase was successful, close the modal and refresh theme packs
+      if (success) {
+        console.log(`✅ Purchase successful for ${pack.id}, closing modal`);
         closePreview();
-        // Show error modal after preview closes
-        setTimeout(() => {
-          setShowPurchaseSuccessModal(true);
-        }, 300);
+        loadThemePacks(); // Refresh to show updated ownership status
+      } else {
+        console.log(`⚠️ Purchase service returned false for ${pack.id}`);
+        // Don't close modal immediately, let the fallback mechanisms handle it
       }
     } catch (error) {
+      // Clear the timeout since we got an error
+      clearTimeout(purchaseTimeout);
+
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+      console.error(`❌ Purchase failed for ${pack.id}:`, errorMessage);
+
       // Store error data to show after preview modal closes
       setPurchaseSuccessData({
         title: "❌ Error",
@@ -461,10 +535,6 @@ export default function ThemeStore() {
       });
       // Close preview modal first, then show error
       closePreview();
-      // Show error modal after preview closes
-      setTimeout(() => {
-        setShowPurchaseSuccessModal(true);
-      }, 300);
     } finally {
       setIsPurchasing(false);
     }
@@ -475,9 +545,6 @@ export default function ThemeStore() {
 
     audioService.playSound("buttonPress");
     audioService.playHaptic("light");
-    console.log("🎨 ThemeStore: User wants to switch to theme:", pack.id);
-    console.log("🎨 ThemeStore: Pack details:", pack);
-    console.log("🎨 ThemeStore: Current theme:", currentTheme);
 
     // Show confirmation modal instead of direct switch
     setPackToSwitch(pack);
@@ -501,9 +568,6 @@ export default function ThemeStore() {
           "🎨 ThemeStore: Theme switched successfully to:",
           packToSwitch.id
         );
-
-        // Wait for background music to be fully loaded before navigation
-        console.log("🎨 ThemeStore: Waiting for background music to load...");
 
         // Import background music service to check audio readiness
         const backgroundMusic = (await import("../../services/backgroundMusic"))
@@ -561,7 +625,8 @@ export default function ThemeStore() {
     setIsAdFreePurchasing(true);
 
     try {
-      const success = await purchaseService.purchaseAdFree();
+      const purchaseResult = await purchaseService.purchaseAdFree();
+      const success = purchaseResult.success;
 
       if (success) {
         // Refresh passive offers and theme packs
@@ -580,12 +645,6 @@ export default function ThemeStore() {
         });
         setShowPurchaseSuccessModal(true);
       } else {
-        const errorMsg = iapContext.lastError || "Unknown error occurred";
-        setPurchaseSuccessData({
-          title: "❌ Purchase Failed",
-          message: `Unable to complete purchase: ${errorMsg}`,
-          action: "OK",
-        });
         setShowPurchaseSuccessModal(true);
       }
     } catch (error) {
@@ -619,10 +678,12 @@ export default function ThemeStore() {
       let success = false;
 
       if (offer.primaryButton.action === "ad_free") {
-        success = await purchaseService.purchaseAdFree();
+        const purchaseResult = await purchaseService.purchaseAdFree();
+        success = purchaseResult.success;
       } else if (offer.primaryButton.action === "theme_packs") {
         // Buy both theme packs (expand fun bundle)
-        success = await purchaseService.purchaseExpandBundle();
+        const purchaseResult = await purchaseService.purchaseExpandBundle();
+        success = purchaseResult.success;
       } else if (offer.primaryButton.action === "complete_set") {
         // Buy the remaining theme pack to complete the collection
         const purchasedPacks = themePackService.getPurchasedPacks();
@@ -630,9 +691,11 @@ export default function ThemeStore() {
         const hasCouple = purchasedPacks.includes("couple");
 
         if (!hasCollege) {
-          success = await purchaseService.purchaseCollegeTheme();
+          const purchaseResult = await purchaseService.purchaseCollegeTheme();
+          success = purchaseResult.success;
         } else if (!hasCouple) {
-          success = await purchaseService.purchaseCoupleTheme();
+          const purchaseResult = await purchaseService.purchaseCoupleTheme();
+          success = purchaseResult.success;
         } else {
           // User already has all themes, this shouldn't happen
           console.warn(
@@ -640,7 +703,8 @@ export default function ThemeStore() {
           );
         }
       } else if (offer.primaryButton.action === "all_in_bundle") {
-        success = await purchaseService.purchaseCompleteBundle();
+        const purchaseResult = await purchaseService.purchaseCompleteBundle();
+        success = purchaseResult.success;
       }
 
       if (success) {
@@ -659,12 +723,6 @@ export default function ThemeStore() {
         });
         setShowPurchaseSuccessModal(true);
       } else {
-        const errorMsg = iapContext.lastError || "Unknown error occurred";
-        setPurchaseSuccessData({
-          title: "❌ Purchase Failed",
-          message: `Unable to complete purchase: ${errorMsg}`,
-          action: "OK",
-        });
         setShowPurchaseSuccessModal(true);
       }
     } catch (error) {
@@ -680,49 +738,6 @@ export default function ThemeStore() {
       setPurchasingBundleId(null);
     }
   };
-
-  // const handleResetStore = async () => {
-  //   audioService.playSound("buttonPress");
-  //   audioService.playHaptic("medium");
-
-  //   try {
-  //     // Reset theme pack purchases
-  //     await themePackService.resetPurchases();
-
-  //     // Reset user premium status (Ad-Free)
-  //     await userService.forceResetForTesting();
-
-  //     // Reset upsell service state
-  //     await upsellService.resetUpsellState();
-
-  //     // Force theme refresh to ensure context updates
-  //     await refreshTheme();
-
-  //     // Small delay to ensure theme context updates
-  //     await new Promise((resolve) => setTimeout(resolve, 100));
-
-  //     // Refresh all data
-  //     loadThemePacks();
-  //     loadPassiveOffers();
-
-  //     // Show success feedback
-  //     audioService.playSound("buttonPress");
-  //     audioService.playHaptic("medium");
-
-  //     // Show success message
-  //     Alert.alert(
-  //       "🔄 Store Reset Complete!",
-  //       "All purchases and premium status have been reset. You're now a free user again and back to the default theme.",
-  //       [{ text: "Got it!" }]
-  //     );
-  //   } catch (error) {
-  //     console.error("❌ ThemeStore: Error resetting store:", error);
-  //     Alert.alert(
-  //       "Error",
-  //       "Failed to reset store completely. Please try again."
-  //     );
-  //   }
-  // };
 
   const renderBundleDeals = () => {
     return (
@@ -795,7 +810,7 @@ export default function ThemeStore() {
       const themeColors = THEME_COLORS[themeId as ThemePackId];
       return {
         primary: themeColors.PRIMARY,
-        online: themeColors.ONLINE,
+        online: "green",
         yellow: themeColors.YELLOW,
         dark: themeColors.DARK,
         light: themeColors.LIGHT,
@@ -881,6 +896,103 @@ export default function ThemeStore() {
     );
   };
 
+  const renderTestProductCard = (
+    productId: string,
+    title: string,
+    description: string,
+    price: string,
+    emoji: string,
+    unlockKey: string,
+    isConsumable: boolean = false
+  ) => {
+    const isOwned = iapContext.isProductPurchased(productId);
+    const isCurrentlyPurchasing =
+      isPurchasing && purchasingBundleId === productId;
+
+    const handleTestProductPurchase = async () => {
+      try {
+        setIsPurchasing(true);
+        setPurchasingBundleId(productId);
+
+        let success = false;
+
+        // Use purchaseService methods for test themes, iapContext for others
+        if (productId === "testthemeFakeupd_6") {
+          const purchaseResult = await purchaseService.purchaseFakeTheme();
+          success = purchaseResult.success;
+        } else if (productId === "testthemeAngryupd_6") {
+          const purchaseResult = await purchaseService.purchaseAngryTheme();
+          success = purchaseResult.success;
+        } else {
+          // For other test products (like test coins), use iapContext directly
+          success = await iapContext.purchaseProduct(productId);
+        }
+
+        if (success) {
+          // Show success message
+          setPurchaseSuccessData({
+            title: "Purchase Successful! 🎉",
+            message: `You've successfully purchased ${title}!`,
+            action: isConsumable
+              ? "Coins added to your account"
+              : "Theme unlocked and ready to use",
+          });
+          setShowPurchaseSuccessModal(true);
+
+          // Refresh theme packs to update ownership status
+          loadThemePacks();
+        }
+      } catch (error) {
+        console.error("Test product purchase failed:", error);
+      } finally {
+        setIsPurchasing(false);
+        setPurchasingBundleId(null);
+      }
+    };
+
+    return (
+      <View style={styles.testProductCard}>
+        <View style={styles.testProductHeader}>
+          <Text style={styles.testProductEmoji}>{emoji}</Text>
+          <View style={styles.testProductInfo}>
+            <Text style={styles.testProductTitle}>{title}</Text>
+            <Text style={styles.testProductPrice}>{price}</Text>
+          </View>
+          {isOwned && (
+            <View style={styles.ownedBadge}>
+              <Text style={styles.ownedBadgeText}>✓ Owned</Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.testProductDescription}>{description}</Text>
+
+        <View style={styles.testProductActions}>
+          {isOwned ? (
+            <View style={styles.ownedButton}>
+              <Text style={styles.ownedButtonText}>
+                {isConsumable ? "Coins Added" : "Theme Unlocked"}
+              </Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.testProductButton,
+                isCurrentlyPurchasing && styles.testProductButtonDisabled,
+              ]}
+              onPress={handleTestProductPurchase}
+              disabled={isCurrentlyPurchasing}
+            >
+              <Text style={styles.testProductButtonText}>
+                {isCurrentlyPurchasing ? "Purchasing..." : `Buy ${price}`}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   const renderPreviewModal = () => (
     <Modal
       visible={showPreview}
@@ -960,13 +1072,17 @@ export default function ThemeStore() {
                     <Button
                       text={isPurchasing ? "Purchasing..." : "Purchase"}
                       onPress={() => handlePurchase(selectedPack!)}
-                      backgroundColor={COLORS.YELLOW}
-                      textColor={COLORS.TEXT_DARK}
+                      backgroundColor={isPurchasing ? "#CCCCCC" : COLORS.YELLOW}
+                      textColor={isPurchasing ? "#000000" : COLORS.TEXT_DARK}
                       fontSize={SIZES.BODY}
                       fontFamily={FONTS.DOSIS_BOLD}
                       paddingHorizontal={SIZES.PADDING_LARGE}
                       paddingVertical={SIZES.PADDING_MEDIUM}
-                      style={styles.purchaseButton}
+                      style={[
+                        styles.purchaseButton,
+                        isPurchasing && styles.purchaseButtonDisabled,
+                      ]}
+                      disabled={isPurchasing}
                     />
                   </View>
                 )}
@@ -976,7 +1092,7 @@ export default function ThemeStore() {
                     <Ionicons
                       name="checkmark-circle"
                       size={32}
-                      color={COLORS.ONLINE}
+                      color={"green"}
                     />
                     <Text style={styles.ownedMessage}>
                       You own this theme pack!
@@ -997,7 +1113,6 @@ export default function ThemeStore() {
     console.log("🛍️ ThemeStore: Upsell purchase successful!");
     loadThemePacks(); // Refresh theme packs after purchase
     loadPassiveOffers(); // Refresh passive offers
-    updateFetchStatus(); // Refresh IAP status
     setShowUpsellModal(false);
   };
 
@@ -1025,14 +1140,6 @@ export default function ThemeStore() {
           </TouchableOpacity>
           <Text style={styles.title}>Theme Store</Text>
           <View style={styles.headerButtons}>
-            {/* <TouchableOpacity
-              onPress={handleResetAllData}
-              style={styles.resetButton}
-              accessibilityLabel="Reset All Data"
-              accessibilityHint="Tap to clear all local data and reset the app to default state"
-            >
-              <Ionicons name="trash-outline" size={20} color={COLORS.YELLOW} />
-            </TouchableOpacity> */}
             <TouchableOpacity
               onPress={handleManualRestore}
               style={styles.restoreButton}
@@ -1050,144 +1157,6 @@ export default function ThemeStore() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
-            {/* Store Status Display */}
-            {/* <View style={styles.statusContainer}>
-              <View style={styles.statusRow}>
-                <Text style={styles.statusText}>Store Status: {fetchStatus}</Text>
-                <TouchableOpacity
-                  onPress={updateFetchStatus}
-                  style={styles.refreshStatusButton}
-                >
-                  <Ionicons name="refresh" size={16} color={COLORS.YELLOW} />
-                </TouchableOpacity>
-              </View>
-              {lastError && (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.errorText}>Error: {lastError}</Text>
-                </View>
-              )}
-              <View style={styles.debugContainer}>
-                <Text style={styles.debugTitle}>🔍 IAP Debug Information</Text>
-
-                <View style={styles.debugRow}>
-                  <Text style={styles.debugLabel}>Connection:</Text>
-                  <Text
-                    style={[
-                      styles.debugValue,
-                      iapContext.connected
-                        ? styles.debugSuccess
-                        : styles.debugError,
-                    ]}
-                  >
-                    {iapContext.connected ? "✅ Connected" : "❌ Disconnected"}
-                  </Text>
-                </View>
-                <View style={styles.debugRow}>
-                  <Text style={styles.debugLabel}>Status:</Text>
-                  <Text
-                    style={[
-                      styles.debugValue,
-                      iapContext.fetchStatus.includes("✅")
-                        ? styles.debugSuccess
-                        : styles.debugError,
-                    ]}
-                  >
-                    {iapContext.fetchStatus}
-                  </Text>
-                </View>
-
-                {iapContext.lastError && (
-                  <View style={styles.debugRow}>
-                    <Text style={styles.debugLabel}>Error:</Text>
-                    <Text style={[styles.debugValue, styles.debugError]}>
-                      {iapContext.lastError}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.debugRow}>
-                  <Text style={styles.debugLabel}>Premium:</Text>
-                  <Text
-                    style={[
-                      styles.debugValue,
-                      userService.isPremium()
-                        ? styles.debugSuccess
-                        : styles.debugError,
-                    ]}
-                  >
-                    {userService.isPremium() ? "✅ Premium" : "❌ Free"}
-                  </Text>
-                </View>
-
-                <View style={styles.debugRow}>
-                  <Text style={styles.debugLabel}>Purchased:</Text>
-                  <Text style={styles.debugValue}>
-                    {Array.from(iapContext.purchasedProducts || new Set()).join(
-                      ", "
-                    ) || "None"}
-                  </Text>
-                </View>
-
-                <View style={styles.debugRow}>
-                  <Text style={styles.debugLabel}>Available Purchases:</Text>
-                  <Text style={styles.debugValue}>
-                    {iapContext.availablePurchases
-                      ? JSON.stringify(
-                          iapContext.availablePurchases.map((p: any) => ({
-                            id: p.id,
-                            productId: p.productId,
-                            sku: p.sku,
-                            purchaseState: p.purchaseState,
-                          })),
-                          null,
-                          2
-                        )
-                      : "None"}
-                  </Text>
-                </View>
-
-                <View style={styles.debugRow}>
-                  <Text style={styles.debugLabel}>Environment:</Text>
-                  <Text style={styles.debugValue}>
-                    {process.env.EXPO_PUBLIC_IS_PRODUCTION === "true"
-                      ? "Production"
-                      : "Development"}
-                  </Text>
-                </View>
-
-                <View style={styles.debugRow}>
-                  <Text style={styles.debugLabel}>Auto-Restore:</Text>
-                  <Text style={[styles.debugValue, styles.debugSuccess]}>
-                    ✅ Enabled (happens on app start)
-                  </Text>
-                </View>
-
-                <View style={styles.debugRow}>
-                  <Text style={styles.debugLabel}>Manual Restore:</Text>
-                  <Text
-                    style={[
-                      styles.debugValue,
-                      restoreStatus.includes("✅")
-                        ? styles.debugSuccess
-                        : restoreStatus.includes("❌")
-                        ? styles.debugError
-                        : styles.debugValue,
-                    ]}
-                  >
-                    {restoreStatus || "Ready"}
-                  </Text>
-                </View>
-
-                {restoreError && (
-                  <View style={styles.debugRow}>
-                    <Text style={styles.debugLabel}>Restore Error:</Text>
-                    <Text style={[styles.debugValue, styles.debugError]}>
-                      {restoreError}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View> */}
-
             {/* Ad-Free Button */}
             <View>
               {!userService.isPremium() &&
@@ -1218,9 +1187,7 @@ export default function ThemeStore() {
               <Text style={styles.sectionTitle}>Theme Packs</Text>
               <View style={styles.themesGrid}>
                 {themePacks.map((pack) => (
-                  <View key={pack.id}>
-                    {renderThemeCard(pack)}
-                  </View>
+                  <View key={pack.id}>{renderThemeCard(pack)}</View>
                 ))}
               </View>
             </View>
@@ -1229,7 +1196,7 @@ export default function ThemeStore() {
       </View>
 
       {renderPreviewModal()}
-      <CustomModal
+      {/* <CustomModal
         visible={showPurchaseSuccess}
         onClose={() => {
           audioService.playSound("buttonPress");
@@ -1247,7 +1214,7 @@ export default function ThemeStore() {
           loadThemePacks(); // Refresh the list
         }}
         showSparkles={true}
-      />
+      /> */}
 
       {/* Theme Switch Confirmation Modal */}
       <CustomModal
@@ -1280,29 +1247,6 @@ export default function ThemeStore() {
         isLoading={isThemeSwitching}
       />
 
-      {/* Store Reset Confirmation Modal */}
-      {/* <CustomModal
-        visible={showResetConfirmation}
-        onClose={() => {
-          audioService.playSound("buttonPress");
-          audioService.playHaptic("light");
-          setShowResetConfirmation(false);
-        }}
-        title="Reset Theme Store?"
-        message="This will reset all theme pack purchases and return you to the default theme. This action cannot be undone."
-        showConfirmButton={true}
-        confirmButtonText="Reset Store"
-        onConfirm={() => {
-          audioService.playSound("buttonPress");
-          audioService.playHaptic("light");
-          handleResetStore();
-          setShowResetConfirmation(false);
-        }}
-        showCloseButton={true}
-        closeButtonText="Cancel"
-        destructive={true}
-      /> */}
-
       {/* Upsell Modal */}
       {currentUpsellOffer && (
         <UpsellModal
@@ -1315,16 +1259,16 @@ export default function ThemeStore() {
       )}
 
       {/* Purchase Celebration Modal */}
-      {showPurchaseCelebrationModal && purchaseType && (
+      {/* {showPurchaseCelebrationModal && purchaseType && (
         <PurchaseCelebrationModal
           visible={showPurchaseCelebrationModal}
           onClose={() => setShowPurchaseCelebrationModal(false)}
           purchaseType={purchaseType}
         />
-      )}
+      )} */}
 
       {/* Purchase Success/Error Modal */}
-      {purchaseSuccessData && (
+      {/* {purchaseSuccessData && (
         <CustomModal
           visible={showPurchaseSuccessModal}
           onClose={() => {
@@ -1339,7 +1283,7 @@ export default function ThemeStore() {
           showConfirmButton={false}
           showSparkles={purchaseSuccessData.title.includes("🎉")}
         />
-      )}
+      )} */}
     </>
   );
 }
@@ -1396,93 +1340,6 @@ const styles = StyleSheet.create({
     padding: SIZES.PADDING_SMALL,
     marginRight: SIZES.PADDING_SMALL,
   },
-  statusContainer: {
-    backgroundColor: COLORS.CARD_BACKGROUND,
-    padding: SIZES.PADDING_SMALL,
-    marginHorizontal: SIZES.PADDING_MEDIUM,
-    marginVertical: SIZES.PADDING_SMALL,
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    borderWidth: 1,
-    borderColor: COLORS.CARD_BORDER,
-  },
-  statusRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  statusText: {
-    fontSize: SIZES.SMALL,
-    color: COLORS.TEXT_DARK,
-    fontFamily: FONTS.DOSIS_BOLD,
-    flex: 1,
-  },
-  refreshStatusButton: {
-    padding: SIZES.PADDING_SMALL,
-    marginLeft: SIZES.PADDING_SMALL,
-  },
-  errorContainer: {
-    marginTop: SIZES.PADDING_SMALL,
-    padding: SIZES.PADDING_SMALL,
-    backgroundColor: "#ffebee",
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    borderLeftWidth: 3,
-    borderLeftColor: "#f44336",
-  },
-  errorText: {
-    fontSize: SIZES.SMALL,
-    color: "#d32f2f",
-    fontFamily: FONTS.DOSIS_BOLD,
-    lineHeight: 16,
-  },
-  debugContainer: {
-    marginTop: SIZES.PADDING_SMALL,
-    padding: SIZES.PADDING_MEDIUM,
-    backgroundColor: "#f5f5f5",
-    borderRadius: SIZES.BORDER_RADIUS_SMALL,
-    borderWidth: 1,
-    borderColor: "#ddd",
-  },
-  debugTitle: {
-    fontSize: SIZES.SUBTITLE,
-    color: "#333",
-    fontFamily: FONTS.DOSIS_BOLD,
-    marginBottom: SIZES.PADDING_SMALL,
-    textAlign: "center",
-  },
-  debugRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: SIZES.PADDING_SMALL / 2,
-    flexWrap: "wrap",
-  },
-  debugLabel: {
-    fontSize: SIZES.SMALL,
-    color: "#666",
-    fontFamily: FONTS.DOSIS_BOLD,
-    flex: 1,
-    minWidth: 80,
-  },
-  debugValue: {
-    fontSize: SIZES.SMALL,
-    color: "#333",
-    flex: 2,
-    textAlign: "right",
-  },
-  debugSuccess: {
-    color: "#4caf50",
-    fontFamily: FONTS.DOSIS_BOLD,
-  },
-  debugError: {
-    color: "#f44336",
-    fontFamily: FONTS.DOSIS_BOLD,
-  },
-  debugText: {
-    fontSize: SIZES.SMALL,
-    color: "#1976d2",
-    fontFamily: FONTS.DOSIS_BOLD,
-    lineHeight: 16,
-  },
   contentContainer: {
     flex: 1,
     backgroundColor: COLORS.FIELDS,
@@ -1515,7 +1372,7 @@ const styles = StyleSheet.create({
     borderLeftColor: COLORS.CARD_BORDER,
     marginTop: 15,
     marginRight: -SIZES.PADDING_MEDIUM,
-     
+
     zIndex: 1, // Ensure button appears above other elements
   },
   adFreeButtonDisabled: {
@@ -1900,6 +1757,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIZES.PADDING_XLARGE,
     paddingVertical: SIZES.PADDING_MEDIUM, // Added vertical padding
   },
+  purchaseButtonDisabled: {
+    opacity: 0.6,
+  },
   ownedSection: {
     alignItems: "center",
     paddingTop: SIZES.PADDING_LARGE,
@@ -1952,5 +1812,95 @@ const styles = StyleSheet.create({
     fontSize: SIZES.SMALL,
     color: COLORS.TEXT_DARK,
     fontFamily: FONTS.DOSIS_BOLD,
+  },
+  // Test Products Styles
+  sectionSubtitle: {
+    fontSize: SIZES.SMALL,
+    color: COLORS.TEXT_SECONDARY,
+    fontFamily: FONTS.DOSIS,
+    marginBottom: SIZES.PADDING_MEDIUM,
+    textAlign: "center",
+  },
+  testProductsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: SIZES.PADDING_SMALL,
+  },
+  testProductCard: {
+    backgroundColor: COLORS.CARD_BACKGROUND,
+    borderRadius: 12,
+    padding: SIZES.PADDING_MEDIUM,
+    marginBottom: SIZES.PADDING_SMALL,
+    width: "48%",
+    borderWidth: 1,
+    borderColor: COLORS.CARD_BORDER,
+    shadowColor: COLORS.SHADOW,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  testProductHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SIZES.PADDING_SMALL,
+  },
+  testProductEmoji: {
+    fontSize: 24,
+    marginRight: SIZES.PADDING_SMALL,
+  },
+  testProductInfo: {
+    flex: 1,
+  },
+  testProductTitle: {
+    fontSize: SIZES.BODY,
+    fontFamily: FONTS.DOSIS_BOLD,
+    color: COLORS.TEXT_DARK,
+    marginBottom: 2,
+  },
+  testProductPrice: {
+    fontSize: SIZES.SMALL,
+    fontFamily: FONTS.DOSIS_BOLD,
+    color: COLORS.BUTTON_PRIMARY,
+  },
+
+  testProductDescription: {
+    fontSize: SIZES.SMALL,
+    fontFamily: FONTS.DOSIS,
+    color: COLORS.TEXT_SECONDARY,
+    marginBottom: SIZES.PADDING_SMALL,
+    lineHeight: 16,
+  },
+  testProductActions: {
+    marginTop: "auto",
+  },
+  testProductButton: {
+    backgroundColor: COLORS.BUTTON_PRIMARY,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  testProductButtonDisabled: {
+    backgroundColor: COLORS.TEXT_SECONDARY,
+    opacity: 0.6,
+  },
+  testProductButtonText: {
+    fontSize: SIZES.SMALL,
+    fontFamily: FONTS.DOSIS_BOLD,
+    color: "white",
+  },
+  ownedButton: {
+    backgroundColor: COLORS.ONLINE,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  ownedButtonText: {
+    fontSize: SIZES.SMALL,
+    fontFamily: FONTS.DOSIS_BOLD,
+    color: "white",
   },
 });

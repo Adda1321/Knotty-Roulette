@@ -10,21 +10,20 @@ import Toast from "react-native-toast-message";
 import PlayerSetup from "../../components/game/PlayerSetup";
 import CustomModal from "../../components/ui/CustomModal";
 import Loader from "../../components/ui/Loader";
-import PurchaseCelebrationModal from "../../components/ui/PurchaseCelebrationModal";
 import { COLORS, FONTS, GAME_CONFIG, SIZES } from "../../constants/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import adService from "../../services/adService";
 import {
-    fetchAllChallenges,
-    fetchChallenges,
-    getChallengesByTheme,
-    trackPlay,
+  fetchAllChallenges,
+  fetchChallenges,
+  getChallengesByTheme,
+  trackPlay,
 } from "../../services/api";
 import audioService from "../../services/audio";
 import { themePackService } from "../../services/themePackService";
 import upsellService, {
-    UpsellOffer,
-    UpsellType,
+  UpsellOffer,
+  UpsellType,
 } from "../../services/upsellService";
 import userService from "../../services/userService";
 import { Challenge, GameState, Player } from "../../types/game";
@@ -372,13 +371,13 @@ export default function HomeScreen() {
       )}
 
       {/* Purchase Celebration Modal */}
-      {showPurchaseCelebrationModal && purchaseType && (
+      {/* {showPurchaseCelebrationModal && purchaseType && (
         <PurchaseCelebrationModal
           visible={showPurchaseCelebrationModal}
           onClose={() => setShowPurchaseCelebrationModal(false)}
           purchaseType={purchaseType}
         />
-      )}
+      )} */}
 
       <Toast />
     </SafeAreaView>

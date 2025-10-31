@@ -1,0 +1,2751 @@
+---
+description: Important: This rule file applies to expo-iap v3 in a React Native Expo managed frontend (no server, no Mac/Xcode), with only non-consumable products (no subscriptions).
+globs:
+alwaysApply: true
+---
+Important Note:
+This Rule file is for Library expo-iap documentation version 3
+Remember We are using React Native Expo Managed WorkFlow only forntend no Server.
+We Donot have Mac or XCode
+And All our products are non-consumable, user once buy them and this is not a Subscription model so if found any info related to Subscription.
+
+Guide:
+
+Installation:
+Package Installation:
+npm install expo-iap
+
+iOS Setup:
+Code Implementation:
+Basic Setup:
+
+code snippet:
+import {useIAP, ErrorCode} from 'expo-iap';
+Its not necessary to follow `com.yourapp.<product-name>` format
+const productIds = [
+  'com.yourapp.premium',
+  'com.yourapp.coins_100',
+  'com.yourapp.subscription_monthly',
+];
+
+function App() {
+  const {connected, products, fetchProducts, requestPurchase, validateReceipt} =
+    useIAP({
+      onPurchaseSuccess: (purchase) => {
+        console.log('Purchase successful:', purchase);
+        // Handle successful purchase
+        validatePurchase(purchase);
+      },
+      onPurchaseError: (error) => {
+        console.error('Purchase failed:', error);
+        // Handle purchase error
+      },
+    });
+
+  React.useEffect(() => {
+    if (connected) {
+      fetchProducts({skus: productIds, type: 'in-app'});
+    }
+  }, [connected]);
+
+  const validatePurchase = async (purchase) => {
+    try {
+      const result = await validateReceipt(purchase.transactionId);
+      if (result.isValid) {
+        // Grant user the purchased content
+        console.log('Receipt is valid');
+      }
+    } catch (error) {
+      console.error('Validation failed:', error);
+    }
+  };
+
+  return (
+    <View>
+      {products.map((product) => (
+        <TouchableOpacity
+          key={product.id}
+          onPress={() =>
+            requestPurchase({
+              request: {ios: {sku: product.id}},
+            })
+          }
+        >
+          <Text>
+            {product.title} - {product.displayPrice}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+💡 Cross-Platform Note: This example shows iOS-specific usage with sku. For cross-platform compatibility, include both sku and skus in your request object. See the Core Methods documentation for details.
+
+iOS-Specific Features:
+Receipt Validation:
+code snippet:
+const validateReceiptExample = async (productId: string) => {
+  try {
+    const result = await validateReceipt(productId);
+
+    console.log('Receipt validation result:', {
+      isValid: result.isValid,
+      receiptData: result.receiptData,
+      jwsRepresentation: result.jwsRepresentation, // iOS 15+
+    });
+
+    return result.isValid;
+  } catch (error) {
+    console.error('Receipt validation failed:', error);
+    return false;
+  }
+};
+
+Common Issues:
+Product IDs Not Found:
+Problem: Products return empty or undefined
+
+Solutions:
+
+1.Check Prerequisites (Most common cause):
+
+Verify ALL agreements are signed in App Store Connect > Business
+Ensure ALL banking, legal, and tax information is completed AND approved by Apple
+These are the most commonly overlooked requirements
+
+2.Verify Product Configuration:
+
+Product IDs match exactly between code and App Store Connect
+Products are in "Ready to Submit" or "Approved" state
+Bundle identifier matches
+
+3.Use Proper Sandbox Testing:
+
+Sign in via Settings > Developer > Sandbox Apple Account
+NOT through the App Store app
+
+Sandbox Testing Issues: (IMPORTANT)
+Problem: "Cannot connect to iTunes Store" error Solution:
+
+Use a dedicated sandbox test user
+Sign out of regular App Store account
+Verify internet connection
+Try on a real device (simulator may have issues)
+
+Receipt Validation Failures: (Important)
+Problem: Receipt validation returns invalid Solution:
+
+Check if app is properly signed
+Verify receipt data is not corrupted
+Ensure proper error handling for network issues
+
+Best Practices:
+Always validate receipts server-side for production apps (We Are not Gonna do this because we dont have a server)
+Handle all error cases gracefully
+Test thoroughly with sandbox users
+Provide restore functionality for non-consumable products (We donot provide manual Restore Functionality but we made it Audtomatic in our code)
+
+Android Setup:
+Code Integration:
+Basic Setup:
+import {useIAP, ErrorCode} from 'expo-iap';
+
+const androidProductIds = [
+  'premium_upgrade',
+  'coins_100',
+  'monthly_subscription',
+];
+
+function App() {
+  const {connected, products, subscriptions, requestProducts, requestPurchase} =
+    useIAP({
+      onPurchaseSuccess: (purchase) => {
+        console.log('Purchase successful:', purchase);
+        handleSuccessfulPurchase(purchase);
+      },
+      onPurchaseError: (error) => {
+        console.error('Purchase failed:', error);
+        handlePurchaseError(error);
+      },
+    });
+
+  React.useEffect(() => {
+    if (connected) {
+      // Fetch products and subscriptions
+      fetchProducts({
+        skus: androidProductIds.filter((id) => !id.includes('subscription')),
+        type: 'in-app',
+      });
+      fetchProducts({
+        skus: androidProductIds.filter((id) => id.includes('subscription')),
+        type: 'subs',
+      });
+    }
+  }, [connected]);
+
+  return (
+    <View>
+      {/* Render products */}
+      {products.map((product) => (
+        <AndroidProductItem key={product.id} product={product} />
+      ))}
+
+      {/* Render subscriptions */}
+      {subscriptions.map((subscription) => (
+        <AndroidSubscriptionItem
+          key={subscription.id}
+          subscription={subscription}
+        />
+      ))}
+    </View>
+  );
+}
+
+Error Handling for Android:
+const handleAndroidError = (error: PurchaseError) => {
+  switch (error.code) {
+    case ErrorCode.UserCancelled:
+      // User cancelled - no action needed
+      break;
+    case ErrorCode.ItemUnavailable:
+      Alert.alert(
+        'Product Unavailable',
+        'This item is not available for purchase',
+      );
+      break;
+    case ErrorCode.ServiceError:
+      Alert.alert('Service Error', 'Google Play services are unavailable');
+      break;
+    case ErrorCode.DeveloperError:
+      Alert.alert('Configuration Error', 'Please contact support');
+      break;
+    default:
+      Alert.alert('Purchase Failed', error.message);
+  }
+};
+Common Issues
+Product IDs Not Found
+Problem: Products return empty or show as unavailable Solutions:
+
+Verify product IDs match exactly between code and Play Console
+Ensure products are Active in Play Console
+Check that app is uploaded to at least Internal testing track
+Verify the app package name matches
+
+Purchases:
+⚠️ Purchase Flow Redesign ⚠️
+
+The purchase flow has been updated as a result of the findings in issue #307. The resulting flow has been redesign to not rely on Promise or Callback.
+
+Below are some of the specific reasons for the redesign:
+
+There may be more than one response when requesting a payment.
+Purchases are inter-session asynchronuous meaning requests that are made may take several hours to complete and continue to exist even after the app has been closed or crashed.
+The purchase may be pending and hard to track what has been done (for example).
+The Billing Flow is an event pattern rather than a callback pattern.
+For a comprehensive understanding of the purchase lifecycle, see our Purchase Lifecycle Guide.
+
+Purchase Flow Overview
+Once you have called fetchProducts(), and have a valid response, you can call requestPurchase(). Subscribable products can be purchased just like consumable products and users can cancel subscriptions by using the iOS System Settings.
+
+Before you request any purchase, you should set purchaseUpdatedListener from expo-iap. It is recommended that you start listening to updates as soon as your application launches. And don't forget that even at launch you may receive successful purchases that either completed while your app was closed or that failed to be finished, consumed or acknowledged due to network errors or bugs.
+
+Key Concepts
+Event-driven: Purchases are handled through events rather than promises
+Asynchronous: Purchases may complete after your app is closed or crashed
+Validation required: Always validate receipts on your server
+State management: Use the useIAP hook for automatic state management
+Basic Purchase Flow
+1. Setup Purchase Listeners
+import {
+  initConnection,
+  purchaseErrorListener,
+  purchaseUpdatedListener,
+  type ProductPurchase,
+  type PurchaseError,
+  finishTransaction,
+} from 'expo-iap';
+
+class App extends Component {
+  purchaseUpdateSubscription = null;
+  purchaseErrorSubscription = null;
+
+  componentDidMount() {
+    initConnection().then(() => {
+      this.purchaseUpdateSubscription = purchaseUpdatedListener(
+            (purchase: ProductPurchase) => {
+              console.log('purchaseUpdatedListener', purchase);
+              this.handlePurchaseUpdate(purchase);
+            },
+          );
+
+          this.purchaseErrorSubscription = purchaseErrorListener(
+            (error: PurchaseError) => {
+              console.log('purchaseErrorListener', error);
+              this.handlePurchaseError(error);
+            },
+          );
+        });
+    });
+  }
+
+  componentWillUnmount() {
+    if (this.purchaseUpdateSubscription) {
+      this.purchaseUpdateSubscription.remove();
+      this.purchaseUpdateSubscription = null;
+    }
+    if (this.purchaseErrorSubscription) {
+      this.purchaseErrorSubscription.remove();
+      this.purchaseErrorSubscription = null;
+    }
+  }
+
+  handlePurchaseUpdate = (purchase: ProductPurchase) => {
+    const receipt = purchase.purchaseToken;
+    if (receipt) {
+      yourAPI
+        .deliverOrDownloadFancyInAppPurchase(purchase.purchaseToken)
+        .then(async (deliveryResult) => {
+          if (isSuccess(deliveryResult)) {
+            // Tell the store that you have delivered what has been paid for.
+            // Failure to do this will result in the purchase being refunded on Android and
+            // the purchase event will reappear on every relaunch of the app until you succeed
+            // in doing the below. It will also be impossible for the user to purchase consumables
+            // again until you do this.
+
+            // IMPORTANT: Always validate receipts on your server for both platforms
+            if (Platform.OS === 'ios') {
+              const receiptData = await validateReceipt();
+              // Send to your server for validation with Apple
+              const isValid = await validateReceiptOnServer(receiptData);
+              if (!isValid) {
+                console.error('Invalid receipt');
+                return;
+              }
+            } else if (Platform.OS === 'android') {
+              // Android also requires server-side validation
+              const purchaseToken = purchase.purchaseTokenAndroid;
+              const packageName = purchase.packageNameAndroid;
+
+              // Your server should:
+              // 1. Get Google Play service account credentials
+              // 2. Use Google Play Developer API to verify the purchase
+              const isValid = await validateAndroidPurchaseOnServer({
+                purchaseToken,
+                packageName,
+                productId: purchase.id,
+              });
+
+              if (!isValid) {
+                console.error('Invalid Android purchase');
+                return;
+              }
+            }
+
+            // IMPORTANT: Always finish the transaction to prevent it from replaying
+            // If consumable (can be purchased again)
+            await finishTransaction({purchase, isConsumable: true});
+            // If not consumable (default: isConsumable = false)
+            await finishTransaction({purchase, isConsumable: false});
+          } else {
+            // Retry / conclude the purchase is fraudulent, etc.
+          }
+        });
+    }
+  };
+
+  handlePurchaseError = (error: PurchaseError) => {
+    console.warn('purchaseErrorListener', error);
+  };
+}
+
+2. Using with Hooks (Recommended)
+For a more modern approach using React hooks, here's a comprehensive implementation:
+
+import React, {useEffect, useState, useCallback} from 'react';
+import {Platform, Alert, InteractionManager} from 'react-native';
+import {useIAP} from 'expo-iap';
+
+// Define your product SKUs
+const bulbPackSkus = ['dev.hyo.martie.10bulbs', 'dev.hyo.martie.30bulbs'];
+const subscriptionSkus = ['dev.hyo.martie.premium'];
+
+export default function PurchaseScreen() {
+  const {
+    connected,
+    products,
+    subscriptions,
+    currentPurchase,
+    currentPurchaseError,
+    requestProducts,
+    requestPurchase,
+    finishTransaction,
+    validateReceipt,
+  } = useIAP();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+
+  // Initialize products when IAP connection is established
+  useEffect(() => {
+    if (!connected) return;
+
+    const initializeIAP = async () => {
+      try {
+        // Get both products and subscriptions
+        await fetchProducts({skus: bulbPackSkus, type: 'in-app'});
+        await fetchProducts({skus: subscriptionSkus, type: 'subs'});
+        setIsReady(true);
+      } catch (error) {
+        console.error('Error initializing IAP:', error);
+      }
+    };
+
+    initializeIAP();
+  }, [connected, requestProducts]);
+
+  // Validate receipt helper
+  const handleValidateReceipt = useCallback(
+    async (sku: string, purchase: any) => {
+      try {
+        if (Platform.OS === 'ios') {
+          return await validateReceipt(sku);
+        } else if (Platform.OS === 'android') {
+          const purchaseToken = purchase.purchaseTokenAndroid;
+          const packageName =
+            purchase.packageNameAndroid || 'your.package.name';
+          const isSub = subscriptionSkus.includes(sku);
+
+          return await validateReceipt(sku, {
+            packageName,
+            productToken: purchaseToken,
+            isSub,
+          });
+        }
+        return {isValid: true}; // Default for unsupported platforms
+      } catch (error) {
+        console.error('Receipt validation failed:', error);
+        return {isValid: false};
+      }
+    },
+    [validateReceipt],
+  );
+
+  // Handle successful purchases
+  useEffect(() => {
+    if (currentPurchase) {
+      handlePurchaseUpdate(currentPurchase);
+    }
+  }, [currentPurchase]);
+
+  // Handle purchase errors
+  useEffect(() => {
+    if (currentPurchaseError) {
+      setIsLoading(false);
+
+      // Don't show error for user cancellation
+      if (currentPurchaseError.code === 'E_USER_CANCELLED') {
+        return;
+      }
+
+      Alert.alert(
+        'Purchase Error',
+        'Failed to complete purchase. Please try again.',
+      );
+      console.error('Purchase error:', currentPurchaseError);
+    }
+  }, [currentPurchaseError]);
+
+  const handlePurchaseUpdate = async (purchase: any) => {
+    try {
+      setIsLoading(true);
+      console.log('Processing purchase:', purchase);
+
+      const productId = purchase.id;
+
+      // Validate receipt on your server
+      const validationResult = await handleValidateReceipt(productId, purchase);
+
+      if (validationResult.isValid) {
+        // Determine if this is a consumable product
+        const isConsumable = bulbPackSkus.includes(productId);
+
+        // Finish the transaction
+        await finishTransaction({
+          purchase,
+          isConsumable, // Set to true for consumable products
+        });
+
+        // Record purchase in your database
+        await recordPurchaseInDatabase(purchase, productId);
+
+        // Update local state (e.g., add bulbs, enable premium features)
+        await updateLocalState(productId);
+
+        // Show success message
+        showSuccessMessage(productId);
+      } else {
+        Alert.alert(
+          'Validation Error',
+          'Purchase could not be validated. Please contact support.',
+        );
+      }
+    } catch (error) {
+      console.error('Error handling purchase:', error);
+      Alert.alert('Error', 'Failed to process purchase.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Request purchase for products
+  const handlePurchaseBulbs = async (productId: string) => {
+    if (!connected) {
+      Alert.alert(
+        'Not Connected',
+        'Store connection unavailable. Please try again later.',
+      );
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      // Platform-specific purchase request (v2.7.0+)
+      await requestPurchase({
+        request: {
+          ios: {
+            sku: productId,
+            andDangerouslyFinishTransactionAutomatically: false,
+          },
+          android: {
+            skus: [productId],
+          },
+        },
+      });
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Purchase request failed:', error);
+    }
+  };
+
+  // Request purchase for subscriptions
+  const handlePurchaseSubscription = async (subscriptionId: string) => {
+    if (!connected) {
+      Alert.alert(
+        'Not Connected',
+        'Store connection unavailable. Please try again later.',
+      );
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      // Find subscription to get offer details
+      const subscription = subscriptions.find((s) => s.id === subscriptionId);
+      const subscriptionOffers = subscription?.subscriptionOfferDetails?.map(
+        (offer) => ({
+          sku: subscriptionId,
+          offerToken: offer.offerToken,
+        }),
+      ) || [{sku: subscriptionId, offerToken: ''}];
+
+      // Platform-specific subscription request (v2.7.0+)
+      await requestPurchase({
+        request: {
+          ios: {
+            sku: subscriptionId,
+          },
+          android: {
+            skus: [subscriptionId],
+            subscriptionOffers,
+          },
+        },
+        type: 'subs',
+      });
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Subscription request failed:', error);
+    }
+  };
+
+  const recordPurchaseInDatabase = async (purchase: any, productId: string) => {
+    // Implement your database recording logic here
+    console.log('Recording purchase in database:', {purchase, productId});
+  };
+
+  const updateLocalState = async (productId: string) => {
+    // Update your local app state based on the purchase
+    if (bulbPackSkus.includes(productId)) {
+      // Add bulbs to user's account
+      const bulbCount = productId.includes('10bulbs') ? 10 : 30;
+      console.log(`Adding ${bulbCount} bulbs to user account`);
+    } else if (subscriptionSkus.includes(productId)) {
+      // Enable premium features
+      console.log('Enabling premium features');
+    }
+  };
+
+  const showSuccessMessage = (productId: string) => {
+    InteractionManager.runAfterInteractions(() => {
+      if (bulbPackSkus.includes(productId)) {
+        const bulbCount = productId.includes('10bulbs') ? 10 : 30;
+        Alert.alert(
+          'Thank You!',
+          `${bulbCount} bulbs have been added to your account.`,
+        );
+      } else if (subscriptionSkus.includes(productId)) {
+        Alert.alert(
+          'Thank You!',
+          'Premium subscription activated successfully.',
+        );
+      }
+    });
+  };
+
+  return (
+    <View>
+      {/* Your purchase UI components */}
+      <Text>Connection Status: {connected ? 'Connected' : 'Disconnected'}</Text>
+      <Text>Products Ready: {isReady ? 'Yes' : 'No'}</Text>
+      {/* Add your purchase buttons and UI here */}
+    </View>
+  );
+}
+
+3. Request a Purchase
+Important Platform Difference:
+
+iOS: Can only purchase one product at a time (single SKU)
+Android: Can purchase multiple products at once (array of SKUs)
+This fundamental difference requires platform-specific handling. Starting from v2.7.0, we provide a cleaner API:
+
+New Platform-Specific API (v2.7.0+)
+import {requestPurchase} from 'expo-iap';
+
+// Cleaner approach with platform-specific parameters
+const handleBuyProduct = async (productId: string) => {
+  try {
+    await requestPurchase({
+      request: {
+        ios: {
+          sku: productId,
+          appAccountToken: 'user-123', // Optional: for server-side validation
+        },
+        android: {
+          skus: [productId],
+          obfuscatedAccountIdAndroid: 'user-123', // Optional: user identifier
+        },
+      },
+    });
+  } catch (err) {
+    console.warn(err.code, err.message);
+  }
+};
+
+Important Notes
+Purchase Flow Best Practices
+Always set up listeners first: Set up purchaseUpdatedListener and purchaseErrorListener before making any purchase requests.
+
+Handle pending purchases: On app launch, check for pending purchases that may have completed while the app was closed.
+
+Never rely on promises: The purchase flow is event-driven, not promise-based. Always use listeners to handle purchase results.
+
+Validate receipts server-side: Never trust client-side validation. Always validate receipts on your secure server.
+
+Finish transactions: Always call finishTransaction after successful validation to complete the purchase.
+
+Handle unfinished transactions on iOS: iOS will replay unfinished transactions on app startup. Always call finishTransaction to prevent onPurchaseSuccess from triggering automatically on every app launch.
+
+Pending and Unfinished Purchases
+iOS Unfinished Transactions
+On iOS, if you don't call finishTransaction after a successful purchase, the transaction remains in an "unfinished" state. This causes:
+
+onPurchaseSuccess to trigger automatically on every app startup
+The same purchase to appear repeatedly until finished
+Users unable to make new purchases of consumable items
+Solution: Always finish transactions after processing:
+
+const {finishTransaction, validateReceipt} = useIAP({
+  onPurchaseSuccess: async (purchase) => {
+    try {
+      // 1. Validate the receipt (IMPORTANT: Server-side validation required for both platforms)
+      if (Platform.OS === 'ios') {
+        const receiptData = await validateReceipt();
+        // Send to your server for validation with Apple
+        const isValid = await validateReceiptOnServer(receiptData);
+        if (!isValid) {
+          console.error('Invalid receipt');
+          return;
+        }
+      } else if (Platform.OS === 'android') {
+        // Android also requires server-side validation
+        const purchaseToken = purchase.purchaseTokenAndroid;
+        const packageName = purchase.packageNameAndroid;
+
+        // Your server should:
+        // 1. Get Google Play service account credentials
+        // 2. Use Google Play Developer API to verify the purchase
+        const isValid = await validateAndroidPurchaseOnServer({
+          purchaseToken,
+          packageName,
+          productId: purchase.id,
+        });
+
+        if (!isValid) {
+          console.error('Invalid Android purchase');
+          return;
+        }
+      }
+
+      // 2. Process the purchase
+      await processPurchase(purchase);
+
+      // 3. IMPORTANT: Finish the transaction
+      await finishTransaction({
+        purchase,
+        isConsumable: false, // defaults to false
+      });
+    } catch (error) {
+      console.error('Purchase processing failed:', error);
+    }
+  },
+});
+
+Handle unfinished transactions on startup:
+
+// On app initialization
+componentDidMount() {
+  initConnection().then(async () => {
+    // Check for unfinished transactions
+    const purchases = await getAvailablePurchases();
+
+    for (const purchase of purchases) {
+      // If already processed, just finish the transaction
+      if (await isAlreadyProcessed(purchase)) {
+        await finishTransaction({ purchase });
+      }
+    }
+
+    // Set up purchase listeners
+    this.setupPurchaseListeners();
+  });
+}
+
+Getting Product Information
+Retrieving Product Prices
+Here's how to get product prices across platforms:
+
+// Get product price by ID with proper platform checking
+const getProductPrice = (productId: string): string => {
+  if (!isReady || products.length === 0) {
+    return Platform.OS === 'ios' ? '$0.99' : '₩1,200'; // Default prices
+  }
+
+  const product = products.find((p) => p.id === productId);
+  if (!product) return Platform.OS === 'ios' ? '$0.99' : '₩1,200';
+
+  if (Platform.OS === 'ios') {
+    return product.displayPrice || '$0.99';
+  } else {
+    // Android
+    const androidProduct = product as ProductAndroid;
+    return (
+      androidProduct.oneTimePurchaseOfferDetails?.formattedPrice || '₩1,200'
+    );
+  }
+};
+
+// Get subscription price by ID with proper platform checking
+const getSubscriptionPrice = (subscriptionId: string): string => {
+  if (!isReady || subscriptions.length === 0) {
+    return Platform.OS === 'ios' ? '$9.99' : '₩11,000'; // Default prices
+  }
+
+  const subscription = subscriptions.find((s) => s.id === subscriptionId);
+  if (!subscription) return Platform.OS === 'ios' ? '$9.99' : '₩11,000';
+
+  if (Platform.OS === 'ios') {
+    return subscription.displayPrice || '$9.99';
+  } else {
+    // Android
+    const androidSubscription = subscription as ProductAndroid;
+    if (androidSubscription.subscriptionOfferDetails?.length > 0) {
+      const firstOffer = androidSubscription.subscriptionOfferDetails[0];
+      if (firstOffer.pricingPhases.pricingPhaseList.length > 0) {
+        return (
+          firstOffer.pricingPhases.pricingPhaseList[0].formattedPrice ||
+          '₩11,000'
+        );
+      }
+    }
+    return '₩11,000'; // Default Android price
+  }
+};
+
+Platform Support
+Checking Platform Compatibility
+// Define supported platforms
+const SUPPORTED_PLATFORMS = ['ios', 'android'];
+
+export default function PurchaseScreen() {
+  const isPlatformSupported = SUPPORTED_PLATFORMS.includes(Platform.OS);
+
+  if (!isPlatformSupported) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <Text>Platform Not Supported</Text>
+        <Text>In-app purchases are only available on iOS and Android.</Text>
+      </View>
+    );
+  }
+
+  // Rest of your purchase implementation
+}
+
+Product Types
+Consumable Products
+Consumable products can be purchased multiple times (e.g., coins, gems):
+
+const buyConsumable = async (productId) => {
+  await requestPurchase({sku: productId});
+  // After successful validation and finishing transaction,
+  // the product can be purchased again
+};
+
+Advanced Purchase Handling
+Purchase Restoration
+For non-consumable products and subscriptions, implement purchase restoration:
+
+const {getAvailablePurchases, availablePurchases} = useIAP();
+
+const restorePurchases = async () => {
+  try {
+    // In hook: updates state, does not return purchases
+    await getAvailablePurchases();
+
+    for (const purchase of availablePurchases) {
+      // Validate and restore each purchase
+      const isValid = await validateReceiptOnServer(purchase);
+      if (isValid) {
+        await grantPurchaseToUser(purchase);
+      }
+    }
+  } catch (error) {
+    console.error('Failed to restore purchases:', error);
+  }
+};
+Receipt Validation
+Important Platform Differences for Receipt Validation:
+
+iOS: Only requires the SKU for validation
+Android: Requires additional parameters including packageName, productToken, and optionally accessToken
+Always validate receipts on your server for security and fraud prevention. Client-side validation is not sufficient for production apps.
+
+const handleValidateReceipt = useCallback(
+  async (sku: string, purchase: any) => {
+    try {
+      if (Platform.OS === 'ios') {
+        // iOS: Simple validation with just SKU
+        return await validateReceipt(sku);
+      } else if (Platform.OS === 'android') {
+        // Android: Requires additional validation parameters
+        const purchaseToken = purchase.purchaseTokenAndroid;
+        const packageName = purchase.packageNameAndroid || 'your.package.name';
+        const isSub = subscriptionSkus.includes(sku);
+
+        // Check required Android parameters before validation
+        if (!purchaseToken || !packageName) {
+          throw new Error(
+            'Android validation requires packageName and productToken',
+          );
+        }
+
+        return await validateReceipt(sku, {
+          packageName,
+          productToken: purchaseToken,
+          isSub,
+          // accessToken may be required for server-side validation
+        });
+      }
+      return {isValid: true}; // Default for unsupported platforms
+    } catch (error) {
+      console.error('Receipt validation failed:', error);
+      return {isValid: false};
+    }
+  },
+  [validateReceipt],
+);
+
+// Use in purchase handler
+const handlePurchaseUpdate = async (purchase: any) => {
+  try {
+    const productId = purchase.id;
+
+    // Validate receipt on your server
+    const validationResult = await handleValidateReceipt(productId, purchase);
+
+    if (validationResult.isValid) {
+      // Process the purchase
+      await finishTransaction({
+        purchase,
+        isConsumable: bulbPackSkus.includes(productId),
+      });
+
+      // Update user's purchase state in your app
+      updateUserPurchases(productId);
+    } else {
+      console.error('Receipt validation failed for:', productId);
+      // Handle invalid receipt
+    }
+  } catch (error) {
+    console.error('Purchase processing failed:', error);
+  }
+};
+
+Best Practices:
+
+Always validate on your server, never trust client-side validation alone
+Store purchase receipts in your database for future reference
+Implement retry logic for failed validations due to network issues
+Log validation failures for fraud detection and analysis
+Error Handling
+Implement comprehensive error handling for various scenarios:
+
+const handlePurchaseError = (error) => {
+  switch (error.code) {
+    case 'E_USER_CANCELLED':
+      // User cancelled - no action needed
+      break;
+
+    case 'E_NETWORK_ERROR':
+      // Show retry option
+      showRetryDialog();
+      break;
+
+    case 'E_ITEM_UNAVAILABLE':
+      // Product not available
+      showProductUnavailableMessage();
+      break;
+
+    case 'E_ALREADY_OWNED':
+      // User already owns this product
+      showAlreadyOwnedMessage();
+      break;
+
+    default:
+      // Generic error handling
+      showGenericErrorMessage(error.message);
+      break;
+  }
+};
+
+Testing Purchases
+iOS Testing
+Create sandbox accounts in App Store Connect
+Sign out of App Store on device
+Sign in with sandbox account when prompted during purchase
+Test with TestFlight builds
+Android Testing
+Create test accounts in Google Play Console
+Upload signed APK to internal testing track
+Add test accounts to the testing track
+Test with signed builds (not debug builds)
+
+
+Lifecycle:
+Implementation with expo-iap
+Connection Management with useIAP
+The useIAP hook automatically manages the connection lifecycle for you, but it's important to understand what happens under the hood.
+
+Automatic Connection
+When you use the useIAP hook, it automatically:
+
+Initializes the connection to the store
+Sets up purchase listeners
+Manages connection state
+Cleans up when the component unmounts
+import {useIAP} from 'expo-iap';
+
+export default function App() {
+  const {connected, products, requestProducts} = useIAP();
+
+  useEffect(() => {
+    // Connection is automatically established
+    if (connected) {
+      console.log('Connected to store');
+      // You can now safely call store methods
+      fetchProducts({skus: ['product1', 'product2'], type: 'in-app'});
+    }
+  }, [connected, requestProducts]);
+
+  return <YourAppContent />;
+}
+
+Connection States
+The connection can be in several states:
+
+Disconnected: Initial state, no connection to store
+Connecting: Attempting to establish connection
+Connected: Successfully connected, ready for operations
+Error: Connection failed
+const {connected, connectionError} = useIAP();
+
+if (connectionError) {
+  return <ErrorView error={connectionError} />;
+}
+
+if (!connected) {
+  return <LoadingView message="Connecting to store..." />;
+}
+
+return <StoreView />;
+Component Lifecycle Integration
+Functional Components
+import React, {useEffect, useRef} from 'react';
+import {
+  initConnection,
+  endConnection,
+  purchaseUpdatedListener,
+  purchaseErrorListener,
+} from 'expo-iap';
+
+export default function StoreComponent() {
+  const listenersRef = useRef([]);
+
+  useEffect(() => {
+    const setupStore = async () => {
+      try {
+        await initConnection();
+
+        // Set up listeners
+        const purchaseUpdateSubscription = purchaseUpdatedListener(
+          (purchase) => {
+            handlePurchaseUpdate(purchase);
+          },
+        );
+
+        const purchaseErrorSubscription = purchaseErrorListener((error) => {
+          handlePurchaseError(error);
+        });
+
+        // Store references for cleanup
+        listenersRef.current = [
+          purchaseUpdateSubscription,
+          purchaseErrorSubscription,
+        ];
+      } catch (error) {
+        console.error('Failed to setup store:', error);
+      }
+    };
+
+    setupStore();
+
+    // Cleanup function
+    return () => {
+      // Remove listeners
+      listenersRef.current.forEach((subscription) => {
+        if (subscription && subscription.remove) {
+          subscription.remove();
+        }
+      });
+
+      // End connection
+      endConnection();
+    };
+  }, []);
+
+  const handlePurchaseUpdate = (purchase) => {
+    // Handle purchase updates
+  };
+
+  const handlePurchaseError = (error) => {
+    // Handle purchase errors
+  };
+
+  return <div>Your store UI</div>;
+}
+
+Best Practices
+✅ Do
+Use useIAP hook: Simplifies lifecycle management
+Initialize early: Connect to store as early as possible in app lifecycle
+Handle connection states: Provide feedback to users about connection status
+Clean up properly: Always remove listeners and end connections
+// ✅ Good: Using useIAP hook
+function MyApp() {
+  const {connected, products, requestProducts} = useIAP();
+
+  useEffect(() => {
+    if (connected) {
+      fetchProducts({skus: productIds, type: 'in-app'});
+    }
+  }, [connected]);
+
+  return <AppContent />;
+}
+
+❌ Don't
+Initialize and end repeatedly: Don't call initConnection/endConnection for every operation
+Ignore connection state: Don't attempt store operations when disconnected
+Forget cleanup: Always clean up listeners to prevent memory leaks
+// ❌ Bad: Initializing for every operation
+const badPurchaseFlow = async (productId) => {
+  await initConnection(); // Don't do this
+  await requestPurchase({sku: productId});
+  await endConnection(); // Don't do this
+};
+
+// ✅ Good: Use existing connection
+const goodPurchaseFlow = async (productId) => {
+  if (connected) {
+    await requestPurchase({sku: productId});
+  }
+};
+
+Purchase Flow Best Practices
+Receipt Validation and Security
+Server-side receipt validation is recommended: For production apps, it's highly recommended to validate receipts on your secure server before granting access to content or features. See Apple's receipt validation guide and Google Play's verification guide.
+
+Finish transactions after validation: Always call finishTransaction after successfully validating a purchase on your server. Failing to do so will cause the purchase to remain in a pending state and may trigger repeated purchase prompts.
+
+Never trust client-side data: Always validate receipts server-side before granting premium content or features.
+
+Purchase State Management
+Handle all purchase states: Including pending, failed, restored, and cancelled purchases. Each state requires different handling logic.
+
+Handle pending purchases: Some purchases may require approval (e.g., parental consent) and remain in pending state for extended periods.
+
+Restore purchases properly: Implement purchase restoration for non-consumable products and subscriptions. This is required by app store guidelines.
+
+Error Handling and User Experience
+Implement comprehensive error handling: Provide meaningful feedback to users for different error scenarios including network errors, cancelled purchases, and validation failures.
+
+Graceful degradation: Your app should work even if purchases fail or the store is unavailable. Don't block core functionality.
+
+User feedback: Keep users informed about purchase status with appropriate loading states and success/error messages.
+
+Testing and Development
+Test thoroughly: Use real devices and official test accounts. In-app purchases don't work in simulators/emulators.
+
+Monitor purchase flow: Log important events for debugging, but never log sensitive information like receipts or tokens.
+
+Check server-side validation libraries: Consider using open-source libraries like node-app-store-receipt-verify for iOS or google-play-billing-validator for Android.
+
+Common Pitfalls and Solutions
+Transaction Management Issues
+❌ Not finishing transactions:
+
+// Wrong - forgetting to finish transaction
+const handlePurchase = async (purchase) => {
+  await validateReceipt(purchase);
+  // Missing: finishTransaction call
+};
+
+✅ Always finish transactions after validation:
+
+// Correct - always finish transaction
+const handlePurchase = async (purchase) => {
+  const isValid = await validateReceipt(purchase);
+  if (isValid) {
+    await finishTransaction({purchase, isConsumable: true});
+  }
+};
+
+Security Issues
+❌ Trusting client-side validation:
+
+// Wrong - never trust client-side validation alone
+const handlePurchase = async (purchase) => {
+  // This is not secure for production
+  grantPremiumFeature();
+};
+
+✅ Always validate server-side:
+
+// Correct - validate on secure server
+const handlePurchase = async (purchase) => {
+  const isValid = await yourAPI.validateReceipt(purchase.purchaseToken);
+  if (isValid) {
+    grantPremiumFeature();
+    await finishTransaction({purchase});
+  }
+};
+
+Development and Testing Issues
+❌ Testing on simulators: In-app purchases only work on real devices with proper app store configurations.
+
+❌ Ignoring error codes: Different errors require different handling strategies.
+
+✅ Proper error handling:
+
+// Correct - handle different error types appropriately
+const handlePurchaseError = (error) => {
+  switch (error.code) {
+    case 'E_USER_CANCELLED':
+      // Silent - user intentionally cancelled
+      break;
+    case 'E_NETWORK_ERROR':
+      showRetryDialog();
+      break;
+    case 'E_ITEM_UNAVAILABLE':
+      showUnavailableMessage();
+      break;
+    default:
+      showGenericErrorMessage();
+      break;
+  }
+};
+
+App Lifecycle Issues
+❌ Not handling app crashes: Purchases can complete after app restart, so always check for pending purchases on app launch.
+
+✅ Handle background purchases:
+
+// Correct - check for purchases on app launch
+useEffect(() => {
+  const checkPendingPurchases = async () => {
+    if (connected) {
+      // Check for any purchases that completed while app was closed
+      const purchases = await getAvailablePurchases();
+      for (const purchase of purchases) {
+        await processPurchase(purchase);
+      }
+    }
+  };
+
+  checkPendingPurchases();
+}, [connected]);
+
+Connection Management Issues
+❌ Initializing connection repeatedly:
+
+// Wrong - don't initialize for every operation
+const purchaseProduct = async (sku) => {
+  await initConnection(); // Don't do this
+  await requestPurchase({sku});
+  await endConnection(); // Don't do this
+};
+
+✅ Maintain single connection:
+
+// Correct - use existing connection
+const purchaseProduct = async (sku) => {
+  if (connected) {
+    await requestPurchase({sku});
+  } else {
+    console.error('Store not connected');
+  }
+};
+
+Troubleshooting:
+
+Common Issues
+fetchProducts() returns an empty array
+This is one of the most common issues. Here are the potential causes and solutions:
+
+1. Connection not established
+const {connected, fetchProducts} = useIAP();
+
+useEffect(() => {
+  if (connected) {
+    // ✅ Only call fetchProducts when connected
+    fetchProducts({skus: productIds, type: 'in-app'});
+  } else {
+    console.log('Not connected to store yet');
+  }
+}, [connected]);
+
+2. Product IDs don't match
+Ensure your product IDs exactly match those configured in the stores:
+
+// ❌ Wrong: Using different IDs
+const productIds = ['my_product_1', 'my_product_2'];
+
+// ✅ Correct: Using exact IDs from store
+const productIds = ['com.yourapp.product1', 'com.yourapp.premium'];
+
+3. Products not approved (iOS)
+Products need time to propagate through Apple's systems:
+
+Wait up to 24 hours after creating products
+Ensure products are in "Ready to Submit" status
+Test with sandbox accounts
+4. App not uploaded to Play Console (Android)
+For Android, your app must be uploaded to Play Console:
+
+# Create signed build
+./gradlew assembleRelease
+
+# Upload to Play Console internal testing track
+
+useIAP hook not working
+1. Missing provider setup
+Ensure you're using the hook within the provider context:
+
+// ❌ Wrong: Hook used outside provider
+function App() {
+  const {connected} = useIAP(); // This will fail
+  return <MyApp />;
+}
+
+// ✅ Correct: Hook used within provider
+import {IAPProvider} from 'expo-iap';
+
+function AppWithProvider() {
+  return (
+    <IAPProvider>
+      <App />
+    </IAPProvider>
+  );
+}
+
+function App() {
+  const {connected} = useIAP(); // This works
+  return <MyApp />;
+}
+
+2. Multiple providers
+Don't wrap your app with multiple IAP providers:
+
+// ❌ Wrong: Multiple providers
+<IAPProvider>
+  <IAPProvider>
+    <App />
+  </IAPProvider>
+</IAPProvider>
+
+// ✅ Correct: Single provider
+<IAPProvider>
+  <App />
+</IAPProvider>
+
+Purchase flow issues
+1. Purchases not completing
+Always handle purchase updates and finish transactions:
+
+const {currentPurchase, finishTransaction} = useIAP();
+
+useEffect(() => {
+  if (currentPurchase) {
+    handlePurchase(currentPurchase);
+  }
+}, [currentPurchase]);
+
+const handlePurchase = async (purchase) => {
+  try {
+    // Validate receipt
+    const isValid = await validateOnServer(purchase);
+
+    if (isValid) {
+      // Grant purchase to user
+      await grantPurchase(purchase);
+
+      // ✅ Always finish the transaction
+      await finishTransaction({
+        purchase,
+        isConsumable: false, // default is false
+      });
+    }
+  } catch (error) {
+    console.error('Purchase handling failed:', error);
+  }
+};
+
+Important - Transaction Acknowledgment Requirements:
+
+iOS: Unfinished transactions remain in the queue indefinitely until finishTransaction is called
+Android: Purchases must be acknowledged within 3 days (72 hours) or they will be automatically refunded
+For consumable products: Use finishTransaction({purchase, isConsumable: true})
+For non-consumables/subscriptions: Use finishTransaction({purchase}) or finishTransaction({purchase, isConsumable: false})
+2. onPurchaseSuccess triggering automatically on app restart (iOS)
+This happens when transactions are not properly finished. iOS stores unfinished transactions and replays them on app startup:
+
+Problem: Your onPurchaseSuccess callback fires automatically every time the app starts with a previous purchase.
+
+Cause: You didn't call finishTransaction after processing the purchase, so iOS keeps the transaction in an "unfinished" state.
+
+Solution: Always call finishTransaction after successfully processing a purchase:
+
+const {finishTransaction} = useIAP({
+  onPurchaseSuccess: async (purchase) => {
+    console.log('Purchase successful:', purchase);
+
+    try {
+      // 1. Validate the receipt (IMPORTANT: Server-side validation required for both platforms)
+      if (Platform.OS === 'ios') {
+        // WARNING: validateReceipt() from useIAP is for development only!
+        // For production, ALWAYS validate on your secure server
+
+        // Option 1 (Development only - NOT SECURE):
+        // const { validateReceipt } = useIAP();
+        // const receiptData = await validateReceipt(purchase.id);
+
+        // Option 2 (RECOMMENDED - Secure):
+        const isValid = await validateReceiptOnServer({
+          transactionId: purchase.transactionId,
+          productId: purchase.id,
+        });
+        if (!isValid) {
+          console.error('Invalid receipt');
+          return;
+        }
+      } else if (Platform.OS === 'android') {
+        // Android also requires server-side validation
+        const purchaseToken = purchase.purchaseTokenAndroid;
+        const packageName = purchase.packageNameAndroid;
+
+        // Get Google Play access token on your server (not in client)
+        // Then validate the purchase with Google Play API
+        const isValid = await validateAndroidPurchaseOnServer({
+          purchaseToken,
+          packageName,
+          productId: purchase.id,
+        });
+
+        if (!isValid) {
+          console.error('Invalid Android purchase');
+          return;
+        }
+      }
+
+      // 2. Process the purchase (unlock content, update backend, etc.)
+      await processSubscription(purchase);
+
+      // 3. IMPORTANT: Finish the transaction to prevent replay
+      await finishTransaction({
+        purchase,
+        // isConsumable defaults to false, which is correct for subscriptions and non-consumables
+      });
+    } catch (error) {
+      console.error('Purchase processing failed:', error);
+    }
+  },
+});
+
+Prevention: Handle pending transactions on app startup:
+
+const {getAvailablePurchases, finishTransaction} = useIAP();
+
+useEffect(() => {
+  const checkPendingPurchases = async () => {
+    // Get all unfinished transactions
+    const purchases = await getAvailablePurchases();
+
+    for (const purchase of purchases) {
+      // Process and finish any pending transactions
+      if (await isAlreadyProcessed(purchase)) {
+        // If already processed, just finish the transaction
+        await finishTransaction({purchase}); // isConsumable: false by default
+      } else {
+        // Process the purchase first, then finish
+        await processPurchase(purchase);
+        await finishTransaction({purchase});
+      }
+    }
+  };
+
+  checkPendingPurchases();
+}, []);
+
+Important Notes:
+
+This issue primarily affects iOS because of how StoreKit handles transactions
+Android requires acknowledgment within 3 days to prevent automatic refunds
+The isConsumable parameter defaults to false, which is appropriate for subscriptions and non-consumable products
+Never set andDangerouslyFinishTransactionAutomatically: true unless you understand the implications
+Always implement proper transaction finishing in your purchase flow
+2. Testing on simulators/emulators
+In-app purchases only work on real devices:
+
+import {Platform} from 'react-native';
+import {isEmulator} from 'react-native-device-info';
+
+const checkDeviceSupport = async () => {
+  if (__DEV__) {
+    const emulator = await isEmulator();
+    if (emulator) {
+      console.warn('In-app purchases not supported on simulators/emulators');
+      return false;
+    }
+  }
+  return true;
+};
+
+Connection issues
+1. Network connectivity
+Handle network errors gracefully:
+
+const {connectionError} = useIAP();
+
+if (connectionError) {
+  return (
+    <View>
+      <Text>Store connection failed</Text>
+      <Text>{connectionError.message}</Text>
+      <Button
+        title="Retry"
+        onPress={() => {
+          // Implement retry logic
+          retryConnection();
+        }}
+      />
+    </View>
+  );
+}
+
+2. Store service unavailable
+Sometimes store services are temporarily unavailable:
+
+const handleStoreUnavailable = () => {
+  // Show user-friendly message
+  Alert.alert(
+    'Store Unavailable',
+    'The App Store is temporarily unavailable. Please try again later.',
+    [{text: 'OK'}],
+  );
+};
+
+Platform-specific issues
+iOS Issues
+Invalid product ID error:
+
+// Ensure you're signed in with sandbox account
+// Check product IDs match exactly
+// Verify app bundle ID matches
+
+StoreKit configuration:
+
+// Add StoreKit capability in Xcode
+// For iOS 12.x, add SwiftUI.framework as optional
+
+Xcode version issues:
+
+If you're experiencing issues like duplicate purchase events or other unexpected behavior:
+
+Solution: Upgrade to Xcode 16.4 or later
+Known issues resolved: #114, react-native-iap #2970
+Symptoms of old Xcode versions:
+Duplicate purchase notifications
+StoreKit transaction handling errors
+Unexpected purchase flow behavior
+Android Issues
+Billing client setup:
+
+// android/app/build.gradle
+dependencies {
+  implementation 'com.android.billingclient:billing:5.0.0'
+}
+
+Missing permissions:
+
+<!-- android/app/src/main/AndroidManifest.xml -->
+<uses-permission android:name="com.android.vending.BILLING" />
+
+Debugging Tips
+1. Enable verbose logging
+import {setDebugMode} from 'expo-iap';
+
+// Enable debug mode in development
+if (__DEV__) {
+  setDebugMode(true);
+}
+
+2. Log purchase events
+const {currentPurchase, currentPurchaseError} = useIAP();
+
+useEffect(() => {
+  if (currentPurchase) {
+    console.log('Purchase received:', JSON.stringify(currentPurchase, null, 2));
+  }
+}, [currentPurchase]);
+
+useEffect(() => {
+  if (currentPurchaseError) {
+    console.error(
+      'Purchase error:',
+      JSON.stringify(currentPurchaseError, null, 2),
+    );
+  }
+}, [currentPurchaseError]);
+
+3. Monitor connection state
+const {connected, connectionError} = useIAP();
+
+useEffect(() => {
+  console.log('Connection state changed:', {connected, error: connectionError});
+}, [connected, connectionError]);
+
+Testing Strategies
+1. Staged testing approach
+Unit tests: Test your purchase logic without actual store calls
+Sandbox testing: Use store sandbox/test accounts
+Internal testing: Test with real store in closed testing
+Production testing: Final verification in live environment
+2. Test different scenarios
+const testScenarios = [
+  'successful_purchase',
+  'user_cancelled',
+  'network_error',
+  'insufficient_funds',
+  'product_unavailable',
+  'pending_purchase',
+];
+
+// Test each scenario with appropriate mocks
+
+3. Device testing matrix
+Test on various devices and OS versions:
+
+iOS: Different iPhone/iPad models, iOS versions
+Android: Different manufacturers, Android versions, Play Services versions
+Error Code Reference
+Common error codes and their meanings:
+
+Code	Description	Action
+E_USER_CANCELLED	User cancelled purchase	No action needed
+E_NETWORK_ERROR	Network connectivity issue	Show retry option
+E_ITEM_UNAVAILABLE	Product not available	Check product setup
+E_ALREADY_OWNED	User already owns product	Check ownership status
+E_INSUFFICIENT_FUNDS	Not enough funds	Direct to payment method
+E_UNKNOWN	Unknown error	Log for investigation
+Getting Help
+If you're still experiencing issues:
+
+Check logs: Review device logs and crash reports
+Search issues: Check the GitHub issues
+Minimal reproduction: Create a minimal example that reproduces the issue. See this example for reference on sharing a helpful repro
+Report bug: File a detailed issue with reproduction steps
+Bug report template
+**Environment:**
+
+- expo-iap version: x.x.x
+- Platform: iOS/Android
+- OS version: x.x.x
+- Device: Device model
+
+**Description:** Clear description of the issue
+
+**Steps to reproduce:**
+
+1. Step 1
+2. Step 2
+3. Step 3
+
+**Expected behavior:** What should happen
+
+**Actual behavior:** What actually happens
+
+**Logs:** Relevant logs and error messages
+
+CORE METHODS:
+initConnection()
+Initializes the connection to the store. This method must be called before any other store operations.
+
+import {initConnection} from 'expo-iap';
+
+const initialize = async () => {
+  try {
+    await initConnection();
+    console.log('Store connection initialized');
+  } catch (error) {
+    console.error('Failed to initialize connection:', error);
+  }
+};
+
+Returns: Promise<boolean>
+
+Note: When using the useIAP hook, connection is automatically managed.
+
+endConnection()
+Ends the connection to the store and cleans up resources.
+
+import {endConnection} from 'expo-iap';
+
+const cleanup = async () => {
+  try {
+    await endConnection();
+    console.log('Store connection ended');
+  } catch (error) {
+    console.error('Failed to end connection:', error);
+  }
+};
+
+Returns: Promise<void>
+
+Note: When using the useIAP hook, connection cleanup is automatic.
+
+fetchProducts()
+Fetches product or subscription information from the store.
+
+import {fetchProducts} from 'expo-iap';
+
+// Fetch in-app products
+const loadProducts = async () => {
+  try {
+    const products = await fetchProducts({
+      skus: ['com.example.product1', 'com.example.product2'],
+      type: 'in-app',
+    });
+
+    console.log('Products:', products);
+    return products;
+  } catch (error) {
+    console.error('Failed to fetch products:', error);
+  }
+};
+
+// Fetch subscriptions
+const loadSubscriptions = async () => {
+  try {
+    const subscriptions = await fetchProducts({
+      skus: ['com.example.premium_monthly', 'com.example.premium_yearly'],
+      type: 'subs',
+    });
+
+    console.log('Subscriptions:', subscriptions);
+    return subscriptions;
+  } catch (error) {
+    console.error('Failed to fetch subscriptions:', error);
+  }
+};
+
+Parameters:
+
+params (object):
+skus (string[]): Array of product or subscription IDs to fetch
+type ('in-app' | 'subs'): Product type - 'in-app' for products, 'subs' for subscriptions
+Returns: Promise<Product[]>
+
+Product Interface
+
+requestPurchase()
+Initiates a purchase request for products or subscriptions.
+
+⚠️ Platform Differences:
+
+iOS: Can only purchase one product at a time (uses sku: string)
+Android: Can purchase multiple products at once (uses skus: string[])
+This exists because the iOS App Store processes purchases individually, while Google Play supports batch purchases.
+
+Recommended usage (no Platform checks)
+import {requestPurchase} from 'expo-iap';
+
+// Product purchase
+const buyProduct = async (productId: string) => {
+  try {
+    await requestPurchase({
+      request: {
+        ios: {
+          sku: productId,
+          quantity: 1,
+        },
+        android: {
+          skus: [productId],
+        },
+      },
+      type: 'in-app',
+    });
+  } catch (error) {
+    console.error('Purchase failed:', error);
+  }
+};
+
+// Subscription purchase
+const buySubscription = async (subscriptionId: string, subscription?: any) => {
+  try {
+    await requestPurchase({
+      request: {
+        ios: {
+          sku: subscriptionId,
+          appAccountToken: 'user-123',
+        },
+        android: {
+          skus: [subscriptionId],
+          subscriptionOffers:
+            subscription?.subscriptionOfferDetails?.map((offer) => ({
+              sku: subscriptionId,
+              offerToken: offer.offerToken,
+            })) || [],
+        },
+      },
+      type: 'subs',
+    });
+  } catch (error) {
+    console.error('Subscription failed:', error);
+  }
+};
+
+Detailed Platform Examples
+iOS Only
+await requestPurchase({
+  request: {
+    sku: productId,
+    quantity: 1,
+    appAccountToken: 'user-account-token',
+  },
+  type: 'in-app',
+});
+
+Android Only
+await requestPurchase({
+  request: {
+    skus: [productId],
+    obfuscatedAccountIdAndroid: 'user-account-id',
+    obfuscatedProfileIdAndroid: 'user-profile-id',
+  },
+  type: 'in-app',
+});
+
+Parameters:
+
+params (object):
+request (object): Purchase request configuration
+iOS: sku (string) - Product ID to purchase
+Android: skus (string[]) - Array of product IDs to purchase
+Cross-platform: Include both sku and skus for compatibility
+quantity? (number, iOS only): Purchase quantity
+appAccountToken? (string, iOS only): User identifier for receipt validation
+obfuscatedAccountIdAndroid? (string, Android only): Obfuscated account ID
+obfuscatedProfileIdAndroid? (string, Android only): Obfuscated profile ID
+isOfferPersonalized? (boolean, Android only): Whether offer is personalized
+type? ('in-app' | 'subs'): Purchase type, defaults to 'in-app'
+Returns: Promise<Purchase | Purchase[] | void>
+
+Note: The actual purchase result is delivered through purchase listeners or the useIAP hook callbacks, not as a return value.
+
+Important Subscription Properties
+For subscription status checks after a purchase or when listing entitlements:
+
+iOS: Check expirationDateIOS to determine if the subscription is still active
+Android: Check autoRenewingAndroid to see if auto‑renewal has been canceled
+finishTransaction()
+Completes a purchase transaction. Must be called after successful receipt validation.
+
+import {finishTransaction} from 'expo-iap';
+
+const completePurchase = async (purchase) => {
+  try {
+    // Validate receipt on your server first
+    const isValid = await validateReceiptOnServer(purchase);
+
+    if (isValid) {
+      // Grant purchase to user
+      await grantPurchaseToUser(purchase);
+
+      // Finish the transaction
+      await finishTransaction({
+        purchase,
+        isConsumable: true, // Set to true for consumable products
+      });
+
+      console.log('Transaction completed');
+    }
+  } catch (error) {
+    console.error('Failed to finish transaction:', error);
+  }
+};
+
+Parameters:
+
+params (object):
+purchase (Purchase): The purchase object to finish
+isConsumable? (boolean): Whether the product is consumable (Android)
+Returns: Promise<VoidResult | boolean>
+
+getAvailablePurchases()
+Retrieves available purchases for restoration (non-consumable products and subscriptions).
+
+import {getAvailablePurchases} from 'expo-iap';
+
+const restorePurchases = async () => {
+  try {
+    const purchases = await getAvailablePurchases();
+
+    for (const purchase of purchases) {
+      // Validate and restore each purchase
+      const isValid = await validateReceiptOnServer(purchase);
+      if (isValid) {
+        await grantPurchaseToUser(purchase);
+      }
+    }
+
+    console.log('Purchases restored');
+  } catch (error) {
+    console.error('Failed to restore purchases:', error);
+  }
+};
+
+Parameters:
+
+options? (iOS only):
+alsoPublishToEventListenerIOS?: boolean
+onlyIncludeActiveItemsIOS?: boolean
+Returns: Promise<Purchase[]>
+
+deepLinkToSubscriptions()
+Opens the platform-specific subscription management UI.
+
+import {deepLinkToSubscriptions} from 'expo-iap';
+
+const openSubscriptionSettings = () => {
+  try {
+    deepLinkToSubscriptions({skuAndroid: 'your_subscription_sku'});
+  } catch (error) {
+    console.error('Failed to open subscription settings:', error);
+  }
+};
+
+Returns: Promise<void>
+
+getStorefront()
+Return the storefront in ISO 3166-1 alpha-2 or ISO 3166-1 alpha-3 format
+
+import {getStorefront} from 'expo-iap';
+
+const storeFront = await getStorefront();
+
+Returns: Promise<string>
+
+getActiveSubscriptions()
+Retrieves all active subscriptions with detailed status information. This method follows the OpenIAP specification for cross-platform subscription management.
+
+import {getActiveSubscriptions} from 'expo-iap';
+
+const checkSubscriptions = async () => {
+  try {
+    // Get all active subscriptions
+    const allActiveSubscriptions = await getActiveSubscriptions();
+
+    // Or filter by specific subscription IDs
+    const specificSubscriptions = await getActiveSubscriptions([
+      'premium_monthly',
+      'premium_yearly',
+    ]);
+
+    for (const subscription of allActiveSubscriptions) {
+      console.log('Product ID:', subscription.productId);
+      console.log('Is Active:', subscription.isActive);
+
+      if (Platform.OS === 'ios') {
+        console.log('Expiration Date:', subscription.expirationDateIOS);
+        console.log(
+          'Days until expiration:',
+          subscription.daysUntilExpirationIOS,
+        );
+        console.log('Environment:', subscription.environmentIOS);
+      } else if (Platform.OS === 'android') {
+        console.log('Auto Renewing:', subscription.autoRenewingAndroid);
+      }
+
+      console.log('Will expire soon:', subscription.willExpireSoon);
+    }
+  } catch (error) {
+    console.error('Failed to get active subscriptions:', error);
+  }
+};
+
+Parameters:
+
+subscriptionIds? (string[]): Optional array of subscription product IDs to filter. If not provided, returns all active subscriptions.
+Returns: Promise<ActiveSubscription[]>
+
+ActiveSubscription Interface:
+
+interface ActiveSubscription {
+  productId: string;
+  isActive: boolean;
+  expirationDateIOS?: Date;
+  autoRenewingAndroid?: boolean;
+  environmentIOS?: string;
+  willExpireSoon?: boolean;
+  daysUntilExpirationIOS?: number;
+}
+
+Platform Behavior:
+
+iOS: Uses expirationDateIos to determine subscription status. Includes expiration date and days until expiration.
+Android: Uses purchase list presence and autoRenewingAndroid flag to determine status.
+hasActiveSubscriptions()
+Checks if the user has any active subscriptions. This is a convenience method that returns a boolean result.
+
+import {hasActiveSubscriptions} from 'expo-iap';
+
+const checkIfUserHasSubscription = async () => {
+  try {
+    // Check if user has any active subscriptions
+    const hasAny = await hasActiveSubscriptions();
+
+    // Or check for specific subscriptions
+    const hasPremium = await hasActiveSubscriptions([
+      'premium_monthly',
+      'premium_yearly',
+    ]);
+
+    if (hasAny) {
+      console.log('User has active subscriptions');
+    }
+
+    if (hasPremium) {
+      console.log('User has premium subscription');
+    }
+  } catch (error) {
+    console.error('Failed to check subscription status:', error);
+  }
+};
+
+Parameters:
+
+subscriptionIds? (string[]): Optional array of subscription product IDs to check. If not provided, checks all subscriptions.
+Returns: Promise<boolean> - Returns true if user has at least one active subscription
+
+Purchase Interface
+interface Purchase {
+  id: string; // Transaction identifier
+  productId: string;
+  transactionDate: number;
+  purchaseToken?: string; // Unified token (iOS JWS or Android token)
+
+  // iOS-specific properties
+  originalTransactionDateIOS?: number;
+  originalTransactionIdentifierIOS?: string;
+  expirationDateIOS?: number;
+  environmentIOS?: 'Production' | 'Sandbox';
+
+  // Android-specific properties
+  dataAndroid?: string;
+  signatureAndroid?: string;
+  purchaseStateAndroid?: number;
+  isAcknowledgedAndroid?: boolean;
+  packageNameAndroid?: string;
+  developerPayloadAndroid?: string;
+  obfuscatedAccountIdAndroid?: string;
+  obfuscatedProfileIdAndroid?: string;
+  autoRenewingAndroid?: boolean;
+}
+
+Platform-specific APIs
+iOS Specific
+The following iOS‑only helpers expose StoreKit and App Store specific capabilities. Most day‑to‑day flows are covered by the cross‑platform Core Methods above; use these only when you need iOS features.
+
+clearTransactionIOS()
+Clears all pending transactions from the iOS payment queue. Useful if your app previously crashed or missed finishing transactions.
+
+import {clearTransactionIOS, getPendingTransactionsIOS} from 'expo-iap';
+
+// Inspect then clear
+const pending = await getPendingTransactionsIOS();
+if (pending.length) {
+  await clearTransactionIOS();
+}
+
+Returns: Promise<void>
+
+getStorefrontIOS()
+Returns the current App Store storefront country code (for example, "US", "GB").
+
+import {getStorefrontIOS} from 'expo-iap';
+
+const storefront = await getStorefrontIOS();
+
+Returns: Promise<string>
+
+getPromotedProductIOS()
+Gets the currently promoted product, if any. Requires iOS 11+.
+
+import {getPromotedProductIOS} from 'expo-iap';
+
+const promoted = await getPromotedProductIOS();
+if (promoted) {
+  // Show your purchase UI for the promoted product
+}
+
+Returns: Promise<Product | null>
+
+requestPurchaseOnPromotedProductIOS()
+Initiates the purchase flow for the currently promoted product. Requires iOS 11+.
+
+import {requestPurchaseOnPromotedProductIOS} from 'expo-iap';
+
+await requestPurchaseOnPromotedProductIOS();
+// Purchase result is delivered via purchase listeners/useIAP callbacks
+
+Returns: Promise<void>
+
+getPendingTransactionsIOS()
+Returns all transactions that are pending completion in the StoreKit payment queue.
+
+import {getPendingTransactionsIOS} from 'expo-iap';
+
+const pending = await getPendingTransactionsIOS();
+
+Returns: Promise<Purchase[]>
+
+isEligibleForIntroOfferIOS()
+Checks if the user is eligible for an introductory offer for a subscription group. Requires iOS 12.2+.
+
+import {isEligibleForIntroOfferIOS, fetchProducts} from 'expo-iap';
+
+// Example: derive group ID from a fetched subscription product
+const [sub] = await fetchProducts({skus: ['your_sub_sku'], type: 'subs'});
+const groupId = sub?.subscriptionInfoIOS?.subscriptionGroupId ?? '';
+const eligible = groupId ? await isEligibleForIntroOfferIOS(groupId) : false;
+
+Returns: Promise<boolean>
+
+subscriptionStatusIOS()
+Returns detailed subscription status information using StoreKit 2. Requires iOS 15+.
+
+import {subscriptionStatusIOS} from 'expo-iap';
+
+const statuses = await subscriptionStatusIOS('your_sub_sku');
+
+Returns: Promise<SubscriptionStatusIOS[]>
+
+currentEntitlementIOS()
+Returns the current entitlement for a given SKU using StoreKit 2. Requires iOS 15+.
+
+import {currentEntitlementIOS} from 'expo-iap';
+
+const entitlement = await currentEntitlementIOS('your_sub_or_product_sku');
+
+Returns: Promise<Purchase | null>
+
+latestTransactionIOS()
+Returns the most recent transaction for a given SKU using StoreKit 2. Requires iOS 15+.
+
+import {latestTransactionIOS} from 'expo-iap';
+
+const last = await latestTransactionIOS('your_sku');
+
+Returns: Promise<Purchase | null>
+
+showManageSubscriptionsIOS()
+Opens the native subscription management interface and returns purchases for subscriptions whose auto‑renewal status changed while the sheet was open. Requires iOS 15+.
+
+import {showManageSubscriptionsIOS} from 'expo-iap';
+
+const changed = await showManageSubscriptionsIOS();
+if (changed.length > 0) {
+  // Update your UI / server using returned purchases
+}
+
+Returns: Promise<Purchase[]>
+
+beginRefundRequestIOS()
+Presents the refund request sheet for a specific SKU. Requires iOS 15+.
+
+import {beginRefundRequestIOS} from 'expo-iap';
+
+const status = await beginRefundRequestIOS('your_sku');
+// status: 'success' | 'userCancelled'
+
+Returns: Promise<'success' | 'userCancelled'>
+
+isTransactionVerifiedIOS()
+Verifies the latest transaction for a given SKU using StoreKit 2. Requires iOS 15+.
+
+import {isTransactionVerifiedIOS} from 'expo-iap';
+
+const ok = await isTransactionVerifiedIOS('your_sku');
+
+Returns: Promise<boolean>
+
+getTransactionJwsIOS()
+Returns the JSON Web Signature (JWS) for a transaction derived from a given SKU. Use this for server‑side validation. Requires iOS 15+.
+
+import {getTransactionJwsIOS} from 'expo-iap';
+
+const jws = await getTransactionJwsIOS('your_sku');
+
+Returns: Promise<string>
+
+getReceiptDataIOS()
+Returns the base64‑encoded receipt data for server validation.
+
+import {getReceiptDataIOS} from 'expo-iap';
+
+const receipt = await getReceiptDataIOS();
+
+Returns: Promise<string>
+
+syncIOS()
+Forces a sync with StoreKit to ensure all transactions are up to date. Requires iOS 15+.
+
+import {syncIOS} from 'expo-iap';
+
+await syncIOS();
+
+Returns: Promise<void>
+
+presentCodeRedemptionSheetIOS()
+Presents the system sheet for redeeming App Store promo/offer codes.
+
+import {presentCodeRedemptionSheetIOS} from 'expo-iap';
+
+await presentCodeRedemptionSheetIOS();
+
+Returns: Promise<boolean>
+
+getAppTransactionIOS()
+Gets app transaction information for iOS apps (iOS 16.0+). AppTransaction represents the initial purchase that unlocked the app, useful for premium apps or apps that were previously paid.
+
+Runtime: iOS 16.0+; Build: Xcode 15.0+ with iOS 16.0 SDK. Older SDKs will throw.
+
+import {getAppTransactionIOS} from 'expo-iap';
+
+const fetchAppTransaction = async () => {
+  try {
+    const appTransaction = await getAppTransactionIOS();
+    if (appTransaction) {
+      console.log('App Transaction ID:', appTransaction.appTransactionId);
+      console.log(
+        'Original Purchase Date:',
+        new Date(appTransaction.originalPurchaseDate),
+      );
+      console.log('Device Verification:', appTransaction.deviceVerification);
+    }
+  } catch (error) {
+    console.error('Failed to get app transaction:', error);
+  }
+};
+
+Returns: Promise<AppTransaction | null>
+
+interface AppTransaction {
+  appTransactionId?: string; // iOS 18.4+
+  originalPlatform?: string; // iOS 18.4+
+  bundleId: string;
+  appVersion: string;
+  originalAppVersion: string;
+  originalPurchaseDate: number; // ms since epoch
+  deviceVerification: string;
+  deviceVerificationNonce: string;
+  environment: string;
+  signedDate: number;
+  appId?: number;
+  appVersionId?: number;
+  preorderDate?: number;
+}
+
+Android Specific
+acknowledgePurchaseAndroid
+Acknowledge a non‑consumable purchase or subscription on Android.
+
+import {acknowledgePurchaseAndroid} from 'expo-iap';
+
+await acknowledgePurchaseAndroid({token: purchase.purchaseToken!});
+
+Notes:
+
+finishTransaction() calls this automatically when isConsumable is false. You typically do not need to call it directly.
+consumePurchaseAndroid
+Consume a purchase (consumables only). This marks an item as consumed so it can be purchased again.
+
+Notes:
+
+finishTransaction() calls Android consumption automatically when isConsumable is true.
+A direct JS helper is not exposed; consumption is handled internally via the native module.
+flushFailedPurchasesCachedAsPendingAndroid (Removed)
+This legacy helper from older libraries has been removed. The modern flow is:
+
+// On app startup (Android)
+const purchases = await getAvailablePurchases();
+
+for (const p of purchases) {
+  if (/* consumable */) {
+    // finishTransaction will consume on Android when isConsumable is true
+    await finishTransaction({ purchase: p, isConsumable: true });
+  } else {
+    // finishTransaction will acknowledge on Android when isConsumable is false
+    await finishTransaction({ purchase: p, isConsumable: false });
+  }
+}
+
+This ensures pending transactions are surfaced and properly resolved without a separate “flush” API.
+
+Removed APIs
+requestProducts() — Removed in v3.0.0. Use fetchProducts({ skus, type }) instead.
+
+Purchase Listeners
+expo-iap provides event listeners to handle purchase updates and errors. These listeners are essential for handling the asynchronous nature of in-app purchases.
+
+purchaseUpdatedListener()
+Listens for purchase updates from the store.
+
+import {purchaseUpdatedListener} from 'expo-iap';
+
+const setupPurchaseListener = () => {
+  const subscription = purchaseUpdatedListener((purchase) => {
+    console.log('Purchase received:', purchase);
+    handlePurchaseUpdate(purchase);
+  });
+
+  // Clean up listener when component unmounts
+  return () => {
+    if (subscription) {
+      subscription.remove();
+    }
+  };
+};
+
+const handlePurchaseUpdate = async (purchase) => {
+  try {
+    // Validate receipt on your server
+    const isValid = await validateReceiptOnServer(purchase);
+
+    if (isValid) {
+      // Grant purchase to user
+      await grantPurchaseToUser(purchase);
+
+      // Finish the transaction
+      await finishTransaction({purchase});
+
+      console.log('Purchase completed successfully');
+    } else {
+      console.error('Receipt validation failed');
+    }
+  } catch (error) {
+    console.error('Error handling purchase:', error);
+  }
+};
+
+Parameters:
+
+callback (function): Function to call when a purchase update is received
+purchase (Purchase): The purchase object
+Returns: Subscription object with remove() method
+
+purchaseErrorListener()
+Listens for purchase errors from the store.
+
+import {purchaseErrorListener} from 'expo-iap';
+
+const setupErrorListener = () => {
+  const subscription = purchaseErrorListener((error) => {
+    console.error('Purchase error:', error);
+    handlePurchaseError(error);
+  });
+
+  // Clean up listener when component unmounts
+  return () => {
+    if (subscription) {
+      subscription.remove();
+    }
+  };
+};
+
+const handlePurchaseError = (error) => {
+  switch (error.code) {
+    case 'E_USER_CANCELLED':
+      // User cancelled the purchase
+      console.log('Purchase cancelled by user');
+      break;
+
+    case 'E_NETWORK_ERROR':
+      // Network error occurred
+      showErrorMessage(
+        'Network error. Please check your connection and try again.',
+      );
+      break;
+
+    case 'E_ITEM_UNAVAILABLE':
+      // Product is not available
+      showErrorMessage('This product is currently unavailable.');
+      break;
+
+    case 'E_ALREADY_OWNED':
+      // User already owns this product
+      showErrorMessage('You already own this product.');
+      break;
+
+    default:
+      // Other errors
+      showErrorMessage(`Purchase failed: ${error.message}`);
+      break;
+  }
+};
+
+Parameters:
+
+callback (function): Function to call when a purchase error occurs
+error (PurchaseError): The error object
+Returns: Subscription object with remove() method
+
+promotedProductListenerIOS() (iOS only)
+Listens for promoted product purchases initiated from the App Store. This fires when a user taps on a promoted product in the App Store.
+
+import {
+  promotedProductListenerIOS,
+  getPromotedProductIOS,
+  requestPurchaseOnPromotedProductIOS,
+} from 'expo-iap';
+
+const setupPromotedProductListener = () => {
+  const subscription = promotedProductListenerIOS((product) => {
+    console.log('Promoted product purchase initiated:', product);
+    handlePromotedProduct(product);
+  });
+
+  return () => {
+    if (subscription) {
+      subscription.remove();
+    }
+  };
+};
+
+const handlePromotedProduct = async (product) => {
+  try {
+    // Show your custom purchase UI with the product details
+    const confirmed = await showProductConfirmation(product);
+
+    if (confirmed) {
+      // Complete the promoted purchase
+      await requestPurchaseOnPromotedProductIOS();
+    }
+  } catch (error) {
+    console.error('Error handling promoted product:', error);
+  }
+};
+
+Parameters:
+
+callback (function): Function to call when a promoted product is selected
+product (Product): The promoted product object
+Returns: Subscription object with remove() method
+
+Related Methods:
+
+getPromotedProductIOS(): Get the promoted product details
+requestPurchaseOnPromotedProductIOS(): Complete the promoted product purchase
+Note: This listener only works on iOS devices and is used for handling App Store promoted products.
+
+Using Listeners with React Hooks
+Functional Components
+import React, {useEffect} from 'react';
+import {purchaseUpdatedListener, purchaseErrorListener} from 'expo-iap';
+
+export default function PurchaseManager() {
+  useEffect(() => {
+    // Set up purchase listeners
+    const purchaseUpdateSubscription = purchaseUpdatedListener((purchase) => {
+      handlePurchaseUpdate(purchase);
+    });
+
+    const purchaseErrorSubscription = purchaseErrorListener((error) => {
+      handlePurchaseError(error);
+    });
+
+    // Cleanup function
+    return () => {
+      purchaseUpdateSubscription?.remove();
+      purchaseErrorSubscription?.remove();
+    };
+  }, []);
+
+  const handlePurchaseUpdate = async (purchase) => {
+    // Handle purchase logic
+  };
+
+  const handlePurchaseError = (error) => {
+    // Handle error logic
+  };
+
+  return <div>{/* Your component JSX */}</div>;
+}
+
+Custom Hook for Purchase Handling
+You can create a custom hook to encapsulate purchase listener logic:
+
+import {useEffect, useCallback} from 'react';
+import {
+  purchaseUpdatedListener,
+  purchaseErrorListener,
+  finishTransaction,
+} from 'expo-iap';
+
+export const usePurchaseHandler = () => {
+  const handlePurchaseUpdate = useCallback(async (purchase) => {
+    try {
+      // Validate receipt
+      const isValid = await validateReceiptOnServer(purchase);
+
+      if (isValid) {
+        // Grant purchase
+        await grantPurchaseToUser(purchase);
+
+        // Finish transaction
+        await finishTransaction({purchase});
+
+        // Show success message
+        showSuccessMessage('Purchase completed successfully!');
+      } else {
+        console.error('Receipt validation failed');
+        showErrorMessage('Purchase validation failed. Please contact support.');
+      }
+    } catch (error) {
+      console.error('Error handling purchase:', error);
+      showErrorMessage('An error occurred while processing your purchase.');
+    }
+  }, []);
+
+  const handlePurchaseError = useCallback((error) => {
+    console.error('Purchase error:', error);
+
+    switch (error.code) {
+      case 'E_USER_CANCELLED':
+        // Don't show error for user cancellation
+        break;
+      default:
+        showErrorMessage(`Purchase failed: ${error.message}`);
+        break;
+    }
+  }, []);
+
+  useEffect(() => {
+    // Set up listeners
+    const purchaseUpdateSubscription =
+      purchaseUpdatedListener(handlePurchaseUpdate);
+    const purchaseErrorSubscription =
+      purchaseErrorListener(handlePurchaseError);
+
+    // Cleanup
+    return () => {
+      purchaseUpdateSubscription?.remove();
+      purchaseErrorSubscription?.remove();
+    };
+  }, [handlePurchaseUpdate, handlePurchaseError]);
+};
+
+// Usage in component
+export default function MyStoreComponent() {
+  usePurchaseHandler(); // Sets up listeners automatically
+
+  return <div>{/* Your store UI */}</div>;
+}
+
+Important Notes
+Listener Lifecycle
+Set up early: Set up listeners as early as possible in your app lifecycle
+Clean up properly: Always remove listeners to prevent memory leaks
+Handle app states: Purchases can complete when your app is in the background
+Error Handling
+Always handle both purchase updates and errors:
+
+useEffect(() => {
+  const purchaseUpdateSubscription = purchaseUpdatedListener((purchase) => {
+    // Handle successful/pending purchases
+  });
+
+  const purchaseErrorSubscription = purchaseErrorListener((error) => {
+    // Handle purchase errors
+  });
+
+  return () => {
+    purchaseUpdateSubscription?.remove();
+    purchaseErrorSubscription?.remove();
+  };
+}, []);
+
+Purchase States
+Purchases can be in different states:
+
+Purchased: Successfully completed
+Pending: Awaiting approval (e.g., parental approval)
+Failed: Purchase failed
+Handle each state appropriately in your purchase listener.
+
+Alternative: useIAP Hook
+For simpler usage, consider using the useIAP hook which automatically manages listeners:
+
+import {useIAP} from 'expo-iap';
+
+export default function StoreComponent() {
+  const {currentPurchase, currentPurchaseError} = useIAP();
+
+  useEffect(() => {
+    if (currentPurchase) {
+      handlePurchaseUpdate(currentPurchase);
+    }
+  }, [currentPurchase]);
+
+  useEffect(() => {
+    if (currentPurchaseError) {
+      handlePurchaseError(currentPurchaseError);
+    }
+  }, [currentPurchaseError]);
+
+  // Rest of component
+}
+
+The useIAP hook provides a more React-friendly way to handle purchases without manually managing listeners.
+
+EXAMPLES:
+Purchase Flow
+This example walks through a clean purchase flow using expo-iap with the useIAP hook and the new platform‑specific request shape. It mirrors the working sample in example/app/purchase-flow.tsx.
+
+View the full example source:
+
+GitHub: example/app/purchase-flow.tsx
+Flow Overview
+Initialize: useIAP manages the store connection lifecycle
+
+Load products:
+
+fetchProducts({ skus, type: 'in-app' })
+
+Start purchase:
+
+requestPurchase({ request: { ios: { sku }, android: { skus: [sku] } }, type: 'in-app' })
+
+Receive callbacks: onPurchaseSuccess / onPurchaseError (from useIAP)
+
+Validate server‑side: send receipt/JWS or token to your backend
+
+Finish transaction:
+
+finishTransaction({ purchase, isConsumable })
+
+Connect → Fetch Products → Request Purchase → Server Validate → Finish Transaction
+
+Key Concepts
+1. Connection Management
+useIAP automatically opens/closes the connection
+Exposes connected, convenient for showing loading states
+2. Product Loading
+Load in‑app products or subscriptions (set type)
+Handle and log failed product fetches
+3. Purchase Flow
+Start purchases via unified request shape (no Platform.OS branching)
+Use onPurchaseSuccess/onPurchaseError from useIAP
+Always call finishTransaction after server validation
+4. Receipt Validation
+Perform validation on your backend (never only on device)
+iOS: validate the receipt/JWS; Android: validate purchase token + package name
+5. User Experience
+Provide clear states for loading, success, and error
+Show subscription management/deep‑links when appropriate
+Platform Differences
+Purchase Request Parameters
+Use the modern, platform‑specific request container (v2.7.0+). This avoids manual Platform.OS checks:
+
+await requestPurchase({
+  request: {
+    ios: {sku: productId, quantity: 1},
+    android: {skus: [productId]},
+  },
+  type: 'in-app',
+});
+
+Notes:
+
+Keep andDangerouslyFinishTransactionAutomatically off (default) to validate first.
+Key iOS Options
+appAccountToken: set per user to correlate receipts on your backend
+quantity: purchase quantity for iOS (consumables)
+Purchase Object Properties
+Purchase objects have different properties on iOS and Android. When accessing platform-specific properties, TypeScript type casting is required:
+
+// Unified fields
+const token = purchase.purchaseToken; // iOS JWS or Android token
+
+// Android-only helpers
+// const pkg = (purchase as PurchaseAndroid).packageNameAndroid;
+
+Receipt Validation
+Receipt validation requires different approaches:
+
+iOS: verify receipt/JWS on your server against Apple
+Android: verify token and package name against Google Play Developer API
+Usage
+import React from 'react';
+import {NavigationContainer} from '@react-navigation/native';
+import PurchaseFlow from './purchase-flow';
+
+export default function App() {
+  return (
+    <NavigationContainer>
+      <PurchaseFlow />
+    </NavigationContainer>
+  );
+}
+
+Customization
+You can customize this example by:
+
+Styling: Modify the styles object to match your app's design
+Product IDs: Update PRODUCT_IDS with your actual product IDs
+Validation: Implement proper server-side receipt validation
+Error Handling: Add more specific error handling for your use case
+Features: Add features like purchase restoration, subscription management, etc.
+
+Available Purchases
+This example shows how to list and restore previously purchased items (non‑consumables and active subscriptions) using getAvailablePurchases() and getActiveSubscriptions().
+
+View the full example source:
+
+GitHub: https://github.com/hyochan/expo-iap/blob/main/example/app/available-purchases.tsx
+Restore Flow
+Ensure the store connection is active (handled by useIAP)
+Call both getAvailablePurchases() and getActiveSubscriptions()
+Validate on your server and grant entitlements
+import React from 'react';
+import {Alert} from 'react-native';
+import {useIAP} from 'expo-iap';
+
+export default function AvailablePurchasesScreen() {
+  const {
+    connected,
+    getAvailablePurchases,
+    getActiveSubscriptions,
+    activeSubscriptions,
+    finishTransaction,
+  } = useIAP();
+
+  const restore = async () => {
+    if (!connected) return;
+    const [purchases] = await Promise.all([
+      getAvailablePurchases(),
+      getActiveSubscriptions(),
+    ]);
+
+    for (const p of purchases) {
+      // TODO: validate on your backend first
+      // await grantEntitlement(p)
+      // Non-consumables and subscriptions typically don't require consumption
+      await finishTransaction({purchase: p, isConsumable: false});
+    }
+
+    Alert.alert('Restored', `Restored ${purchases.length} purchases`);
+  };
+
+  return null; // Render your UI and call restore() from a button
+}
+
+Showing Active Subscriptions
+The hook exposes activeSubscriptions, which you can render directly after calling getActiveSubscriptions():
+
+import {useIAP} from 'expo-iap';
+
+function ActiveSubscriptionsList() {
+  const {activeSubscriptions, getActiveSubscriptions} = useIAP();
+
+  useEffect(() => {
+    getActiveSubscriptions();
+  }, [getActiveSubscriptions]);
+
+  return (
+    <View>
+      {activeSubscriptions.map((s) => (
+        <Text key={s.productId}>{s.productId}</Text>
+      ))}
+    </View>
+  );
+}
+
+Tips
+Only non‑consumables and subscriptions are returned; consumables are not restorable
+Always perform server‑side validation before granting access
+On iOS, you can optionally filter for active items using onlyIncludeActiveItemsIOS
+Android tip: If users redeem a promo code in Google Play, open https://play.google.com/redeem with Linking.openURL(...) and then refresh with getAvailablePurchases() and getActiveSubscriptions()

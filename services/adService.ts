@@ -24,7 +24,7 @@ const debugEnvironment = () => {
 };
 
 // Conditionally import AdMob
-let AdEventType: any, InterstitialAd: any, TestIds: any;
+let AdEventType: any, InterstitialAd: any, TestIds: any, mobileAds: any;
 
 if (isNativeEnvironment()) {
   try {
@@ -33,10 +33,12 @@ if (isNativeEnvironment()) {
     AdEventType = admob.AdEventType;
     InterstitialAd = admob.InterstitialAd;
     TestIds = admob.TestIds;
+    mobileAds = admob.default; // Import mobileAds for initialization
     console.log("✅ AdMob loaded successfully:", {
       AdEventType: !!AdEventType,
       InterstitialAd: !!InterstitialAd,
       TestIds: !!TestIds,
+      mobileAds: !!mobileAds,
     });
   } catch (error) {
     console.log("🚫 AdMob: Failed to load", error);
@@ -53,21 +55,21 @@ const getAdConfig = () => {
   if (!isNative) {
     return { INTERSTITIAL_ID: null };
   }
-  const showLiveAds = false; // Remove in PRODUCTION
+
   // In native environment, use test ads for non-production, real ads for production
   if (isProd) {
     // Production: Use real ad IDs
     return {
       INTERSTITIAL_ID: Platform.select({
         android: "ca-app-pub-9976626838955349/2586969967",
-        ios: "ca-app-pub-9976626838955349~7843166076",
-        default: "ca-app-pub-9976626838955349/2586969967",
+        ios: "ca-app-pub-9976626838955349/8529561786",
+        default: "ca-app-pub-9976626838955349/8529561786",
       }),
     };
   } else {
     // Non-production: Use test ad IDs
     return {
-      INTERSTITIAL_ID: TestIds?.INTERSTITIAL || "test-id",
+      INTERSTITIAL_ID: TestIds?.INTERSTITIAL || "ca-app-pub-9976626838955349/8529561786",
     };
   }
 };
@@ -90,15 +92,17 @@ class AdService {
     const isNative = isNativeEnvironment();
     const hasAdId = AD_CONFIG.INTERSTITIAL_ID !== null;
     const hasAdMob = InterstitialAd !== undefined;
+    const hasMobileAds = mobileAds !== undefined;
 
     console.log(`🔍 AdMob Availability Check:`, {
       isNative,
       hasAdId,
       hasAdMob,
+      hasMobileAds,
       adId: AD_CONFIG.INTERSTITIAL_ID,
     });
 
-    return isNative && hasAdId && hasAdMob;
+    return isNative && hasAdId && hasAdMob && hasMobileAds;
   }
 
   /**
@@ -160,10 +164,32 @@ class AdService {
       return;
     }
 
+    // CRITICAL: Initialize AdMob SDK first
+    await this.initializeAdMobSDK();
+
     await this.loadInterstitialAd();
 
     // Listen for user tier changes
     userService.onTierChange(() => this.onUserTierChange());
+  }
+
+  /**
+   * Initialize the AdMob SDK - REQUIRED for iOS
+   */
+  private async initializeAdMobSDK(): Promise<void> {
+    if (!mobileAds) {
+      console.log("🚫 AdMob: mobileAds not available");
+      return;
+    }
+
+    try {
+      console.log("🎯 AdMob: Initializing SDK...");
+      const adapterStatuses = await mobileAds().initialize();
+      console.log("✅ AdMob: SDK initialized successfully", adapterStatuses);
+    } catch (error) {
+      console.log("❌ AdMob: SDK initialization failed:", error);
+      throw error;
+    }
   }
 
   /**
@@ -296,8 +322,8 @@ class AdService {
    */
   async onUserTierChange(): Promise<void> {
     console.log("🔄 AdService: onUserTierChange() called");
-    if (!InterstitialAd) {
-      console.log("🚫 AdService: InterstitialAd not available, skipping");
+    if (!InterstitialAd || !mobileAds) {
+      console.log("🚫 AdService: AdMob components not available, skipping");
       return;
     }
 
@@ -311,7 +337,9 @@ class AdService {
       await upsellService.resetAdCount();
     } else {
       console.log("🎯 AdService: User is not premium, initializing ads");
-      await this.initialize();
+      // Reinitialize AdMob SDK and ads
+      await this.initializeAdMobSDK();
+      await this.loadInterstitialAd();
     }
   }
 

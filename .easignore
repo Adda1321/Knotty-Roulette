@@ -26,6 +26,10 @@ scripts/
 knotty-roulette-keystore.jks
 upload_certificate.pem
 
+# EAS Credentials (SENSITIVE - DO NOT COMMIT)
+credentials.json
+credentials/
+
 # Node modules (already ignored by default)
 node_modules/
 

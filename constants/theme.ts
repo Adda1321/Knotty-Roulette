@@ -109,6 +109,8 @@ export const THEME_PACKS = {
   DEFAULT: "default",
   COLLEGE: "college",
   COUPLE: "couple",
+  TEST_THEME_FAKE: "test_theme_fake",
+  TEST_THEME_ANGRY: "test_theme_angry",
 } as const;
 
 export type ThemePackId = (typeof THEME_PACKS)[keyof typeof THEME_PACKS];
@@ -148,6 +150,24 @@ export const THEME_PACK_DATA: Record<ThemePackId, ThemePackData> = {
       "Romantic and flirty challenges designed for couples and date nights.",
     price: 2.99,
     emoji: "💕",
+    isDefault: false,
+  },
+  [THEME_PACKS.TEST_THEME_FAKE]: {
+    id: THEME_PACKS.TEST_THEME_FAKE,
+    name: "Fake Theme Pack",
+    description:
+      "Unlock the fake theme with mysterious and deceptive patterns.",
+    price: 2.99,
+    emoji: "🎭",
+    isDefault: false,
+  },
+  [THEME_PACKS.TEST_THEME_ANGRY]: {
+    id: THEME_PACKS.TEST_THEME_ANGRY,
+    name: "Angry Theme Pack",
+    description:
+      "Unlock the angry theme with bold red colors and intense effects.",
+    price: 2.99,
+    emoji: "😡",
     isDefault: false,
   },
 };
@@ -274,6 +294,75 @@ export const THEME_COLORS = {
 
     // Shadow Colors
     SHADOW: "rgba(0, 0, 0, 0.1)",
+    SHADOW_DARK: "#000000",
+  },
+
+
+  [THEME_PACKS.TEST_THEME_FAKE]: {
+    // Primary Colors - Fake/Mysterious Theme
+    PRIMARY: "#4A148C", // Deep purple
+    LIGHT: "#9C27B0", // Purple
+    LIGHTEST: "#E1BEE7", // Light purple
+    DARK: "#2E1065", // Dark purple
+    TEXT: "#FFEB3B", // Yellow text
+    YELLOW: "#FFEB3B",
+    FIELDS: "#F3E5F5", // Very light purple fields
+    GAMEBOARDPRIMARY: "#6A1B9A",
+    GAMEBOARDSECONDARY: "#BA68C8",
+    SCOREBOARD: "#8E24AA",
+
+    // Background Colors
+    BACKGROUND_DARK: "#1A0033", // Very dark purple
+
+    // Text Colors
+    TEXT_PRIMARY: "#FFFFFF",
+    TEXT_SECONDARY: "#E1BEE7",
+    TEXT_DARK: "#2E1065",
+
+    // Card Colors
+    CARD_BACKGROUND: "#FFFFFF",
+    CARD_BORDER: "#E1BEE7",
+
+    // Button Colors
+    BUTTON_PRIMARY: "#4A148C", // Deep purple
+    BUTTON_SECONDARY: "#FFEB3B", // Yellow
+
+    // Shadow Colors
+    SHADOW: "rgba(0, 0, 0, 0.3)",
+    SHADOW_DARK: "#000000",
+  },
+
+  [THEME_PACKS.TEST_THEME_ANGRY]: {
+    // Primary Colors - Angry/Red Theme
+    PRIMARY: "#D32F2F", // Red
+    LIGHT: "#FFCDD2", // Light red
+    LIGHTEST: "#FFEBEE", // Very light red
+    DARK: "#B71C1C", // Dark red
+    TEXT: "#FFD700", // Gold text
+    YELLOW: "#FFD700",
+    FIELDS: "#FFEBEE", // Very light red fields
+    GAMEBOARDPRIMARY: "#F44336",
+    GAMEBOARDSECONDARY: "#FFCDD2",
+    SCOREBOARD: "#E57373",
+
+    // Background Colors
+    BACKGROUND_DARK: "#8B0000", // Dark red
+
+    // Text Colors
+    TEXT_PRIMARY: "#FFFFFF",
+    TEXT_SECONDARY: "#FFCDD2",
+    TEXT_DARK: "#B71C1C",
+
+    // Card Colors
+    CARD_BACKGROUND: "#FFFFFF",
+    CARD_BORDER: "#FFCDD2",
+
+    // Button Colors
+    BUTTON_PRIMARY: "#D32F2F", // Red
+    BUTTON_SECONDARY: "#FFD700", // Gold
+
+    // Shadow Colors
+    SHADOW: "rgba(0, 0, 0, 0.2)",
     SHADOW_DARK: "#000000",
   },
 } as const;

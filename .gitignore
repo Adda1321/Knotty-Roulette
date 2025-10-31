@@ -12,15 +12,15 @@ expo-env.d.ts
 # Native
 .kotlin/
 *.orig.*
-*.jks
-*.p8
-*.p12
-*.key
+# *.jks
+# *.p8
+# *.p12
+# *.key
 *.mobileprovision
 
 # EAS Credentials (SENSITIVE - DO NOT COMMIT)
-credentials.json
-credentials/
+# credentials.json
+# credentials/
 
 # Metro
 .metro-health-check*
